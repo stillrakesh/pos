@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Menu, Search, Store, Monitor, LayoutGrid, Clock, Bell, User,
-  ChevronDown, Info, CreditCard, Banknote, Printer, Eye, Plus,
+  ChevronDown, ChevronUp, Info, CreditCard, Banknote, Printer, Eye, Plus,
   Minus, X, Utensils, Smartphone, BarChart3, TrendingUp, PieChart, AlertTriangle, Truck, ShoppingBag, ChefHat, MessageSquare, CheckSquare, Sunset, Trash2
 } from 'lucide-react';
 import './index.css';
@@ -106,6 +106,8 @@ const INITIAL_MENU_ITEMS = [
   { id: 1101, name: 'Chocolate with Brownie', price: 299, type: 'veg', cat: 'Desserts', inStock: true },
 ];
 
+const INITIAL_FLOOR_SECTIONS = ['A/C', 'Non A/C'];
+
 const INITIAL_TABLES = [
   { id: 1, name: 'Table 1', status: 'blank', type: 'A/C', order: [] },
   { id: 2, name: 'Table 2', status: 'blank', type: 'A/C', order: [] },
@@ -155,7 +157,54 @@ const TopHeader = ({ onViewChange, onSimulateAggregator }) => {
         <Search size={14} color="#6b7280" />
         <input type="text" placeholder="KOT No" />
       </div>
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '15px' }}>
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button
+          onClick={() => onViewChange('tables')}
+          style={{
+            cursor: 'pointer',
+            border: '2px solid #94161c',
+            background: 'white',
+            color: '#94161c',
+            padding: '6px 16px',
+            borderRadius: '6px',
+            fontWeight: 'bold',
+            fontSize: '13px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => { e.target.style.background = '#94161c'; e.target.style.color = 'white'; }}
+          onMouseLeave={(e) => { e.target.style.background = 'white'; e.target.style.color = '#94161c'; }}
+        >
+          <LayoutGrid size={16} /> TABLE ORDER
+        </button>
+        <button
+          onClick={() => onViewChange('nontables')}
+          style={{
+            cursor: 'pointer',
+            border: 'none',
+            background: '#94161c',
+            color: 'white',
+            padding: '8px 18px',
+            borderRadius: '6px',
+            fontWeight: 'bold',
+            fontSize: '13px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            boxShadow: '0 4px 6px -1px rgba(148, 22, 28, 0.3)',
+            transition: 'all 0.2s ease',
+            transform: 'scale(1.05)'
+          }}
+          onMouseEnter={(e) => { e.target.style.transform = 'scale(1.1)'; e.target.style.boxShadow = '0 6px 8px -1px rgba(148, 22, 28, 0.4)'; }}
+          onMouseLeave={(e) => { e.target.style.transform = 'scale(1.05)'; e.target.style.boxShadow = '0 4px 6px -1px rgba(148, 22, 28, 0.3)'; }}
+        >
+          <ShoppingBag size={16} /> PICK UP ORDER
+        </button>
+
+        <div style={{ borderLeft: '1px solid #e5e7eb', height: '30px', margin: '0 5px' }}></div>
+
         <button onClick={() => onViewChange('dayclose')} style={{ cursor: 'pointer', border: 'none', background: 'transparent', textAlign: 'center', opacity: 0.7 }}>
           <Sunset size={16} /><div style={{ fontSize: '9px' }}>Day Close</div>
         </button>
@@ -165,12 +214,7 @@ const TopHeader = ({ onViewChange, onSimulateAggregator }) => {
         <button onClick={() => onViewChange('kds')} style={{ cursor: 'pointer', border: 'none', background: 'transparent', textAlign: 'center', opacity: 0.7 }}>
           <ChefHat size={16} /><div style={{ fontSize: '9px' }}>Kitchen</div>
         </button>
-        <button onClick={() => onViewChange('nontables')} style={{ cursor: 'pointer', border: 'none', background: 'transparent', textAlign: 'center', opacity: 0.7 }}>
-          <ShoppingBag size={16} /><div style={{ fontSize: '9px' }}>Online</div>
-        </button>
-        <button onClick={() => onViewChange('tables')} style={{ cursor: 'pointer', border: 'none', background: 'transparent', textAlign: 'center', opacity: 0.7 }}>
-          <LayoutGrid size={16} /><div style={{ fontSize: '9px' }}>Tables</div>
-        </button>
+
         <div style={{ borderLeft: '1px solid #e5e7eb', height: '30px', margin: '0 10px' }}></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ textAlign: 'right' }}>
@@ -234,8 +278,10 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems }) =
     }
   };
 
-  const deleteCategory = () => {
-    alert("Data removal is strictly disabled! Contact Administrator.");
+  const deleteCategory = (catName) => {
+    if (window.confirm(`Are you sure you want to delete the category "${catName}"? This will not delete the items in this category.`)) {
+      setCategories(categories.filter(c => c !== catName));
+    }
   };
 
   const addItem = () => {
@@ -253,12 +299,20 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems }) =
     }
   };
 
-  const deleteItem = () => {
-    alert("Data removal is strictly disabled! Contact Administrator.");
+  const deleteItem = (id) => {
+    if (window.confirm("Are you sure you want to remove this item from the menu?")) {
+      setMenuItems(menuItems.filter(item => item.id !== id));
+    }
   };
 
   const toggleStock = (id) => {
     setMenuItems(menuItems.map(item => item.id === id ? { ...item, inStock: !item.inStock } : item));
+  };
+
+  const clearAllItems = () => {
+    if (window.confirm("CRITICAL ACTION: Are you sure you want to delete ALL menu items? This cannot be undone.")) {
+      setMenuItems([]);
+    }
   };
 
   return (
@@ -295,7 +349,25 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems }) =
 
         {/* Menu Items Section */}
         <div style={{ background: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: '#374151' }}>Add Menu Item</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#374151' }}>Menu Items</h3>
+            <button
+              onClick={clearAllItems}
+              style={{
+                background: '#fee2e2',
+                color: '#dc2626',
+                border: '1px solid #fecaca',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              <Trash2 size={14} style={{ verticalAlign: 'middle', marginRight: '6px' }} /> Clear All Items
+            </button>
+          </div>
+          <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '16px' }}>Add new items or manage current inventory stock below.</p>
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr auto', gap: '10px', alignItems: 'center', marginBottom: '24px' }}>
             <input
               type="text"
@@ -360,13 +432,17 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems }) =
 };
 
 /* --- FLOOR PLAN SETUP VIEW --- */
-const FloorPlanSetupView = ({ tables, setTables }) => {
+/* --- FLOOR PLAN SETUP VIEW --- */
+const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
   const [newTableName, setNewTableName] = useState('');
-  const [newTableType, setNewTableType] = useState('A/C');
+  const [newTableType, setNewTableType] = useState(sections[0] || '');
   const [tableToRemove, setTableToRemove] = useState(null);
+  const [newSectionName, setNewSectionName] = useState('');
+  const [editingSection, setEditingSection] = useState(null);
+  const [editSectionValue, setEditSectionValue] = useState('');
 
   const addTable = () => {
-    if (newTableName.trim() === '') return;
+    if (newTableName.trim() === '' || !newTableType) return;
     const newId = Date.now();
     const newTable = {
       id: newId,
@@ -393,12 +469,84 @@ const FloorPlanSetupView = ({ tables, setTables }) => {
     setTableToRemove(null);
   };
 
+  const addSection = () => {
+    if (!newSectionName.trim()) return;
+    if (sections.includes(newSectionName.trim())) {
+      alert("Section already exists.");
+      return;
+    }
+    setSections([...sections, newSectionName.trim()]);
+    setNewSectionName('');
+    if (!newTableType) setNewTableType(newSectionName.trim());
+  };
+
+  const removeSection = (sec) => {
+    const hasTables = tables.some(t => t.type === sec);
+    if (hasTables) {
+      alert("Cannot remove a section that containing tables. Move or delete tables first.");
+      return;
+    }
+    if (window.confirm(`Remove section "${sec}"?`)) {
+      setSections(sections.filter(s => s !== sec));
+    }
+  };
+
+  const startEditSection = (sec) => {
+    setEditingSection(sec);
+    setEditSectionValue(sec);
+  };
+
+  const saveSectionRename = () => {
+    if (!editSectionValue.trim() || editSectionValue === editingSection) {
+      setEditingSection(null);
+      return;
+    }
+    // Update section name in list
+    setSections(sections.map(s => s === editingSection ? editSectionValue.trim() : s));
+    // Update type in all tables belonging to this section
+    setTables(tables.map(t => t.type === editingSection ? { ...t, type: editSectionValue.trim() } : t));
+
+    if (newTableType === editingSection) setNewTableType(editSectionValue.trim());
+    setEditingSection(null);
+  };
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: '#f9fafb' }} className="animate-fade-in no-scrollbar">
       <div style={{ maxWidth: '800px', margin: '0 auto' }}>
         <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', color: '#1f2937', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <LayoutGrid size={28} color="#8b5cf6" /> Floor Plan Setup
         </h2>
+
+        {/* Section Management */}
+        <div style={{ background: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '24px' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: '#374151' }}>Manage Sections (Areas)</h3>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+            <input
+              type="text"
+              placeholder="New Section Name (e.g. Roof Top)"
+              value={newSectionName}
+              onChange={e => setNewSectionName(e.target.value)}
+              style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
+            />
+            <button onClick={addSection} className="btn-pp" style={{ background: '#10b981', color: 'white', fontWeight: 'bold' }}>+ Add Section</button>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {sections.map(sec => (
+              <div key={sec} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f3f4f6', padding: '6px 12px', borderRadius: '20px', fontSize: '13px' }}>
+                {editingSection === sec ? (
+                  <>
+                    <input autoFocus value={editSectionValue} onChange={e => setEditSectionValue(e.target.value)} onBlur={saveSectionRename} onKeyDown={e => e.key === 'Enter' && saveSectionRename()} style={{ background: 'white', border: '1px solid #d1d5db', borderRadius: '4px', padding: '2px 6px', fontSize: '13px', width: '100px' }} />
+                  </>
+                ) : (
+                  <>
+                    <span onClick={() => startEditSection(sec)} style={{ fontWeight: 'bold', color: '#4b5563', cursor: 'pointer' }}>{sec}</span>
+                    <button onClick={() => removeSection(sec)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: '#ef4444' }}><X size={14} /></button>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
 
         <div style={{ background: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '24px' }}>
           <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: '#374151' }}>Add New Table</h3>
@@ -415,14 +563,14 @@ const FloorPlanSetupView = ({ tables, setTables }) => {
               onChange={e => setNewTableType(e.target.value)}
               style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white' }}
             >
-              <option value="A/C">A/C Section</option>
-              <option value="Non A/C">Non A/C Section</option>
+              {!newTableType && <option value="" disabled>Select Section</option>}
+              {sections.map(sec => <option key={sec} value={sec}>{sec} Section</option>)}
             </select>
             <button onClick={addTable} style={{ background: '#8b5cf6', color: 'white', padding: '10px 20px', borderRadius: '6px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>Add Table</button>
           </div>
         </div>
 
-        {['A/C', 'Non A/C'].map(section => (
+        {sections.map(section => (
           <div key={section} style={{ background: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '24px' }}>
             <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: '#374151' }}>{section} Section</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
@@ -578,7 +726,7 @@ const PrinterSettingsView = ({ settings, onSaveSettings, categories }) => {
   );
 };
 
-const TableManagement = ({ tables, onSelectTable, onClearTable }) => {
+const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTable }) => {
   const [tableToClear, setTableToClear] = useState(null);
   const getTableTotal = (order) => order.reduce((acc, item) => acc + (item.price * item.qty), 0);
 
@@ -598,7 +746,7 @@ const TableManagement = ({ tables, onSelectTable, onClearTable }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', background: '#fef08a', borderRadius: '2px' }}></div> Running KOT</div>
       </div>
 
-      {['A/C', 'Non A/C'].map(section => (
+      {(floorPlanSections || []).map(section => (
         <div key={section} style={{ marginBottom: '30px' }}>
           <h3 className="table-section-header">{section}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px' }}>
@@ -705,42 +853,92 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder }) => {
   const getOrderTotal = (orderArr) => orderArr.reduce((acc, item) => acc + (item.price * item.qty), 0);
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }} className="animate-fade-in no-scrollbar">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#374151' }}>Takeaway & Delivery</h2>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button className="btn-pp btn-pp-outline" onClick={() => onCreateOrder('Delivery')} style={{ display: 'flex', alignItems: 'center', background: 'white' }}><Truck size={14} style={{ marginRight: '6px' }} />+ New Delivery</button>
-          <button className="btn-pp btn-pp-outline" onClick={() => onCreateOrder('Takeaway')} style={{ display: 'flex', alignItems: 'center', background: 'white' }}><ShoppingBag size={14} style={{ marginRight: '6px' }} />+ New Takeaway</button>
+    <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: '#f8fafc' }} className="animate-fade-in no-scrollbar">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1e293b' }}>Pickup Orders Dashboard</h2>
+          <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Manage all takeaway and delivery orders from one place.</p>
+        </div>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            className="btn-pp"
+            onClick={() => onCreateOrder('Takeaway')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: '#94161c',
+              color: 'white',
+              padding: '10px 20px',
+              borderRadius: '8px',
+              fontWeight: 'bold',
+              boxShadow: '0 4px 6px -1px rgba(148, 22, 28, 0.2)'
+            }}
+          >
+            <Plus size={18} style={{ marginRight: '8px' }} /> + New Pickup Order
+          </button>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
-        {orders.length === 0 && <div style={{ color: '#9ca3af', fontStyle: 'italic', gridColumn: '1 / -1' }}>No active Takeaway or Delivery orders.</div>}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+        {orders.length === 0 && (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px', background: 'white', borderRadius: '12px', border: '2px dashed #e2e8f0' }}>
+            <ShoppingBag size={48} color="#cbd5e1" style={{ margin: '0 auto 16px' }} />
+            <div style={{ color: '#94a3b8', fontSize: '15px', fontWeight: '500' }}>No active pickup orders at the moment.</div>
+          </div>
+        )}
         {orders.map(order => {
           const tableTotal = getOrderTotal(order.order);
-          let bg = order.type === 'Delivery' ? '#fee2e2' : '#e0e7ff';
-          let text = order.type === 'Delivery' ? '#991b1b' : '#3730a3';
-          let border = order.type === 'Delivery' ? '#fca5a5' : '#a5b4fc';
+          let bg = order.type === 'Delivery' ? '#fff1f2' : '#f0f9ff';
+          let text = order.type === 'Delivery' ? '#be123c' : '#0369a1';
+          let border = order.type === 'Delivery' ? '#ffe4e6' : '#e0f2fe';
 
-          if (order.type === 'Zomato') { bg = '#ffe4e6'; text = '#e11d48'; border = '#fda4af'; }
-          if (order.type === 'Swiggy') { bg = '#ffedd5'; text = '#c2410c'; border = '#fdba74'; }
-          if (order.type === 'Thrive') { bg = '#dcfce7'; text = '#166534'; border = '#86efac'; }
+          if (order.type === 'Zomato') { bg = '#fff1f2'; text = '#e11d48'; border = '#ffe4e6'; }
+          if (order.type === 'Swiggy') { bg = '#fff7ed'; text = '#c2410c'; border = '#ffedd5'; }
+          if (order.type === 'Thrive') { bg = '#f0fdf4'; text = '#15803d'; border = '#dcfce7'; }
+
+          // Map internal status to requested status labels
+          let statusLabel = 'Preparing';
+          let statusColor = '#f59e0b';
+          if (order.status === 'printed') { statusLabel = 'Ready'; statusColor = '#10b981'; }
+          if (order.status === 'completed' || order.status === 'settled') { statusLabel = 'Completed'; statusColor = '#64748b'; }
 
           return (
             <div
               key={order.id}
               className={`pp-table-card status-${order.status}`}
               onClick={() => onSelectOrder(order)}
-              style={{ alignItems: 'flex-start', padding: '16px', height: '110px' }}
+              style={{
+                alignItems: 'flex-start',
+                padding: '20px',
+                height: 'auto',
+                background: 'white',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                cursor: 'pointer',
+                transition: 'transform 0.2s, box-shadow 0.2s'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'; }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '8px' }}>
-                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1f2937' }}>{order.name}</div>
-                <div style={{ fontSize: '10px', background: bg, color: text, padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', border: `1px solid ${border}` }}>{order.type}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '12px' }}>
+                <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#1e293b' }}>{order.customerName || order.name}</div>
+                <div style={{ fontSize: '10px', background: bg, color: text, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold', border: `1px solid ${border}`, textTransform: 'uppercase' }}>{order.type}</div>
               </div>
-              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: 'auto' }}>{order.phone || 'Pending Finalization'}</div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginTop: 'auto' }}>
-                <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>Items: {order.order.reduce((acc, i) => acc + i.qty, 0)}</div>
-                <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#94161c' }}>₹{tableTotal}</div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '16px' }}>
+                <Clock size={12} color="#64748b" />
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>{statusLabel}</span>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusColor }}></div>
+              </div>
+
+              <div style={{ fontSize: '13px', color: '#475569', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <User size={14} color="#94a3b8" /> {order.phone || 'Walk-In Customer'}
+              </div>
+
+              <div style={{ borderTop: '1px solid #f1f5f9', width: '100%', paddingTop: '12px', marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>{order.order.reduce((acc, i) => acc + i.qty, 0)} Items Ordered</div>
+                <div style={{ fontWeight: '800', fontSize: '16px', color: '#94161c' }}>₹{tableTotal}</div>
               </div>
             </div>
           );
@@ -1218,6 +1416,8 @@ const OrderingSystem = ({ table, tables, initialOrder, onBack, onSaveOrder, onSe
   const [cart, setCart] = useState(initialOrder || []);
   const [activeCat, setActiveCat] = useState("Quick Snack's");
   const [searchQuery, setSearchQuery] = useState('');
+  const isPickup = table?.type === 'Takeaway' || table?.type === 'Delivery' || ['Zomato', 'Swiggy', 'Thrive'].includes(table?.type);
+  const [orderNote, setOrderNote] = useState(table?.note || '');
 
   // Customer CRM State
   const [customerPhone, setCustomerPhone] = useState(table?.phone || '');
@@ -1253,6 +1453,7 @@ const OrderingSystem = ({ table, tables, initialOrder, onBack, onSaveOrder, onSe
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [isPaid, setIsPaid] = useState(false);
   const [splitWays, setSplitWays] = useState(1);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Calculations
   const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
@@ -1316,6 +1517,11 @@ const OrderingSystem = ({ table, tables, initialOrder, onBack, onSaveOrder, onSe
     const isBill = actionType === 'Print Bill' || actionType.includes('Bill');
     const newStatus = isKOT ? 'kot' : isPrint ? 'printed' : 'running';
 
+    if (isPickup && (!customerName || customerPhone.length < 10)) {
+      alert("Customer Name and valid 10-digit Phone Number are required for pickup orders.");
+      return;
+    }
+
     if (isKOT) {
       updatedCart = cart.map(item => {
         const prevPrintedQty = item.printedQty || 0;
@@ -1337,7 +1543,7 @@ const OrderingSystem = ({ table, tables, initialOrder, onBack, onSaveOrder, onSe
 
     if (isPaid && actionType.includes('Save')) {
       // Settle and clear table with full analytics data
-      onSettleTable(table.id, { cart: updatedCart, subtotal, discountAmt, redeemedPoints, discountAuth, taxes: 0, grandTotal, paymentMethod, timestamp: new Date().toISOString(), phone: customerPhone, customerName });
+      onSettleTable(table.id, { cart: updatedCart, subtotal, discountAmt, redeemedPoints, discountAuth, taxes: 0, grandTotal, paymentMethod, timestamp: new Date().toISOString(), phone: customerPhone, customerName, note: orderNote });
     } else {
       // Just save order state
       setCart(updatedCart); // update local state so diff tracking is consistent
@@ -1367,6 +1573,28 @@ const OrderingSystem = ({ table, tables, initialOrder, onBack, onSaveOrder, onSe
 
       {/* Category Sidebar */}
       <div className="menu-sidebar no-print no-scrollbar">
+        {isPickup && (
+          <div style={{ padding: '12px', background: '#fffbeb', borderBottom: '1px solid #fde68a', marginBottom: '10px', borderRadius: '8px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#92400e', marginBottom: '8px', textTransform: 'uppercase' }}>Customer Details *</div>
+            <input
+              type="text"
+              placeholder="Name"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              style={{ width: '100%', padding: '8px', fontSize: '12px', border: '1px solid #fcd34d', borderRadius: '4px', marginBottom: '8px', outline: 'none' }}
+              required
+            />
+            <input
+              type="text"
+              placeholder="Phone"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              style={{ width: '100%', padding: '8px', fontSize: '12px', border: '1px solid #fcd34d', borderRadius: '4px', outline: 'none' }}
+              maxLength="10"
+              required
+            />
+          </div>
+        )}
         {CATEGORIES.map(cat => (
           <button
             key={cat}
@@ -1420,10 +1648,9 @@ const OrderingSystem = ({ table, tables, initialOrder, onBack, onSaveOrder, onSe
 
       {/* Billing Panel */}
       <div className="billing-panel no-print">
-        <div className="billing-tabs">
-          <button className={`billing-tab ${table?.type !== 'Delivery' && table?.type !== 'Takeaway' ? 'active' : ''}`}>Dine in</button>
-          <button className={`billing-tab ${table?.type === 'Delivery' ? 'active' : ''}`}>Delivery</button>
-          <button className={`billing-tab ${table?.type === 'Takeaway' ? 'active' : ''}`}>Pick Up</button>
+        <div style={{ background: '#94161c', color: 'white', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{table?.name || 'New Order'}</div>
+          <button onClick={onBack} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>Close</button>
         </div>
 
         <div style={{ padding: '8px 12px', display: 'flex', borderBottom: '1px solid #e5e7eb', alignItems: 'center', gap: '12px' }}>
@@ -1455,30 +1682,21 @@ const OrderingSystem = ({ table, tables, initialOrder, onBack, onSaveOrder, onSe
           </div>
         </div>
 
-        {/* --- CRM SECTION --- */}
-        <div style={{ padding: '8px 12px', background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-            <input type="text" placeholder="Phone 10-digit" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} style={{ flex: 1, padding: '6px', fontSize: '12px', border: `1px solid ${customerPhone.length === 10 ? '#10b981' : '#d1d5db'}`, borderRadius: '4px', outline: 'none' }} maxLength="10" />
-            <input type="text" placeholder="Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} style={{ flex: 1, padding: '6px', fontSize: '12px', border: '1px solid #d1d5db', borderRadius: '4px', outline: 'none' }} />
+        {/* --- CRM SECTION (Only for Dine-in as Pickup has it in sidebar) --- */}
+        {!isPickup && (
+          <div style={{ padding: '8px 12px', background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+              <input type="text" placeholder="Phone 10-digit" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} style={{ flex: 1, padding: '6px', fontSize: '12px', border: `1px solid ${customerPhone.length === 10 ? '#10b981' : '#d1d5db'}`, borderRadius: '4px', outline: 'none' }} maxLength="10" />
+              <input type="text" placeholder="Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} style={{ flex: 1, padding: '6px', fontSize: '12px', border: '1px solid #d1d5db', borderRadius: '4px', outline: 'none' }} />
+            </div>
+            {customerInfo && (
+              <div style={{ padding: '6px 8px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '4px', fontSize: '11px', color: '#065f46', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Welcome back! (Visits: {customerInfo.visits})</span>
+                <span style={{ fontWeight: 'bold' }}>{customerInfo.points} Loyalty Pts</span>
+              </div>
+            )}
           </div>
-          {customerInfo && (
-            <div style={{ padding: '6px 8px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '4px', fontSize: '11px', color: '#065f46', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>Welcome back! (Visits: {customerInfo.visits})</span>
-              <span style={{ fontWeight: 'bold' }}>{customerInfo.points} Loyalty Pts</span>
-            </div>
-          )}
-          {customerInfo && customerInfo.points > 0 && redeemedPoints === 0 && (
-            <button onClick={() => setRedeemedPoints(Math.min(customerInfo.points, subtotal))} style={{ marginTop: '6px', width: '100%', padding: '4px', background: '#10b981', color: 'white', border: 'none', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}>
-              Redeem {Math.min(customerInfo.points, subtotal)} Points for ₹{Math.min(customerInfo.points, subtotal)} Discount
-            </button>
-          )}
-          {redeemedPoints > 0 && (
-            <div style={{ marginTop: '6px', fontSize: '11px', color: '#dc2626', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span>-{redeemedPoints} Points Applied Successfully</span>
-              <button onClick={() => setRedeemedPoints(0)} style={{ border: 'none', background: 'transparent', color: '#6b7280', cursor: 'pointer', textDecoration: 'underline' }}>Undo</button>
-            </div>
-          )}
-        </div>
+        )}
         {/* --- END CRM SECTION --- */}
 
         <div style={{ padding: '8px 12px', display: 'flex', fontSize: '10px', fontWeight: 'bold', color: '#9ca3af', borderBottom: '1px solid #e5e7eb' }}>
@@ -1523,84 +1741,128 @@ const OrderingSystem = ({ table, tables, initialOrder, onBack, onSaveOrder, onSe
         </div>
 
         {/* Financials & Footer */}
-        <div style={{ background: '#fdf2f2', borderTop: '1px solid #fee2e2' }}>
-          {/* Advanced Tax & Discount Section */}
-          <div style={{ padding: '12px', fontSize: '12px', color: '#6b7280', borderBottom: '1px solid #fee2e2' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
-              <span style={{ fontWeight: '500' }}>Subtotal:</span>
-              <span style={{ fontWeight: '600', color: '#374151' }}>₹{subtotal.toFixed(2)}</span>
+        <div style={{ background: '#fff', borderTop: '1px solid #e5e7eb' }}>
+          <div style={{ padding: '12px', borderBottom: '1px solid #f1f5f9' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>Subtotal</span>
+              <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>₹{subtotal.toFixed(2)}</span>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <input type="checkbox" id="discount-toggle" checked={applyDiscount} onChange={(e) => setApplyDiscount(e.target.checked)} />
-                <label htmlFor="discount-toggle" style={{ fontWeight: '500', color: applyDiscount ? '#10b981' : '#6b7280', cursor: 'pointer' }}>Discount %:</label>
-                {applyDiscount && (
-                  <input type="number" value={discountRate} onChange={(e) => setDiscountRate(e.target.value)} style={{ width: '40px', padding: '2px', border: '1px solid #d1d5db', borderRadius: '4px', textAlign: 'center', fontSize: '11px' }} />
-                )}
-              </div>
-              <span style={{ fontWeight: '600', color: applyDiscount ? '#10b981' : '#d1d5db' }}>-₹{discountAmt.toFixed(2)}</span>
-            </div>
+            <button
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '8px',
+                marginTop: '8px',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                color: '#64748b',
+                cursor: 'pointer'
+              }}
+            >
+              {showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              Advanced Options
+            </button>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <input type="checkbox" id="service-toggle" checked={applyServiceCharge} onChange={(e) => setApplyServiceCharge(e.target.checked)} />
-                <label htmlFor="service-toggle" style={{ fontWeight: '500', color: applyServiceCharge ? '#374151' : '#6b7280', cursor: 'pointer' }}>Service Charge %:</label>
-                {applyServiceCharge && (
-                  <input type="number" value={serviceChargeRate} onChange={(e) => setServiceChargeRate(e.target.value)} style={{ width: '40px', padding: '2px', border: '1px solid #d1d5db', borderRadius: '4px', textAlign: 'center', fontSize: '11px' }} />
+            {showAdvanced && (
+              <div style={{ marginTop: '12px', padding: '12px', background: '#f1f5f9', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '10px' }} className="animate-fade-in">
+                {/* Discount */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input type="checkbox" id="discount-toggle" checked={applyDiscount} onChange={(e) => setApplyDiscount(e.target.checked)} />
+                    <label htmlFor="discount-toggle" style={{ fontSize: '12px', fontWeight: '500', color: '#475569' }}>Discount %</label>
+                  </div>
+                  {applyDiscount && (
+                    <input type="number" value={discountRate} onChange={(e) => setDiscountRate(e.target.value)} style={{ width: '50px', padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center', fontSize: '12px' }} />
+                  )}
+                </div>
+
+                {/* Service Charge */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input type="checkbox" id="service-toggle" checked={applyServiceCharge} onChange={(e) => setApplyServiceCharge(e.target.checked)} />
+                    <label htmlFor="service-toggle" style={{ fontSize: '12px', fontWeight: '500', color: '#475569' }}>Service Charge %</label>
+                  </div>
+                  {applyServiceCharge && (
+                    <input type="number" value={serviceChargeRate} onChange={(e) => setServiceChargeRate(e.target.value)} style={{ width: '50px', padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center', fontSize: '12px' }} />
+                  )}
+                </div>
+
+                {/* Split Bill */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', fontWeight: '500', color: '#475569' }}>Split Bill (Ways)</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button style={{ border: '1px solid #cbd5e1', background: 'white', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }} onClick={() => setSplitWays(Math.max(1, splitWays - 1))}>-</button>
+                    <span style={{ fontSize: '12px', fontWeight: 'bold', width: '20px', textAlign: 'center' }}>{splitWays}</span>
+                    <button style={{ border: '1px solid #cbd5e1', background: 'white', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }} onClick={() => setSplitWays(splitWays + 1)}>+</button>
+                  </div>
+                </div>
+
+                {/* Order Notes */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: '500', color: '#475569' }}>Order Note / Instructions</label>
+                  <textarea
+                    value={orderNote}
+                    onChange={(e) => setOrderNote(e.target.value)}
+                    placeholder="Add general instructions for this order..."
+                    style={{ width: '100%', padding: '8px', fontSize: '12px', border: '1px solid #cbd5e1', borderRadius: '6px', minHeight: '60px', outline: 'none', resize: 'none' }}
+                  />
+                </div>
+
+                {/* Loyalty Redeemed */}
+                {redeemedPoints > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444', fontSize: '12px', fontWeight: 'bold' }}>
+                    <span>Points Redeemed</span>
+                    <span>-₹{redeemedPoints.toFixed(2)}</span>
+                  </div>
                 )}
-              </div>
-              <span style={{ fontWeight: '600', color: applyServiceCharge ? '#374151' : '#d1d5db' }}>₹{serviceCharge.toFixed(2)}</span>
-            </div>
-            {redeemedPoints > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: '#dc2626' }}>
-                <span style={{ fontWeight: '500' }}>Loyalty Points Redeemed:</span>
-                <span style={{ fontWeight: '600' }}>-₹{redeemedPoints.toFixed(2)}</span>
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontWeight: '500' }}>Round off:</span>
-              <span style={{ fontWeight: '600', color: '#374151' }}>{roundOff > 0 ? '+' : ''}{roundOff.toFixed(2)}</span>
-            </div>
           </div>
 
-          <div style={{ padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #fee2e2' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '10px', color: '#6b7280', fontWeight: 'bold' }}>SPLIT:</span>
-              <button style={{ border: '1px solid #e5e7eb', background: 'white', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }} onClick={() => setSplitWays(Math.max(1, splitWays - 1))}>-</button>
-              <span style={{ fontSize: '12px', fontWeight: 'bold', width: '12px', textAlign: 'center' }}>{splitWays}</span>
-              <button style={{ border: '1px solid #e5e7eb', background: 'white', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }} onClick={() => setSplitWays(splitWays + 1)}>+</button>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <span style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>NET PAYABLE</span>
-              <div style={{ fontSize: '20px', fontWeight: '900', color: '#94161c' }}>₹{grandTotal.toFixed(2)}</div>
-              {splitWays > 1 && (
-                <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 'bold' }}>
-                  (₹{(grandTotal / splitWays).toFixed(2)} / each)
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div style={{ padding: '8px' }}>
-            <div className="payment-chip-row">
-              {['Cash', 'Card', 'UPI'].map(method => (
-                <div
-                  key={method}
-                  className={`payment-chip ${paymentMethod === method ? 'selected' : ''}`}
-                  onClick={() => setPaymentMethod(method)}
-                >
-                  {method === 'Cash' ? <Banknote size={14} color={paymentMethod === 'Cash' ? "#94161c" : "#6b7280"} /> :
-                    method === 'Card' ? <CreditCard size={14} color={paymentMethod === 'Card' ? "#94161c" : "#6b7280"} /> :
-                      <Smartphone size={14} color={paymentMethod === 'UPI' ? "#94161c" : "#6b7280"} />}
-                  {method}
-                </div>
-              ))}
+          <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Total Amount</div>
+              <div style={{ fontSize: '24px', fontWeight: '900', color: '#94161c' }}>₹{grandTotal.toFixed(2)}</div>
+              {splitWays > 1 && <div style={{ fontSize: '11px', color: '#94161c', fontWeight: 'bold' }}>₹{(grandTotal / splitWays).toFixed(2)} / person</div>}
             </div>
 
-            <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => setIsPaid(!isPaid)}>
-              <input type="checkbox" checked={isPaid} readOnly />
-              <span style={{ fontSize: '11px', color: '#374151', fontWeight: 'bold' }}>Mark as Paid to Free Table</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {['Cash', 'Card', 'UPI'].map(method => (
+                  <button
+                    key={method}
+                    onClick={() => setPaymentMethod(method)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid',
+                      borderColor: paymentMethod === method ? '#94161c' : '#e2e8f0',
+                      background: paymentMethod === method ? '#fef2f2' : 'white',
+                      color: paymentMethod === method ? '#94161c' : '#64748b',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    {method}
+                  </button>
+                ))}
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                <input type="checkbox" checked={isPaid} onChange={() => setIsPaid(!isPaid)} />
+                <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569' }}>Mark as Paid</span>
+              </label>
             </div>
           </div>
 
@@ -2082,6 +2344,7 @@ export default function App() {
   const [printerSettings, setPrinterSettings] = useState({ billHeader: 'TYDE CAFE', billFooter: 'Thank You for Visiting!', categorizedKOT: false, billLayout: 'standard', printFontFamily: 'Helvetica, Arial, sans-serif', printFontSize: '13', printFontWeight: 'normal' });
   const [menuItems, setMenuItems] = useState(INITIAL_MENU_ITEMS);
   const [categories, setCategories] = useState(INITIAL_CATEGORIES);
+  const [floorPlanSections, setFloorPlanSections] = useState(INITIAL_FLOOR_SECTIONS);
   const [customers, setCustomers] = useState({});
 
   useEffect(() => {
@@ -2109,6 +2372,9 @@ export default function App() {
 
           const savedCategories = await get('pos_categories');
           if (savedCategories) setCategories(savedCategories);
+
+          const savedSections = await get('pos_floor_sections');
+          if (savedSections) setFloorPlanSections(savedSections);
         } else {
           await set('pos_menu_version', MENU_VERSION);
           // Resets to new defaults above. Optional: save new defaults immediately.
@@ -2150,6 +2416,10 @@ export default function App() {
   useEffect(() => {
     if (isDbLoaded) set('pos_categories', categories);
   }, [categories, isDbLoaded]);
+
+  useEffect(() => {
+    if (isDbLoaded) set('pos_floor_sections', floorPlanSections);
+  }, [floorPlanSections, isDbLoaded]);
 
   if (!isDbLoaded) {
     return (
@@ -2284,7 +2554,7 @@ export default function App() {
 
       <main style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {view === 'tables' && (
-          <TableManagement tables={tables} onSelectTable={handleSelectTable} onClearTable={clearTableFast} />
+          <TableManagement tables={tables} floorPlanSections={floorPlanSections} onSelectTable={handleSelectTable} onClearTable={clearTableFast} />
         )}
         {view === 'nontables' && (
           <NonTableManagement orders={nonTableOrders} onSelectOrder={handleSelectTable} onCreateOrder={handleCreateNonTableOrder} />
@@ -2317,7 +2587,7 @@ export default function App() {
           />
         )}
         {view === 'floorplan' && (
-          <FloorPlanSetupView tables={tables} setTables={setTables} />
+          <FloorPlanSetupView tables={tables} setTables={setTables} sections={floorPlanSections} setSections={setFloorPlanSections} />
         )}
         {view === 'ordering' && (
           <OrderingSystem
