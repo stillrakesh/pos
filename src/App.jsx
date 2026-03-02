@@ -7,6 +7,7 @@ import {
 import './index.css';
 import { get, set } from 'idb-keyval';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import * as XLSX from 'xlsx';
 // --- INITIAL MOCK DATA ---
 const MENU_VERSION = '1';
 
@@ -317,6 +318,44 @@ const OrderHistoryView = ({ orderHistory, activePickups = [], onSelectActive }) 
     avg: orderHistory.length > 0 ? (orderHistory.reduce((acc, o) => acc + o.grandTotal, 0) / orderHistory.length).toFixed(0) : 0
   };
 
+  const handleExportExcel = () => {
+    if (orderHistory.length === 0) {
+      alert("No data available to export.");
+      return;
+    }
+
+    const data = orderHistory.map(order => ({
+      'Date': new Date(order.timestamp).toLocaleDateString(),
+      'Time': new Date(order.timestamp).toLocaleTimeString(),
+      'Order ID': order.id,
+      'Table/Type': order.tableId,
+      'Customer Name': order.customerName || 'N/A',
+      'Phone': order.phone || 'N/A',
+      'Subtotal': order.subtotal || 0,
+      'Discount': order.discountAmt || 0,
+      'Loyalty Redeemed': order.redeemedPoints || 0,
+      'Service Charge': order.serviceCharge || 0,
+      'Grand Total': order.grandTotal,
+      'Payment Method': order.paymentMethod,
+      'Note': order.note || '',
+      'Items Sold': order.cart.map(i => `${i.name} (x${i.qty})`).join(', ')
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Sales Report");
+
+    // Formatting: Set column widths for better readability
+    const wscols = [
+      { wch: 12 }, { wch: 10 }, { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 15 },
+      { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 15 },
+      { wch: 30 }, { wch: 60 }
+    ];
+    ws['!cols'] = wscols;
+
+    XLSX.writeFile(wb, `TydeCafe_Sales_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '48px', background: '#fcfcfd' }} className="animate-fade-in no-scrollbar">
       {/* Premium Dashboard Header */}
@@ -326,8 +365,18 @@ const OrderHistoryView = ({ orderHistory, activePickups = [], onSelectActive }) 
             <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'var(--primary)' }}></div>
             <span style={{ fontSize: '11px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px' }}>Operational Intelligence</span>
           </div>
-          <h2 style={{ fontSize: '42px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1.5px', lineHeight: '1' }}>
+          <h2 style={{ fontSize: '42px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1.5px', lineHeight: '1', display: 'flex', alignItems: 'center', gap: '20px' }}>
             Transaction <span style={{ color: 'var(--primary)', fontStyle: 'italic' }}>Archive</span>
+            <button
+              onClick={handleExportExcel}
+              style={{
+                fontSize: '13px', fontWeight: '800', padding: '12px 24px', borderRadius: '14px',
+                background: '#10b981', color: 'white', border: 'none', cursor: 'pointer',
+                boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', gap: '8px'
+              }}
+            >
+              <TrendingUp size={16} /> Export Excel report
+            </button>
           </h2>
 
           {/* VIEW SWITCHER */}
@@ -2880,11 +2929,54 @@ const AnalyticsDashboard = ({ orderHistory, menuItems }) => {
     time: new Date(o.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }));
 
+  const handleExportSummary = () => {
+    if (orderHistory.length === 0) {
+      alert("No data to export.");
+      return;
+    }
+
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Key Metrics
+    const metricsData = [
+      { Metric: 'Total Sales', Value: `₹${totalSales.toFixed(2)}` },
+      { Metric: 'Total Orders', Value: totalOrders },
+      { Metric: 'Average Bill Value', Value: `₹${avgBill}` },
+      { Metric: 'Total Discounts Given', Value: `₹${totalDiscounts.toFixed(2)}` }
+    ];
+    const wsMetrics = XLSX.utils.json_to_sheet(metricsData);
+    XLSX.utils.book_append_sheet(wb, wsMetrics, "Summary Metrics");
+
+    // Sheet 2: Top Items
+    const itemsData = topItems.map(item => ({ 'Product Name': item.name, 'Qty Sold': item.qty, 'Revenue': `₹${item.revenue.toFixed(2)}` }));
+    const wsItems = XLSX.utils.json_to_sheet(itemsData);
+    XLSX.utils.book_append_sheet(wb, wsItems, "Top Selling Items");
+
+    // Sheet 3: Category Performance
+    const categoryData = topCategories.map(([name, val]) => ({ 'Category': name, 'Total Revenue': `₹${val.toFixed(2)}` }));
+    const wsCategory = XLSX.utils.json_to_sheet(categoryData);
+    XLSX.utils.book_append_sheet(wb, wsCategory, "Category Sales");
+
+    XLSX.writeFile(wb, `Business_Performance_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: '#f9fafb' }} className="animate-fade-in no-scrollbar">
-      <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <BarChart3 size={20} color="#94161c" /> Business Analytics Data Hub
-      </h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+          <BarChart3 size={20} color="#94161c" /> Business Analytics Data Hub
+        </h2>
+        <button
+          onClick={handleExportSummary}
+          style={{
+            fontSize: '12px', fontWeight: '800', padding: '10px 20px', borderRadius: '10px',
+            background: '#94161c', color: 'white', border: 'none', cursor: 'pointer',
+            boxShadow: '0 4px 6px rgba(148, 22, 28, 0.2)', display: 'flex', alignItems: 'center', gap: '6px'
+          }}
+        >
+          <TrendingUp size={14} /> Download Summary Report (.xlsx)
+        </button>
+      </div>
 
       {/* Smart Alerts Banner Area */}
       {alerts.length > 0 && (
