@@ -3319,6 +3319,94 @@ const TimeElapsed = ({ createdAt }) => {
   return <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 'bold' }}>{elapsed}m ago</div>;
 };
 
+const QuickPrintModal = ({ table, settings, onClose, onPrint }) => {
+  const [discountVal, setDiscountVal] = React.useState('0');
+  const [discountType, setDiscountType] = React.useState('amount'); // 'amount' or 'percent'
+  const [serviceChargeEnabled, setServiceChargeEnabled] = React.useState(!!settings?.autoServiceCharge);
+
+  if (!table) return null;
+
+  const subtotal = table.order.reduce((acc, i) => acc + (i.price * i.qty), 0);
+  
+  let discountAmt = 0;
+  if (discountType === 'percent') {
+    discountAmt = Math.floor(subtotal * (parseFloat(discountVal) || 0) / 100);
+  } else {
+    discountAmt = parseFloat(discountVal) || 0;
+  }
+
+  const service = serviceChargeEnabled ? Math.floor((subtotal - discountAmt) * (settings.serviceChargeRate || 5) / 100) : 0;
+  const grandTotal = subtotal - discountAmt + service;
+
+  return (
+    <div className="no-print" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10001, backdropFilter: 'blur(4px)' }}>
+      <div style={{ background: 'white', width: '400px', borderRadius: '16px', padding: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#111827' }}>Print & Adjust Bill</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+          <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+            <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>Subtotal</div>
+            <div style={{ fontSize: '24px', fontWeight: '950', color: '#111827' }}>₹{subtotal}</div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px' }}>DISCOUNT</div>
+              <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '8px', padding: '4px' }}>
+                <input 
+                  type="text" 
+                  value={discountVal} 
+                  onChange={e => setDiscountVal(e.target.value)}
+                  style={{ background: 'white', border: 'none', flex: 1, padding: '8px', fontSize: '14px', borderRadius: '6px', outline: 'none', fontWeight: '500' }}
+                />
+                <button 
+                  onClick={() => setDiscountType('amount')}
+                  style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: '800', background: discountType === 'amount' ? 'white' : 'transparent', boxShadow: discountType === 'amount' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
+                >₹</button>
+                <button 
+                  onClick={() => setDiscountType('percent')}
+                  style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: '800', background: discountType === 'percent' ? 'white' : 'transparent', boxShadow: discountType === 'percent' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
+                >%</button>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#fdf2f2', borderRadius: '10px' }}>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: '900', color: '#991b1b' }}>Service Charge ({settings.serviceChargeRate || 5}%)</div>
+              <div style={{ fontSize: '11px', color: '#b91c1c' }}>Auto-calculated on taxable value</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#991b1b' }}>₹{service}</span>
+              <button 
+                onClick={() => setServiceChargeEnabled(!serviceChargeEnabled)}
+                style={{ width: '36px', height: '20px', borderRadius: '10px', background: serviceChargeEnabled ? '#10b981' : '#cbd5e1', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.3s' }}
+              >
+                <div style={{ position: 'absolute', top: '2px', left: serviceChargeEnabled ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: 'white', transition: 'left 0.3s' }}></div>
+              </button>
+            </div>
+          </div>
+
+          <div style={{ borderTop: '2px dashed #f1f5f9', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '800' }}>PAYABLE AMOUNT</div>
+            <div style={{ fontSize: '24px', fontWeight: '950', color: '#94161c' }}>₹{grandTotal}</div>
+          </div>
+        </div>
+
+        <button 
+          onClick={() => onPrint(discountAmt, service, grandTotal)}
+          style={{ width: '100%', padding: '16px', background: '#94161c', color: 'white', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+        >
+          <Printer size={20} /> PRINT BILL
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const QuickSettleModal = ({ table, settings, onClose, onSettle }) => {
   const [method, setMethod] = React.useState('Cash');
   if (!table) return null;
@@ -3378,6 +3466,7 @@ export default function App() {
   const [view, setView] = useState('tables');
   const [selectedTable, setSelectedTable] = useState(null);
   const [quickSettleTable, setQuickSettleTable] = useState(null);
+  const [quickPrintTable, setQuickPrintTable] = useState(null);
   const [globalSearch, setGlobalSearch] = useState('');
   const [showSidebar, setShowSidebar] = useState(false);
   const [isDbLoaded, setIsDbLoaded] = useState(false);
@@ -3644,23 +3733,8 @@ export default function App() {
     setView('kds')
   };
 
-  const handleQuickPrint = async (table) => {
-    const subtotal = table.order.reduce((acc, i) => acc + (i.price * i.qty), 0);
-    const serviceCharge = (settings?.autoServiceCharge) ? Math.floor(subtotal * (settings?.serviceChargeRate || 5) / 100) : 0;
-    const grandTotal = subtotal + serviceCharge;
-    await printPosToSerial({
-      tableName: (table.name && table.name.trim() !== '') ? table.name : `Table ${table.id}`,
-      orderType: table.type === 'Delivery' ? 'Delivery' : (table.type === 'Takeaway' ? 'Pick Up' : 'Dine In'),
-      items: table.order,
-      subtotal,
-      grandTotal,
-      discountAmt: 0,
-      taxes: serviceCharge,
-      timestamp: new Date().toLocaleTimeString(),
-      customerName: table.customerName || 'Walk-In',
-      customerPhone: table.phone || '',
-      note: table.note || ''
-    }, 'BILL');
+  const handleQuickPrint = (table) => {
+    setQuickPrintTable(table);
   };
 
   return (
@@ -3678,6 +3752,31 @@ export default function App() {
         />
         
         <main style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+          {quickPrintTable && (
+            <QuickPrintModal 
+              table={quickPrintTable}
+              settings={settings}
+              onClose={() => setQuickPrintTable(null)}
+              onPrint={async (discountAmt, serviceCharge, grandTotal) => {
+                const subtotal = quickPrintTable.order.reduce((acc, i) => acc + (i.price * i.qty), 0);
+                await printPosToSerial({
+                  tableName: (quickPrintTable.name && quickPrintTable.name.trim() !== '') ? quickPrintTable.name : `Table ${quickPrintTable.id}`,
+                  orderType: quickPrintTable.type === 'Delivery' ? 'Delivery' : (quickPrintTable.type === 'Takeaway' ? 'Pick Up' : 'Dine In'),
+                  items: quickPrintTable.order,
+                  subtotal,
+                  discountAmt,
+                  serviceCharge,
+                  grandTotal,
+                  orderId: quickPrintTable.id,
+                  phone: quickPrintTable.phone,
+                  customerName: quickPrintTable.customerName
+                });
+                setTables(prev => prev.map(t => t.id === quickPrintTable.id ? { ...t, status: 'printed' } : t));
+                setQuickPrintTable(null);
+              }}
+            />
+          )}
+
           {quickSettleTable && (
             <QuickSettleModal
               table={quickSettleTable}
