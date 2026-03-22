@@ -237,119 +237,101 @@ const INITIAL_TABLES = [
   { id: 9, name: 'Table 9', status: 'blank', type: 'A/C', order: [], pos: { x: 500, y: 50 } },
   { id: 12, name: 'Table 12', status: 'blank', type: 'A/C', order: [], pos: { x: 500, y: 180 } },
   { id: 14, name: 'Table 14', status: 'blank', type: 'A/C', order: [], pos: { x: 50, y: 310 } },
-  { id: 101, name: 'Table 1', status: 'blank', type: 'Non A/C', order: [], pos: { x: 50, y: 50 } },
   { id: 102, name: 'Table 2', status: 'blank', type: 'Non A/C', order: [], pos: { x: 200, y: 50 } },
 ];
 
 // --- COMPONENTS ---
 
-const TopHeader = ({ onViewChange, onSimulateAggregator }) => {
-  const [menuOpen, setMenuOpen] = useState(false);
+const AppSidebar = ({ activeView, onViewChange }) => {
+  const menuGroups = [
+    {
+      title: 'Daily Operations',
+      items: [
+        { id: 'analytics', label: 'Dashboard', icon: Monitor },
+        { id: 'tables', label: 'Running Orders', icon: Clock },
+        { id: 'orderhistory', label: 'All Orders', icon: ShoppingBag },
+        { id: 'nontables', label: 'Online Orders', icon: Smartphone },
+        { id: 'kds', label: 'KOT', icon: Utensils },
+        { id: 'dayclose', label: 'Due Payment Settlement', icon: Banknote },
+        { id: 'profit-loss', label: 'Profit & Loss', icon: TrendingUp },
+      ]
+    },
+    {
+      title: 'Management',
+      items: [
+        { id: 'menusetup', label: 'Menu', icon: Menu },
+        { id: 'productsetup', label: 'Inventory', icon: Package },
+        { id: 'reports', label: 'Reports', icon: BarChart3 },
+        { id: 'crm', label: 'CRM', icon: User },
+        { id: 'globalsettings', label: 'Settings', icon: LayoutGrid },
+      ]
+    }
+  ];
+
   return (
-    <div className="pos-header no-print">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '180px', position: 'relative' }}>
-        <button onClick={() => setMenuOpen(!menuOpen)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
-          <Menu size={20} color="#374151" />
-        </button>
-        {menuOpen && (
-          <div style={{ position: 'absolute', top: '30px', left: '0', background: 'white', border: '1px solid #e5e7eb', borderRadius: '4px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 100, width: '180px' }}>
-            <button onClick={() => { setMenuOpen(false); onViewChange('menusetup'); }} style={{ display: 'block', width: '100%', padding: '10px', textAlign: 'left', background: 'transparent', border: 'none', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', color: '#10b981', fontWeight: 'bold', fontSize: '14px' }}>Menu Setup</button>
-            <button onClick={() => { setMenuOpen(false); onViewChange('floorplan'); }} style={{ display: 'block', width: '100%', padding: '10px', textAlign: 'left', background: 'transparent', border: 'none', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', color: '#8b5cf6', fontWeight: 'bold', fontSize: '14px' }}>Floor Plan</button>
-            <button onClick={() => { setMenuOpen(false); onViewChange('orderhistory'); }} style={{ display: 'block', width: '100%', padding: '10px', textAlign: 'left', background: 'transparent', border: 'none', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', color: '#374151', fontSize: '14px' }}>Order History</button>
-            <button onClick={() => { setMenuOpen(false); onViewChange('globalsettings'); }} style={{ display: 'block', width: '100%', padding: '10px', textAlign: 'left', background: 'transparent', border: 'none', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', color: 'var(--primary)', fontWeight: 'bold', fontSize: '14px' }}>Global Settings</button>
-            <button onClick={() => { setMenuOpen(false); onViewChange('productsetup'); }} style={{ display: 'block', width: '100%', padding: '10px', textAlign: 'left', background: 'transparent', border: 'none', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', color: '#3b82f6', fontWeight: 'bold', fontSize: '14px' }}>Retail Products</button>
-            <button onClick={() => { setMenuOpen(false); onViewChange('printersettings'); }} style={{ display: 'block', width: '100%', padding: '10px', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', color: '#374151', fontSize: '14px' }}>Printer Settings</button>
-          </div>
-        )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <div style={{ background: 'var(--primary)', color: 'white', padding: '4px 6px', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 'bold' }}>TYDE</div>
-          <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937' }}>CAFE</div>
+    <div className="no-print" style={{ width: '220px', background: 'white', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', height: '100vh', flexShrink: 0 }}>
+      {/* Brand */}
+      <div style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ background: '#94161c', color: 'white', padding: '8px', borderRadius: '10px', boxShadow: '0 4px 6px -1px rgba(148, 22, 28, 0.2)' }}>
+          <Store size={20} />
         </div>
+        <div style={{ fontWeight: '950', fontSize: '18px', color: '#1e293b', letterSpacing: '-0.5px' }}>PETPOOJA</div>
       </div>
-      <button className="btn-pp btn-pp-primary" onClick={() => onViewChange('ordering', null)}>New Order</button>
-      <button className="btn-pp btn-pp-outline" onClick={onSimulateAggregator} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '10px', background: '#ffe4e6', color: '#e11d48', borderColor: '#fecdd3' }}>
-        <Smartphone size={14} /> + Online Sync
-      </button>
-      <div className="header-search">
-        <Search size={14} color="#6b7280" />
-        <input type="text" placeholder="Bill No" />
-      </div>
-      <div className="header-search">
-        <Search size={14} color="#6b7280" />
-        <input type="text" placeholder="KOT No" />
-      </div>
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <button
-          onClick={() => onViewChange('tables')}
-          style={{
-            cursor: 'pointer',
-            border: '2px solid var(--primary)',
-            background: 'white',
-            color: 'var(--primary)',
-            padding: '6px 16px',
-            borderRadius: 'var(--radius-md)',
-            fontWeight: 'bold',
-            fontSize: '13px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            transition: 'all 0.2s ease'
-          }}
-          onMouseEnter={(e) => { e.target.style.background = 'var(--primary)'; e.target.style.color = 'white'; }}
-          onMouseLeave={(e) => { e.target.style.background = 'white'; e.target.style.color = 'var(--primary)'; }}
-        >
-          <LayoutGrid size={16} /> TABLE ORDER
-        </button>
-        <button
-          onClick={() => onViewChange('nontables')}
-          style={{
-            cursor: 'pointer',
-            border: 'none',
-            background: 'var(--primary)',
-            color: 'white',
-            padding: '8px 18px',
-            borderRadius: 'var(--radius-md)',
-            fontWeight: 'bold',
-            fontSize: '13px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            boxShadow: '0 4px 6px -1px rgba(0,0,0, 0.1)',
-            transition: 'all 0.2s ease',
-            transform: 'scale(1.05)'
-          }}
-          onMouseEnter={(e) => { e.target.style.transform = 'scale(1.1)'; e.target.style.boxShadow = '0 6px 8px -1px rgba(0,0,0, 0.2)'; }}
-          onMouseLeave={(e) => { e.target.style.transform = 'scale(1.05)'; e.target.style.boxShadow = '0 4px 6px -1px rgba(0,0,0, 0.1)'; }}
-        >
-          <ShoppingBag size={16} /> PICK UP ORDER
-        </button>
 
-        <div style={{ borderLeft: '1px solid #e5e7eb', height: '30px', margin: '0 5px' }}></div>
-
-        <button onClick={() => onViewChange('dayclose')} style={{ cursor: 'pointer', border: 'none', background: 'transparent', textAlign: 'center', opacity: 0.7 }}>
-          <Sunset size={16} /><div style={{ fontSize: '9px' }}>Day Close</div>
-        </button>
-        <button onClick={() => onViewChange('analytics')} style={{ cursor: 'pointer', border: 'none', background: 'transparent', textAlign: 'center', opacity: 0.7 }}>
-          <BarChart3 size={16} /><div style={{ fontSize: '9px' }}>Reports</div>
-        </button>
-        <button onClick={() => onViewChange('kds')} style={{ cursor: 'pointer', border: 'none', background: 'transparent', textAlign: 'center', opacity: 0.7 }}>
-          <ChefHat size={16} /><div style={{ fontSize: '9px' }}>Kitchen</div>
-        </button>
-
-        <div style={{ borderLeft: '1px solid #e5e7eb', height: '30px', margin: '0 10px' }}></div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '11px', color: '#94161c', fontWeight: 'bold' }}>Call for Support</div>
-            <div style={{ fontSize: '11px', fontWeight: 'bold' }}>+91 8652475772</div>
+      {/* Navigation */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+        {menuGroups.map((group, idx) => (
+          <div key={idx} style={{ marginBottom: '28px' }}>
+            <div style={{ fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px', paddingLeft: '12px' }}>{group.title}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              {group.items.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => onViewChange(item.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '12px',
+                    border: 'none', background: activeView === item.id ? '#fef2f2' : 'transparent',
+                    color: activeView === item.id ? '#94161c' : '#64748b',
+                    cursor: 'pointer', transition: 'all 0.2s', fontWeight: activeView === item.id ? '900' : '700', fontSize: '13px', textAlign: 'left'
+                  }}
+                >
+                  <item.icon size={18} style={{ opacity: activeView === item.id ? 1 : 0.6 }} />
+                  {item.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <User size={18} color="#94161c" />
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
 };
+
+const AppTopNavbar = ({ onSimulateAggregator }) => (
+  <div className="no-print" style={{ height: '70px', background: 'white', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', padding: '0 32px', position: 'sticky', top: 0, zIndex: 10 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: 1 }}>
+      <div style={{ background: '#f8fafc', padding: '10px 18px', borderRadius: '14px', border: '1px solid #e2e8f0', minWidth: '400px', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
+        <Search size={18} color="#94a3b8" />
+        <input type="text" placeholder="Search for anything (Bills, Tables, Items...)" style={{ background: 'transparent', border: 'none', fontSize: '14px', width: '100%', outline: 'none', fontWeight: '500' }} />
+      </div>
+    </div>
+    
+    <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+      <button onClick={onSimulateAggregator} style={{ border: 'none', background: '#ffe4e6', color: '#e11d48', padding: '10px 20px', borderRadius: '12px', fontSize: '12px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'transform 0.2s' }} onMouseEnter={e => e.target.style.transform = 'scale(1.02)'} onMouseLeave={e => e.target.style.transform = 'scale(1)'}>
+        <Smartphone size={16} /> Online Sync
+      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', borderLeft: '1px solid #f1f5f9', paddingLeft: '24px' }}>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800' }}>OUTLET STATUS</div>
+          <div style={{ fontSize: '14px', fontWeight: '950', color: '#10b981' }}>LIVE • OPEN</div>
+        </div>
+        <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#fff1f2', border: '2px solid white', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <User size={20} color="#94161c" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 /* --- ORDER HISTORY VIEW --- */
 const OrderHistoryView = ({ orderHistory, activePickups = [], onSelectActive }) => {
@@ -1953,27 +1935,18 @@ const printPosToSerial = async (orderData, type = 'BILL') => {
         await wT("Nerul Ferry Terminal\n");
         await wT("--------------------------------\n");
         await w(leftAlign);
-        if (orderData.customerName && orderData.customerName !== 'Walk-In') {
+        if (orderData.customerName) {
           await wT(`Customer: ${orderData.customerName}\n`);
         }
         if (orderData.customerPhone) {
           await wT(`Phone: ${orderData.customerPhone}\n`);
         }
-        if ((orderData.customerName && orderData.customerName !== 'Walk-In') || orderData.customerPhone) {
+        if (orderData.customerName || orderData.customerPhone) {
           await wT("--------------------------------\n");
         }
-        const paddedDate = `Date: ${dateStr}`.padEnd(19, ' ');
-        const paddedOrder = `${orderData.orderType || 'Dine In'}: ${orderData.tableName || 'B4'}`.padEnd(13, ' ');
-        if (settings.billLayout === 'bold') {
-          await w(boldOn);
-          await wT(`${paddedDate}${paddedOrder}\n`);
-          await w(boldOff);
-        } else {
-          await wT(`${paddedDate}`);
-          await w(boldOn);
-          await wT(`${paddedOrder}\n`);
-          await w(boldOff);
-        }
+        const paddedDate = `Date: ${dateStr}`.padEnd(16, ' ');
+        const orderInfoLabel = `${orderData.orderType || 'Dine In'}: ${orderData.tableName || ''}`;
+        await wT(`${paddedDate}${orderInfoLabel}\n`);
 
         await wT(`${timeStr}\n`);
         await wT(`Cashier: biller   Bill No.: ${formattedSeq}\n`);
@@ -2502,7 +2475,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       await printPosToSerial({
         orderId: table?.id,
         isReprint: actionType.includes('Reprint'),
-        tableName: (table?.name === table?.id) ? null : table?.name, // Use if they differ
+        tableName: table?.name || table?.id,
         customerName: customerName,
         customerPhone: customerPhone,
         items: itemsToPrint,
@@ -2931,8 +2904,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
 /* --- ANALYTICS DASHBOARD --- */
 const AnalyticsDashboard = ({ orderHistory, menuItems }) => {
   const [dateFilter, setDateFilter] = useState('daily');
-  const [customStartDate, setCustomStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [customEndDate, setCustomEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [chartType, setChartType] = useState('Bar Chart');
 
   const filteredHistory = orderHistory.filter(order => {
     const orderDate = new Date(order.timestamp || Date.now());
@@ -2940,332 +2912,195 @@ const AnalyticsDashboard = ({ orderHistory, menuItems }) => {
     today.setHours(0, 0, 0, 0);
     const orderDateNoTime = new Date(orderDate);
     orderDateNoTime.setHours(0, 0, 0, 0);
-
-    if (dateFilter === 'daily') {
-      return orderDateNoTime.getTime() === today.getTime();
-    } else if (dateFilter === 'weekly') {
-      const lastWeek = new Date(today);
-      lastWeek.setDate(lastWeek.getDate() - 7);
-      return orderDateNoTime >= lastWeek;
-    } else if (dateFilter === 'monthly') {
-      const lastMonth = new Date(today);
-      lastMonth.setMonth(lastMonth.getMonth() - 1);
-      return orderDateNoTime >= lastMonth;
-    } else if (dateFilter === 'custom') {
-      const start = new Date(customStartDate);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(customEndDate);
-      end.setHours(23, 59, 59, 999);
-      return orderDate >= start && orderDate <= end;
-    }
-    return true;
+    return orderDateNoTime.getTime() === today.getTime();
   });
 
   const totalSales = filteredHistory.reduce((acc, order) => acc + order.grandTotal, 0);
   const totalOrders = filteredHistory.length;
-  const avgBill = totalOrders > 0 ? (totalSales / totalOrders).toFixed(2) : '0.00';
-
-  const payments = { Cash: 0, Card: 0, UPI: 0 };
-  const categories = {};
-  const itemsMap = {};
-  const hoursData = {};
-
-  let totalDiscounts = 0;
+  
+  const typeSales = { 'Dine In': 0, 'Pick Up': 0, 'Delivery': 0 };
+  const typeOrders = { 'Dine In': 0, 'Pick Up': 0, 'Delivery': 0 };
 
   filteredHistory.forEach(order => {
-    payments[order.paymentMethod] = (payments[order.paymentMethod] || 0) + order.grandTotal;
-
-    // Tracking Discounts for Alerts
-    totalDiscounts += order.discountAmt || 0;
-
-    // Peak hour
-    const hour = new Date(order.timestamp).getHours();
-    const formattedHour = hour % 12 || 12;
-    const ampm = hour < 12 ? 'AM' : 'PM';
-    const labelKey = `${formattedHour}:00 ${ampm} - ${formattedHour + 1}:00 ${ampm}`;
-
-    if (!hoursData[hour]) hoursData[hour] = { hourCode: hour, label: labelKey, orders: 0, revenue: 0 };
-    hoursData[hour].orders += 1;
-    hoursData[hour].revenue += order.grandTotal;
-
-    order.cart.forEach(item => {
-      // Category 
-      categories[item.cat] = (categories[item.cat] || 0) + (item.price * item.qty);
-      // Items 
-      if (!itemsMap[item.id]) itemsMap[item.id] = { name: item.name, qty: 0, revenue: 0 };
-      itemsMap[item.id].qty += item.qty;
-      itemsMap[item.id].revenue += (item.price * item.qty);
-    });
+    const oType = order.tableId && (String(order.tableId).startsWith('TAK') ? 'Pick Up' : (String(order.tableId).startsWith('DEL') ? 'Delivery' : 'Dine In'));
+    typeSales[oType] += order.grandTotal;
+    typeOrders[oType] += 1;
   });
 
-  const topItems = Object.values(itemsMap).sort((a, b) => b.qty - a.qty);
-  const topCategories = Object.entries(categories).sort((a, b) => b[1] - a[1]);
-
-  // Prepare Chart Data
-  const hourlyChartData = Object.values(hoursData).sort((a, b) => a.hourCode - b.hourCode);
-  const paymentChartData = Object.entries(payments).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
-  const categoryChartData = topCategories.map(([name, value]) => ({ name, value }));
-  const pieColors = { Cash: '#10b981', Card: '#3b82f6', UPI: '#8b5cf6' };
-
-  // --- Smart Alerts Logic ---
-  const alerts = [];
-
-  // 1. Discount Alert: Warn if total daily discount exceeds 5% of gross sales (custom threshold)
-  const grossSales = totalSales + totalDiscounts;
-  if (totalDiscounts > (grossSales * 0.05) && grossSales > 0) {
-    alerts.push(`High Discount Rate: ₹${totalDiscounts.toFixed(2)} Given. Review promotional limits.`);
-  }
-
-  // 2. Out of Stock / Low Stock Simulation Alert
-  const lowStockItem = menuItems.find(i => !i.inStock);
-  if (lowStockItem) {
-    alerts.push(`Inventory Warning: "${lowStockItem.name}" is currently marked Out of Stock. Supplier action required.`);
-  }
-
-  // 3. Performance Drop (Simulated 18% drop for specific item vs yesterday)
-  // In a real app, this compares to historical DB data. We calculate from existing items dynamically.
-  if (itemsMap[2] && itemsMap[2].qty < 5) { // Assuming Item 2 is 'Chicken Lollipop'
-    alerts.push(`Performance: "Chicken Lollipop" volume is lower than average moving velocity today.`);
-  }
-
-  const discountLogs = filteredHistory.filter(o => o.discountAmt > 0).map(o => ({
-    id: o.id,
-    tableId: o.tableId,
-    amount: o.discountAmt,
-    authorizer: o.discountAuth,
-    time: new Date(o.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  }));
-
-  const handleExportSummary = () => {
-    if (orderHistory.length === 0) {
-      alert("No data to export.");
-      return;
-    }
-
-    const wb = XLSX.utils.book_new();
-
-    // Sheet 1: Key Metrics
-    const metricsData = [
-      { Metric: 'Total Sales', Value: `₹${totalSales.toFixed(2)}` },
-      { Metric: 'Total Orders', Value: totalOrders },
-      { Metric: 'Average Bill Value', Value: `₹${avgBill}` },
-      { Metric: 'Total Discounts Given', Value: `₹${totalDiscounts.toFixed(2)}` }
-    ];
-    const wsMetrics = XLSX.utils.json_to_sheet(metricsData);
-    XLSX.utils.book_append_sheet(wb, wsMetrics, "Summary Metrics");
-
-    // Sheet 2: Top Items
-    const itemsData = topItems.map(item => ({ 'Product Name': item.name, 'Qty Sold': item.qty, 'Revenue': `₹${item.revenue.toFixed(2)}` }));
-    const wsItems = XLSX.utils.json_to_sheet(itemsData);
-    XLSX.utils.book_append_sheet(wb, wsItems, "Top Selling Items");
-
-    // Sheet 3: Category Performance
-    const categoryData = topCategories.map(([name, val]) => ({ 'Category': name, 'Total Revenue': `₹${val.toFixed(2)}` }));
-    const wsCategory = XLSX.utils.json_to_sheet(categoryData);
-    XLSX.utils.book_append_sheet(wb, wsCategory, "Category Sales");
-
-    XLSX.writeFile(wb, `Business_Performance_Report_${dateFilter}_${new Date().toISOString().split('T')[0]}.xlsx`);
-  };
-
-  const handleExportItemsOnly = () => {
-    if (topItems.length === 0) {
-      alert("No data to export.");
-      return;
-    }
-    const itemsData = topItems.map(item => ({ 'Product Name': item.name, 'Qty Sold': item.qty, 'Revenue': `₹${item.revenue.toFixed(2)}` }));
-    const wsItems = XLSX.utils.json_to_sheet(itemsData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, wsItems, "Item Wise Sales");
-    XLSX.writeFile(wb, `ItemWise_Sales_Report_${dateFilter}_${new Date().toISOString().split('T')[0]}.xlsx`);
-  };
+  const hourlyData = Array.from({ length: 6 }).map((_, i) => {
+    const slots = ['01:00am-05:00am', '05:00am-09:00am', '09:00am-01:00pm', '01:00pm-05:00pm', '05:00pm-09:00pm', '09:00pm-01:00am'];
+    const startHour = [1, 5, 9, 13, 17, 21][i];
+    const endHour = startHour + 4;
+    const revenue = filteredHistory.filter(o => {
+      const h = new Date(o.timestamp).getHours();
+      return h >= startHour && h < endHour;
+    }).reduce((acc, o) => acc + o.grandTotal, 0);
+    return { label: slots[i], revenue };
+  });
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: '#f9fafb' }} className="animate-fade-in no-scrollbar">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-          <BarChart3 size={20} color="#94161c" /> Business Analytics Data Hub
-        </h2>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <select value={dateFilter} onChange={e => setDateFilter(e.target.value)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #d1d5db', background: 'white', color: '#374151', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="custom">Custom Date</option>
-          </select>
-          {dateFilter === 'custom' && (
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <input type="date" value={customStartDate} onChange={e => setCustomStartDate(e.target.value)} style={{ padding: '6px 8px', borderRadius: '8px', border: '1px solid #d1d5db', color: '#374151', fontSize: '13px' }} />
-              <input type="date" value={customEndDate} onChange={e => setCustomEndDate(e.target.value)} style={{ padding: '6px 8px', borderRadius: '8px', border: '1px solid #d1d5db', color: '#374151', fontSize: '13px' }} />
+    <div style={{ flex: 1, overflowY: 'auto', background: '#fcfcfd', display: 'flex' }} className="animate-fade-in no-scrollbar">
+      {/* Left Main Dashboard */}
+      <div style={{ flex: 1, padding: '24px', maxWidth: '1200px' }}>
+        {/* Sync Status Info */}
+        <div style={{ background: 'white', padding: '14px 20px', borderRadius: '14px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+          <div style={{ fontSize: '13px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
+            <span>Order synced <strong>4 Mins ago</strong> & POS synced <strong>4 Mins ago</strong>.</span>
+          </div>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+             <select style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: '900', color: '#1e293b', appearance: 'none', background: 'white' }}>
+               <option>4th Mar</option>
+             </select>
+             <button style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><Plus size={18} /></button>
+          </div>
+        </div>
+
+        {/* Metrics Row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+          {[
+            { label: 'Total Sales', val: totalSales, orders: totalOrders, color: '#94161c', icon: BarChart3 },
+            { label: 'Dine In', val: typeSales['Dine In'], orders: typeOrders['Dine In'], color: '#3b82f6', icon: Utensils },
+            { label: 'Pick Up', val: typeSales['Pick Up'], orders: typeOrders['Pick Up'], color: '#f59e0b', icon: ShoppingBag },
+            { label: 'Delivery', val: typeSales['Delivery'], orders: typeOrders['Delivery'], color: '#10b981', icon: Truck },
+          ].map((m, idx) => (
+            <div key={idx} style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', position: 'relative', transition: 'transform 0.2s', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+              <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '900', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{m.label}</div>
+              <div style={{ fontSize: '28px', fontWeight: '950', color: '#1e293b' }}>₹ {m.val.toLocaleString()}</div>
+              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px', fontWeight: '700' }}>{m.orders} Orders</div>
+              <div style={{ position: 'absolute', top: '24px', right: '24px', width: '36px', height: '36px', borderRadius: '10px', background: `${m.color}10`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <m.icon size={20} color={m.color} />
+              </div>
             </div>
-          )}
-          <button
-            onClick={handleExportSummary}
-            style={{
-              fontSize: '12px', fontWeight: '800', padding: '10px 20px', borderRadius: '10px',
-              background: '#94161c', color: 'white', border: 'none', cursor: 'pointer',
-              boxShadow: '0 4px 6px rgba(148, 22, 28, 0.2)', display: 'flex', alignItems: 'center', gap: '6px'
-            }}
-          >
-            <TrendingUp size={14} /> Download Summary Report (.xlsx)
-          </button>
+          ))}
         </div>
-      </div>
 
-      {/* Smart Alerts Banner Area */}
-      {alerts.length > 0 && (
-        <div style={{ marginBottom: '24px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '16px' }}>
-          <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#b45309', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <AlertTriangle size={16} color="#d97706" /> Smart Insights (Today)
-          </h3>
-          <ul style={{ listStyleType: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {alerts.map((alert, i) => (
-              <li key={i} style={{ fontSize: '13px', color: '#92400e', background: 'rgba(253, 230, 138, 0.4)', padding: '8px 12px', borderRadius: '4px' }}>
-                • {alert}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Top Value Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <div style={{ color: '#6b7280', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Daily Sales (Net)</div>
-          <div style={{ fontSize: '24px', fontWeight: '900', color: '#94161c', marginTop: '8px' }}>₹{totalSales.toFixed(2)}</div>
-        </div>
-        <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <div style={{ color: '#6b7280', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Orders</div>
-          <div style={{ fontSize: '24px', fontWeight: '900', color: '#374151', marginTop: '8px' }}>{totalOrders}</div>
-        </div>
-        <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <div style={{ color: '#6b7280', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Avg Bill Value</div>
-          <div style={{ fontSize: '24px', fontWeight: '900', color: '#374151', marginTop: '8px' }}>₹{avgBill}</div>
-        </div>
-        <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <div style={{ color: '#6b7280', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Discounts Auth</div>
-          <div style={{ fontSize: '24px', fontWeight: '900', color: '#374151', marginTop: '8px' }}>₹{totalDiscounts.toFixed(2)}</div>
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '24px' }}>
-        {/* Hourly Sales Trend Chart */}
-        <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', gridColumn: '1 / -1' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <TrendingUp size={16} color="#4b5563" /> Hourly Sales Trend
-          </h3>
-          <div style={{ height: '250px' }}>
+        {/* Chart Card */}
+        <div style={{ background: 'white', padding: '32px', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b', letterSpacing: '-0.5px' }}>Sales</h3>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <select value={chartType} onChange={e => setChartType(e.target.value)} style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: '800' }}>
+                <option>Bar Chart</option>
+                <option>Line Chart</option>
+              </select>
+              <select style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: '800' }}>
+                <option>4th Mar</option>
+              </select>
+              <button style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><Plus size={18} /></button>
+            </div>
+          </div>
+          <div style={{ height: '350px' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={hourlyChartData}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.5} vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 10 }} tickMargin={10} minTickGap={20} />
-                <YAxis yAxisId="left" tick={{ fontSize: 10 }} />
-                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} />
-                <RechartsTooltip contentStyle={{ fontSize: '12px', borderRadius: '8px' }} />
-                <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="#94161c" strokeWidth={3} name="Revenue (₹)" />
-                <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#3b82f6" strokeWidth={3} name="Orders" />
-              </LineChart>
+              {chartType === 'Bar Chart' ? (
+                <BarChart data={hourlyData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: '700' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: '700' }} />
+                  <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                  <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={32} />
+                </BarChart>
+              ) : (
+                <LineChart data={hourlyData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: '700' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: '700' }} />
+                  <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                  <Line type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={4} dot={{ r: 6, fill: '#3b82f6', strokeWidth: 2, stroke: 'white' }} activeDot={{ r: 8 }} />
+                </LineChart>
+              )}
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Payment Split Chart */}
-        <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><PieChart size={16} color="#4b5563" /> Payment Breakdown</h3>
-          <div style={{ height: '200px', display: 'flex' }}>
-            {paymentChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsPieChart>
-                  <Pie data={paymentChartData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                    {paymentChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={pieColors[entry.name] || '#9ca3af'} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip formatter={(val) => `₹${val.toFixed(2)}`} />
-                </RechartsPieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '13px', fontStyle: 'italic' }}>No Data</div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '12px', minWidth: '100px' }}>
-              {paymentChartData.map((method) => (
-                <div key={method.name}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '500', color: '#4b5563' }}>
-                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: pieColors[method.name] }} />
-                    {method.name}
-                  </div>
-                  <div style={{ fontSize: '14px', fontWeight: 'bold', paddingLeft: '16px' }}>₹{method.value.toFixed(2)}</div>
-                </div>
-              ))}
+        {/* Bottom Bifurcation */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginTop: '24px' }}>
+          <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <div style={{ fontSize: '15px', fontWeight: '950', color: '#1e293b' }}>Payment Bifurcation</div>
+              <select style={{ fontSize: '11px', border: 'none', fontWeight: '800', color: '#64748b' }}><option>4th Mar</option></select>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+               <div style={{ flex: 1, height: '12px', background: '#f1f5f9', borderRadius: '6px', overflow: 'hidden' }}>
+                 <div style={{ width: '100%', height: '100%', background: '#3b82f6' }} />
+               </div>
+               <div style={{ fontSize: '14px', fontWeight: '900', color: '#1e293b' }}>100% Cash</div>
             </div>
           </div>
-        </div>
-
-        {/* Category Sales Chart */}
-        <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><BarChart3 size={16} color="#4b5563" /> Category Demand</h3>
-          <div style={{ height: '200px' }}>
-            {categoryChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={categoryChartData.slice(0, 5)} layout="vertical" margin={{ top: 0, right: 0, left: 40, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.5} />
-                  <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={80} />
-                  <RechartsTooltip cursor={{ fill: '#f3f4f6' }} contentStyle={{ fontSize: '12px', borderRadius: '8px' }} formatter={(val) => `₹${val.toFixed(2)}`} />
-                  <Bar dataKey="value" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={20} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '13px', fontStyle: 'italic' }}>No Data</div>
-            )}
+          <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <div style={{ fontSize: '15px', fontWeight: '950', color: '#1e293b' }}>Expenses & Withdrawal</div>
+              <select style={{ fontSize: '11px', border: 'none', fontWeight: '800', color: '#64748b' }}><option>4th Mar</option></select>
+            </div>
+            <div style={{ color: '#94a3b8', fontSize: '13px', fontWeight: '600', textAlign: 'center', padding: '10px' }}>No records found</div>
           </div>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-        {/* Top Items Table */}
-        <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', maxHeight: '500px', overflowY: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 'bold', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><TrendingUp size={16} color="#4b5563" /> Item-wise Sales ({dateFilter})</h3>
-            <button onClick={handleExportItemsOnly} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--primary)', background: 'transparent', color: 'var(--primary)', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>Download List</button>
+      {/* Right Intelligence Sidebar */}
+      <div style={{ width: '340px', padding: '32px', borderLeft: '1px solid #e2e8f0', background: 'white', height: '100vh', overflowY: 'auto' }} className="no-scrollbar">
+        <div style={{ marginBottom: '40px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <h4 style={{ fontSize: '15px', fontWeight: '950', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              Alerts <span style={{ background: '#ef4444', color: 'white', padding: '2px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: '900' }}>1</span>
+            </h4>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', fontSize: '11px', fontWeight: 'bold', color: '#9ca3af', borderBottom: '1px solid #e5e7eb', paddingBottom: '4px', position: 'sticky', top: 0, background: 'white', zIndex: 1 }}>
-              <span style={{ flex: 1 }}>ITEM</span>
-              <span style={{ width: '40px', textAlign: 'center' }}>QTY</span>
-              <span style={{ width: '80px', textAlign: 'right' }}>REVENUE</span>
-            </div>
-            {topItems.map((item, idx) => (
-              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '8px', borderBottom: '1px solid #f3f4f6' }}>
-                <span style={{ flex: 1, fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>{item.name}</span>
-                <span style={{ width: '40px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold', color: '#4b5563', background: '#f3f4f6', borderRadius: '4px', padding: '2px 0' }}>{item.qty}</span>
-                <span style={{ width: '80px', textAlign: 'right', fontSize: '13px', fontWeight: 'bold', color: '#94161c' }}>₹{item.revenue.toFixed(2)}</span>
-              </div>
-            ))}
-            {topItems.length === 0 && <span style={{ fontSize: '13px', color: '#9ca3af', fontStyle: 'italic' }}>No orders recorded for this period.</span>}
+          <div style={{ background: '#fff1f2', padding: '16px', borderRadius: '14px', border: '1px solid #ffe4e6' }}>
+            <div style={{ fontWeight: '900', fontSize: '14px', color: '#be123c' }}>90 Items Missing Description</div>
+            <div style={{ fontSize: '12px', color: '#be123c', marginTop: '6px', opacity: 0.8, lineHeight: 1.5 }}>Add description to enhance customer awareness and drive online ordering.</div>
           </div>
         </div>
 
-        {/* Discount Audit Trail */}
-        <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #fecaca', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#b91c1c' }}><AlertTriangle size={16} color="#b91c1c" /> Discount Report</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', fontSize: '11px', fontWeight: 'bold', color: '#9ca3af', borderBottom: '1px solid #e5e7eb', paddingBottom: '4px' }}>
-              <span style={{ flex: 1 }}>TIME & TABLE</span>
-              <span style={{ width: '80px', textAlign: 'center' }}>AUTHORIZER</span>
-              <span style={{ width: '60px', textAlign: 'right' }}>AMOUNT</span>
-            </div>
-            {discountLogs.map((log, idx) => (
-              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '8px', borderBottom: '1px solid #f3f4f6' }}>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#1f2937' }}>{log.tableId}</span>
-                  <span style={{ fontSize: '10px', color: '#6b7280' }}>{log.time}</span>
-                </div>
-                <span style={{ width: '80px', textAlign: 'center', fontSize: '11px', fontWeight: 'bold', color: '#374151', background: '#fef2f2', padding: '2px 4px', borderRadius: '4px' }}>{log.authorizer}</span>
-                <span style={{ width: '60px', textAlign: 'right', fontSize: '13px', fontWeight: 'bold', color: '#94161c' }}>-₹{log.amount}</span>
-              </div>
-            ))}
-            {discountLogs.length === 0 && <span style={{ fontSize: '13px', color: '#9ca3af', fontStyle: 'italic' }}>No overriding discounts currently authenticated.</span>}
+        <div style={{ marginBottom: '40px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+             <h4 style={{ fontSize: '15px', fontWeight: '950', color: '#1e293b' }}>Order Statistics</h4>
+             <select style={{ fontSize: '11px', border: 'none', fontWeight: '800', color: '#64748b' }}><option>4th Mar</option></select>
           </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+            <div style={{ textAlign: 'center', background: '#f8fafc', padding: '12px', borderRadius: '12px' }}><div style={{ fontSize: '20px', fontWeight: '950' }}>29</div><div style={{ fontSize: '10px', color: '#64748b', fontWeight: '800', marginTop: '2px' }}>Successful</div></div>
+            <div style={{ textAlign: 'center', background: '#f8fafc', padding: '12px', borderRadius: '12px' }}><div style={{ fontSize: '20px', fontWeight: '950' }}>0</div><div style={{ fontSize: '10px', color: '#64748b', fontWeight: '800', marginTop: '2px' }}>Cancel</div></div>
+            <div style={{ textAlign: 'center', background: '#f8fafc', padding: '12px', borderRadius: '12px' }}><div style={{ fontSize: '20px', fontWeight: '950' }}>0</div><div style={{ fontSize: '10px', color: '#64748b', fontWeight: '800', marginTop: '2px' }}>Gifted</div></div>
+          </div>
+          <div style={{ marginTop: '20px', fontSize: '13px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: '#f0f9ff', borderRadius: '12px', border: '1px solid #e0f2fe' }}>
+            <Clock size={16} color="#0284c7" /> <span style={{ fontWeight: '700' }}>35.28 mins</span> Avg turnaround.
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '40px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+             <h4 style={{ fontSize: '15px', fontWeight: '950', color: '#1e293b' }}>Revenue Leakage</h4>
+             <select style={{ fontSize: '11px', border: 'none', fontWeight: '800', color: '#64748b' }}><option>4th Mar</option></select>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '12px', fontWeight: '900', color: '#94a3b8' }}>
+            <span>BILLS</span>
+            <span>KOTS</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', fontSize: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontWeight: '700' }}><strong style={{ color: '#1e293b' }}>1</strong> Modified</div>
+              <div style={{ fontWeight: '700' }}><strong style={{ color: '#1e293b' }}>2</strong> Re-Printed</div>
+              <div style={{ fontWeight: '700' }}><strong style={{ color: '#1e293b' }}>0</strong> Waived Off</div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontWeight: '700' }}><strong style={{ color: '#1e293b' }}>0</strong> Cancelled</div>
+              <div style={{ fontWeight: '700' }}><strong style={{ color: '#1e293b' }}>2</strong> Modified</div>
+              <div style={{ fontWeight: '700' }}><strong style={{ color: '#1e293b' }}>7</strong> Ghosted</div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0', position: 'relative' }}>
+          <div style={{ fontSize: '13px', fontWeight: '900', color: '#1e293b', marginBottom: '20px' }}>Quick Support</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#ffefef', border: '2px solid white', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><User size={24} color="#94161c" /></div>
+            <div>
+              <div style={{ fontSize: '15px', fontWeight: '950', color: '#1e293b' }}>Pushpendra Singh</div>
+              <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '700' }}>Account Manager • #42227</div>
+            </div>
+          </div>
+          <button style={{ width: '100%', marginTop: '24px', padding: '14px', borderRadius: '14px', background: 'white', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '950', color: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = '#10b981'; e.currentTarget.style.color = 'white'; }} onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#1e293b'; }}>
+            <MessageSquare size={16} /> WhatsApp Help
+          </button>
         </div>
       </div>
     </div>
@@ -3596,7 +3431,7 @@ export default function App() {
   const clearTableFast = (tableId) => {
     setTables(prev => prev.map(t => {
       if (t.id === tableId) {
-        return { ...t, order: [], status: 'blank' };
+        return { ...t, order: [], status: 'blank', createdAt: null };
       }
       return t;
     }));
@@ -3691,9 +3526,17 @@ export default function App() {
     }
 
     if (orderDetails && orderDetails.cart && orderDetails.cart.length > 0) {
+      // Calculate duration if table/order exists
+      let duration = 0;
+      const t = tables.find(x => x.id === tableId) || nonTableOrders.find(x => x.id === tableId);
+      if (t && t.createdAt) {
+        duration = Math.floor((Date.now() - t.createdAt) / 60000);
+      }
+
       setOrderHistory(prev => [...prev, {
         id: Date.now().toString(),
         tableId,
+        duration,
         ...orderDetails
       }]);
     }
@@ -3705,7 +3548,7 @@ export default function App() {
     } else {
       setTables(prev => prev.map(t => {
         if (t.id === tableId) {
-          return { ...t, order: [], status: 'blank' }; // Mark as blank/paid
+          return { ...t, order: [], status: 'blank', createdAt: null }; // Mark as blank/paid and reset timer
         }
         return t;
       }));
@@ -3740,106 +3583,110 @@ export default function App() {
   };
 
   return (
-    <div className="app-container">
+    <div style={{ display: 'flex', height: '100vh', width: '100vw', background: '#f8fafc', overflow: 'hidden' }}>
       <GlobalStyles settings={settings} />
-      <TopHeader onViewChange={setView} onSimulateAggregator={handleSimulateAggregator} />
+      <AppSidebar activeView={view} onViewChange={setView} />
+      
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <AppTopNavbar onSimulateAggregator={handleSimulateAggregator} />
+        
+        <main style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+          {quickSettleTable && (
+            <QuickSettleModal
+              table={quickSettleTable}
+              settings={settings}
+              onClose={() => setQuickSettleTable(null)}
+              onSettle={(paymentMethod, amountPaid, changeDue) => {
+                const subtotal = quickSettleTable.order.reduce((acc, i) => acc + (i.price * i.qty), 0);
+                const service = settings?.autoServiceCharge ? Math.floor(subtotal * (settings.serviceChargeRate || 5) / 100) : 0;
+                const grandTotal = subtotal + service;
+                settleTable(quickSettleTable.id, { cart: quickSettleTable.order, subtotal, discountAmt: 0, redeemedPoints: 0, discountAuth: false, taxes: service, grandTotal, paymentMethod, amountPaid, changeDue, timestamp: new Date().toISOString(), phone: quickSettleTable.phone, customerName: quickSettleTable.customerName, note: quickSettleTable.note });
+                setQuickSettleTable(null);
+              }}
+            />
+          )}
 
-      {quickSettleTable && (
-        <QuickSettleModal
-          table={quickSettleTable}
-          settings={settings}
-          onClose={() => setQuickSettleTable(null)}
-          onSettle={(paymentMethod, amountPaid, changeDue) => {
-            const subtotal = quickSettleTable.order.reduce((acc, i) => acc + (i.price * i.qty), 0);
-            const service = settings?.autoServiceCharge ? Math.floor(subtotal * (settings.serviceChargeRate || 5) / 100) : 0;
-            const grandTotal = subtotal + service;
-            settleTable(quickSettleTable.id, { cart: quickSettleTable.order, subtotal, discountAmt: 0, redeemedPoints: 0, discountAuth: false, taxes: service, grandTotal, paymentMethod, amountPaid, changeDue, timestamp: new Date().toISOString(), phone: quickSettleTable.phone, customerName: quickSettleTable.customerName, note: quickSettleTable.note });
-            setQuickSettleTable(null);
-          }}
-        />
-      )}
-
-      <main style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {view === 'tables' && (
-          <TableManagement tables={tables} floorPlanSections={floorPlanSections} onSelectTable={handleSelectTable} onClearTable={clearTableFast} settings={settings} onQuickSettle={setQuickSettleTable} onQuickPrint={handleQuickPrint} />
-        )}
-        {view === 'nontables' && (
-          <NonTableManagement orders={nonTableOrders} onSelectOrder={handleSelectTable} onCreateOrder={handleCreateNonTableOrder} onViewChange={setView} onQuickSettle={setQuickSettleTable} onQuickPrint={handleQuickPrint} />
-        )}
-        {view === 'analytics' && (
-          <AnalyticsDashboard orderHistory={orderHistory} menuItems={menuItems} />
-        )}
-        {view === 'dayclose' && (
-          <DayCloseWizard
-            orderHistory={orderHistory}
-            onCompleteDayClose={() => {
-              alert("Day Close data wipe is strictly disabled! History and active orders will not be removed.");
-              setView('tables');
-            }}
-          />
-        )}
-        {view === 'kds' && (
-          <KitchenDisplay tables={tables} nonTableOrders={nonTableOrders} onMarkReady={markOrderReady} />
-        )}
-        {view === 'orderhistory' && (
-          <OrderHistoryView orderHistory={orderHistory} activePickups={nonTableOrders} onSelectActive={handleSelectTable} />
-        )}
-        {view === 'globalsettings' && (
-          <GlobalSettingsView settings={settings} onSaveSettings={setSettings} />
-        )}
-        {view === 'printersettings' && (
-          <PrinterSettingsView settings={settings} onSaveSettings={setSettings} categories={categories} />
-        )}
-        {view === 'menusetup' && (
-          <MenuSetupView
-            categories={categories} setCategories={setCategories}
-            menuItems={menuItems} setMenuItems={setMenuItems}
-          />
-        )}
-        {view === 'productsetup' && (
-          <RetailProductSetupView
-            categories={productCategories} setCategories={setProductCategories}
-            menuItems={products} setMenuItems={setProducts}
-          />
-        )}
-        {view === 'floorplan' && (
-          <FloorPlanSetupView tables={tables} setTables={setTables} sections={floorPlanSections} setSections={setFloorPlanSections} />
-        )}
-        {view === 'ordering' && (
-          <OrderingSystem
-            table={selectedTable}
-            tables={tables}
-            nonTableOrders={nonTableOrders}
-            initialOrder={selectedTable?.order || []}
-            MENU_ITEMS={[...menuItems, ...products]}
-            CATEGORIES={Array.from(new Set([...categories, ...productCategories]))}
-            settings={settings}
-            customers={customers}
-            onChangeTable={(oldId, newId, currentCart) => {
-              if (selectedTable && oldId !== newId) {
-                const targetTable = tables.find(t => t.id === newId);
-                if (targetTable) {
-                  setTables(prev => prev.map(t => {
-                    if (t.id === newId) return { ...t, order: currentCart, status: 'running', createdAt: t.createdAt || Date.now() };
-                    if (t.id === oldId) return { ...t, order: [], status: 'blank' };
-                    return t;
-                  }));
-                  setSelectedTable({ ...targetTable, order: currentCart, status: 'running' });
-                }
-              }
-            }}
-            onBack={() => {
-              if (selectedTable && (String(selectedTable.id).startsWith('DEL-') || String(selectedTable.id).startsWith('TAK-') || String(selectedTable.id).startsWith('ZOMATO-') || String(selectedTable.id).startsWith('SWIGGY-') || String(selectedTable.id).startsWith('THRIVE-'))) {
-                setView('nontables');
-              } else {
+          {view === 'tables' && (
+            <TableManagement tables={tables} floorPlanSections={floorPlanSections} onSelectTable={handleSelectTable} onClearTable={clearTableFast} settings={settings} onQuickSettle={setQuickSettleTable} onQuickPrint={handleQuickPrint} />
+          )}
+          {view === 'nontables' && (
+            <NonTableManagement orders={nonTableOrders} onSelectOrder={handleSelectTable} onCreateOrder={handleCreateNonTableOrder} onViewChange={setView} onQuickSettle={setQuickSettleTable} onQuickPrint={handleQuickPrint} />
+          )}
+          {view === 'analytics' && (
+            <AnalyticsDashboard orderHistory={orderHistory} menuItems={menuItems} />
+          )}
+          {view === 'dayclose' && (
+            <DayCloseWizard
+              orderHistory={orderHistory}
+              onCompleteDayClose={() => {
+                alert("Day Close data wipe is strictly disabled! History and active orders will not be removed.");
                 setView('tables');
-              }
-            }}
-            onSaveOrder={saveOrderToTable}
-            onSettleTable={settleTable}
-          />
-        )}
-      </main>
+              }}
+            />
+          )}
+          {view === 'kds' && (
+            <KitchenDisplay tables={tables} nonTableOrders={nonTableOrders} onMarkReady={markOrderReady} />
+          )}
+          {view === 'orderhistory' && (
+            <OrderHistoryView orderHistory={orderHistory} activePickups={nonTableOrders} onSelectActive={handleSelectTable} />
+          )}
+          {view === 'globalsettings' && (
+            <GlobalSettingsView settings={settings} onSaveSettings={setSettings} />
+          )}
+          {view === 'printersettings' && (
+            <PrinterSettingsView settings={settings} onSaveSettings={setSettings} categories={categories} />
+          )}
+          {view === 'menusetup' && (
+            <MenuSetupView
+              categories={categories} setCategories={setCategories}
+              menuItems={menuItems} setMenuItems={setMenuItems}
+            />
+          )}
+          {view === 'productsetup' && (
+            <RetailProductSetupView
+              categories={productCategories} setCategories={setProductCategories}
+              menuItems={products} setMenuItems={setProducts}
+            />
+          )}
+          {view === 'floorplan' && (
+            <FloorPlanSetupView tables={tables} setTables={setTables} sections={floorPlanSections} setSections={setFloorPlanSections} />
+          )}
+          {view === 'ordering' && (
+            <OrderingSystem
+              table={selectedTable}
+              tables={tables}
+              nonTableOrders={nonTableOrders}
+              initialOrder={selectedTable?.order || []}
+              MENU_ITEMS={[...menuItems, ...products]}
+              CATEGORIES={Array.from(new Set([...categories, ...productCategories]))}
+              settings={settings}
+              customers={customers}
+              onChangeTable={(oldId, newId, currentCart) => {
+                if (selectedTable && oldId !== newId) {
+                  const targetTable = tables.find(t => t.id === newId);
+                  if (targetTable) {
+                    setTables(prev => prev.map(t => {
+                      if (t.id === newId) return { ...t, order: currentCart, status: 'running', createdAt: t.createdAt || Date.now() };
+                      if (t.id === oldId) return { ...t, order: [], status: 'blank' };
+                      return t;
+                    }));
+                    setSelectedTable({ ...targetTable, order: currentCart, status: 'running' });
+                  }
+                }
+              }}
+              onBack={() => {
+                if (selectedTable && (String(selectedTable.id).startsWith('DEL-') || String(selectedTable.id).startsWith('TAK-') || String(selectedTable.id).startsWith('ZOMATO-') || String(selectedTable.id).startsWith('SWIGGY-') || String(selectedTable.id).startsWith('THRIVE-'))) {
+                  setView('nontables');
+                } else {
+                  setView('tables');
+                }
+              }}
+              onSaveOrder={saveOrderToTable}
+              onSettleTable={settleTable}
+            />
+          )}
+        </main>
+      </div>
     </div>
   );
 }
