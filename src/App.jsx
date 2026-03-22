@@ -307,33 +307,74 @@ const AppSidebar = ({ activeView, onViewChange }) => {
   );
 };
 
-const AppTopNavbar = ({ onSimulateAggregator, globalSearch, onSearchChange }) => (
-  <div className="no-print" style={{ height: '70px', background: 'white', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', padding: '0 32px', position: 'sticky', top: 0, zIndex: 10 }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: 1 }}>
-      <div style={{ background: '#f8fafc', padding: '10px 18px', borderRadius: '14px', border: '1px solid #e2e8f0', minWidth: '400px', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
-        <Search size={18} color="#94a3b8" />
+const AppTopNavbar = ({ onSimulateAggregator, globalSearch, onSearchChange, onToggleSidebar, onViewChange }) => (
+  <div className="no-print" style={{ height: '70px', background: 'white', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', padding: '0 24px', position: 'sticky', top: 0, zIndex: 1000, gap: '20px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <button onClick={onToggleSidebar} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', color: '#1f2937' }}><Menu size={24} /></button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ background: '#94161c', color: 'white', padding: '4px 8px', borderRadius: '4px', fontWeight: '900', fontSize: '12px' }}>TYDE</div>
+        <span style={{ fontWeight: '950', fontSize: '16px', color: '#1f2937', letterSpacing: '0.5px' }}>CAFE</span>
+      </div>
+    </div>
+
+    <button onClick={() => onViewChange('tables')} style={{ background: '#94161c', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 16px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}>New Order</button>
+
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ background: '#fff1f2', color: '#be123c', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }} onClick={onSimulateAggregator}>
+        <Plus size={16} /> Online Sync
+      </div>
+      
+      <div style={{ background: '#f8fafc', padding: '8px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '8px', flex: 1, maxWidth: '200px' }}>
+        <Search size={16} color="#94a3b8" />
         <input 
           type="text" 
-          placeholder="Search for anything (Bills, Tables, Items...)" 
+          placeholder="Bill No" 
           value={globalSearch}
           onChange={e => onSearchChange(e.target.value)}
-          style={{ background: 'transparent', border: 'none', fontSize: '14px', width: '100%', outline: 'none', fontWeight: '500' }} 
+          style={{ background: 'transparent', border: 'none', fontSize: '13px', width: '100%', outline: 'none' }} 
         />
+      </div>
+      <div style={{ background: '#f8fafc', padding: '8px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '8px', flex: 1, maxWidth: '200px' }}>
+        <Search size={16} color="#94a3b8" />
+        <input type="text" placeholder="KOT No" style={{ background: 'transparent', border: 'none', fontSize: '13px', width: '100%', outline: 'none' }} />
       </div>
     </div>
     
-    <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-      <button onClick={onSimulateAggregator} style={{ border: 'none', background: '#ffe4e6', color: '#e11d48', padding: '10px 20px', borderRadius: '12px', fontSize: '12px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'transform 0.2s' }} onMouseEnter={e => e.target.style.transform = 'scale(1.02)'} onMouseLeave={e => e.target.style.transform = 'scale(1)'}>
-        <Smartphone size={16} /> Online Sync
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <button 
+        onClick={() => onViewChange('tables')} 
+        style={{ border: '2px solid #94161c', color: '#94161c', background: 'white', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+      >
+        <LayoutGrid size={18} /> TABLE ORDER
       </button>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', borderLeft: '1px solid #f1f5f9', paddingLeft: '24px' }}>
+      <button 
+        onClick={() => onViewChange('nontables')} 
+        style={{ border: 'none', background: '#94161c', color: 'white', padding: '10px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+      >
+        <ShoppingBag size={18} /> PICK UP ORDER
+      </button>
+
+      <div style={{ display: 'flex', gap: '8px', borderLeft: '1px solid #f1f5f9', paddingLeft: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
+          <Sunset size={18} color="#64748b" />
+          <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#64748b' }}>Day Close</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
+          <BarChart3 size={18} color="#64748b" />
+          <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#64748b' }}>Reports</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
+          <ChefHat size={18} color="#64748b" />
+          <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#64748b' }}>Kitchen</span>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderLeft: '1px solid #f1f5f9', paddingLeft: '16px' }}>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800' }}>OUTLET STATUS</div>
-          <div style={{ fontSize: '14px', fontWeight: '950', color: '#10b981' }}>LIVE • OPEN</div>
+          <div style={{ fontSize: '12px', fontWeight: '950', color: '#94161c' }}>Call for Support</div>
+          <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1f2937' }}>+91 8652475772</div>
         </div>
-        <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#fff1f2', border: '2px solid white', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-          <User size={20} color="#94161c" />
-        </div>
+        <User size={24} color="#64748b" style={{ cursor: 'pointer' }} />
       </div>
     </div>
   </div>
@@ -3338,6 +3379,7 @@ export default function App() {
   const [selectedTable, setSelectedTable] = useState(null);
   const [quickSettleTable, setQuickSettleTable] = useState(null);
   const [globalSearch, setGlobalSearch] = useState('');
+  const [showSidebar, setShowSidebar] = useState(false);
   const [isDbLoaded, setIsDbLoaded] = useState(false);
   const [tables, setTables] = useState(INITIAL_TABLES);
   const [orderHistory, setOrderHistory] = useState([]);
@@ -3624,10 +3666,16 @@ export default function App() {
   return (
     <div style={{ display: 'flex', height: '100vh', width: '100vw', background: '#f8fafc', overflow: 'hidden' }}>
       <GlobalStyles settings={settings} />
-      <AppSidebar activeView={view} onViewChange={setView} />
+      {showSidebar && <AppSidebar activeView={view} onViewChange={setView} />}
       
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <AppTopNavbar onSimulateAggregator={handleSimulateAggregator} globalSearch={globalSearch} onSearchChange={setGlobalSearch} />
+        <AppTopNavbar 
+          onSimulateAggregator={handleSimulateAggregator} 
+          globalSearch={globalSearch} 
+          onSearchChange={setGlobalSearch} 
+          onToggleSidebar={() => setShowSidebar(!showSidebar)}
+          onViewChange={setView}
+        />
         
         <main style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
           {quickSettleTable && (
