@@ -2410,7 +2410,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   const [customNoteText, setCustomNoteText] = useState('');
 
   // Service Charge & Discount State
-  const [applyServiceCharge, setApplyServiceCharge] = useState(isPickup ? true : (settings?.autoServiceCharge ?? true));
+  const [applyServiceCharge, setApplyServiceCharge] = useState(isPickup ? false : (settings?.autoServiceCharge ?? true));
   const [serviceChargeRate, setServiceChargeRate] = useState(settings?.serviceChargeRate ?? 5);
 
   const [applyDiscount, setApplyDiscount] = useState(false);
