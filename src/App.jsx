@@ -307,7 +307,7 @@ const AppSidebar = ({ activeView, onViewChange }) => {
   );
 };
 
-const AppTopNavbar = ({ onSimulateAggregator, globalSearch, onSearchChange, onToggleSidebar, onViewChange }) => (
+const AppTopNavbar = ({ globalSearch, onSearchChange, onToggleSidebar, onViewChange }) => (
   <div className="no-print" style={{ height: '70px', background: 'white', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', padding: '0 24px', position: 'sticky', top: 0, zIndex: 1000, gap: '20px' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
       <button onClick={onToggleSidebar} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', color: '#1f2937' }}><Menu size={24} /></button>
@@ -3907,7 +3907,6 @@ export default function App() {
       
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <AppTopNavbar 
-          onSimulateAggregator={handleSimulateAggregator} 
           globalSearch={globalSearch} 
           onSearchChange={handleGlobalSearch} 
           onToggleSidebar={() => setShowSidebar(!showSidebar)}
