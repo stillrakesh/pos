@@ -1,6 +1,4 @@
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 // Certificate and Key stored as strings for Vercel reliability
 const QZ_CERT = `-----BEGIN CERTIFICATE-----
@@ -57,31 +55,25 @@ DCcbY+O4ZukSaI0Qjtr70mz7lao1Ljw/50uxSHj+ImhiKf2KbQ1dL4fdMOgJJlKw
 5K4h6TDrs33JipuRqJID+JQ=
 -----END PRIVATE KEY-----`;
 
-module.exports = (req, res) => {
-  // Add CORS headers manually for Vercel functions
-  res.setHeader('Access-Control-Allow-Credentials', true)
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT')
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  )
+export default function handler(req, res) {
+  // CORS Headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
-    res.status(200).end()
-    return
+    return res.status(200).end();
   }
 
-  const { pathname } = new URL(req.url, `http://${req.headers.host}`);
+  // Purely check the URL path without extra modules
+  const url = req.url || '';
   
-  // handle /api/signing/certificate
-  if (pathname.includes('/certificate')) {
-    res.status(200).send(QZ_CERT);
-    return;
+  if (url.includes('/certificate')) {
+    return res.status(200).send(QZ_CERT);
   }
 
-  // handle /api/signing/sign
-  if (pathname.includes('/sign')) {
+  if (url.includes('/sign')) {
+    // Vercel pre-parses query params into req.query
     const toSign = req.query.request;
     if (!toSign) return res.status(400).send('No request to sign');
 
@@ -89,13 +81,12 @@ module.exports = (req, res) => {
       const signer = crypto.createSign('SHA512');
       signer.update(toSign);
       const signature = signer.sign(QZ_KEY, 'base64');
-      res.status(200).send(signature);
+      return res.status(200).send(signature);
     } catch (err) {
       console.error('Signing error:', err);
-      res.status(500).send('Error during signing');
+      return res.status(500).send('Error during signing');
     }
-    return;
   }
 
-  res.status(404).send('Not Found');
-};
+  return res.status(404).send('Not Found');
+}
