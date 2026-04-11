@@ -1,13 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Menu, Search, Store, Monitor, LayoutGrid, Clock, Bell, User,
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  Menu, Search, Store, Monitor, LayoutGrid, Clock, Bell, User, Wifi,
   ChevronDown, ChevronUp, Info, CreditCard, Banknote, Printer, Eye, Plus,
-  Minus, X, Utensils, Smartphone, BarChart3, TrendingUp, PieChart, AlertTriangle, Truck, ShoppingBag, ChefHat, MessageSquare, CheckSquare, Sunset, Trash2, Package
+  Minus, X, Utensils, Smartphone, BarChart3, TrendingUp, PieChart, AlertTriangle, Truck, ShoppingBag, ChefHat, MessageSquare, CheckSquare, Sunset, Trash2, Package,
+  Settings2, ReceiptText
 } from 'lucide-react';
 import './index.css';
 import { get, set, del, clear } from 'idb-keyval';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import * as XLSX from 'xlsx';
+
+// Modular Components & Utilities
+import { printPosToSerial } from './utils/printerUtils';
+import { QuickPrintModal, QuickSettleModal } from './components/billing/SettlementModals';
+import DayCloseWizard from './components/billing/DayCloseWizard';
+import BillDesigner from './components/settings/BillDesigner';
+import PrinterSetup from './components/settings/PrinterSetup';
+import ReportsHub from './components/dashboard/ReportsHub';
+import CaptainOrders from './components/billing/CaptainOrders';
+import { formatCurrency, getOrderTotal } from './utils/formatters';
+
 // --- INITIAL MOCK DATA ---
 const MENU_VERSION = '2';
 
@@ -77,7 +89,7 @@ const INITIAL_PRODUCT_CATEGORIES = [
   "🥤 Mixers & Refreshers",
   "🍺 Premium Beers (500 ml)",
   "🍸 Vodka",
-  "🦌 Herbal Liqueur",
+  "🌿 Herbal Liqueur",
   "🥃 Premium Whisky",
   "🍹 Signature Cocktails"
 ];
@@ -98,18 +110,18 @@ const INITIAL_PRODUCTS = [
   { id: 9103, name: 'Tuborg Mild', price: 349, cat: "🍺 Premium Beers (500 ml)", type: 'retail', stockQuantity: 100, inStock: true },
 
   // Vodka
-  { id: 9201, name: 'Smirnoff 30ml', price: 169, cat: "🍸 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9202, name: 'Smirnoff 60ml', price: 279, cat: "🍸 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9203, name: 'Smirnoff 180ml', price: 919, cat: "🍸 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9204, name: 'Smirnoff Quart', price: 3199, cat: "🍸 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9205, name: 'Smirnoff Jamun 30ml', price: 179, cat: "🍸 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9206, name: 'Smirnoff Jamun 60ml', price: 289, cat: "🍸 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9207, name: 'Smirnoff Jamun 180ml', price: 929, cat: "🍸 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9208, name: 'Smirnoff Jamun Quart', price: 3229, cat: "🍸 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
+  { id: 9201, name: 'Smirnoff 30ml', price: 169, cat: "🧊 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
+  { id: 9202, name: 'Smirnoff 60ml', price: 279, cat: "🧊 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
+  { id: 9203, name: 'Smirnoff 180ml', price: 919, cat: "🧊 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
+  { id: 9204, name: 'Smirnoff Quart', price: 3199, cat: "🧊 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
+  { id: 9205, name: 'Smirnoff Jamun 30ml', price: 179, cat: "🧊 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
+  { id: 9206, name: 'Smirnoff Jamun 60ml', price: 289, cat: "🧊 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
+  { id: 9207, name: 'Smirnoff Jamun 180ml', price: 929, cat: "🧊 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
+  { id: 9208, name: 'Smirnoff Jamun Quart', price: 3229, cat: "🧊 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
 
   // Herbal Liqueur
-  { id: 9301, name: 'Jägermeister 30ml', price: 499, cat: "🦌 Herbal Liqueur", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9302, name: 'Jägerbomb', price: 599, cat: "🦌 Herbal Liqueur", type: 'retail', stockQuantity: 100, inStock: true },
+  { id: 9301, name: 'JÃ¤germeister 30ml', price: 499, cat: "🌿 Herbal Liqueur", type: 'retail', stockQuantity: 100, inStock: true },
+  { id: 9302, name: 'JÃ¤gerbomb', price: 599, cat: "🌿 Herbal Liqueur", type: 'retail', stockQuantity: 100, inStock: true },
 
   // Whisky
   { id: 9401, name: 'Oaksmith Gold 30ml', price: 149, cat: "🥃 Premium Whisky", type: 'retail', stockQuantity: 100, inStock: true },
@@ -125,8 +137,8 @@ const INITIAL_PRODUCTS = [
   { id: 9411, name: 'JW Red Label 750ml', price: 4999, cat: "🥃 Premium Whisky", type: 'retail', stockQuantity: 100, inStock: true },
 
   // Signature Cocktails
-  { id: 9501, name: 'Blue Lagoon', price: 349, cat: "🍹 Signature Cocktails", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9502, name: 'Old Fashioned', price: 399, cat: "🍹 Signature Cocktails", type: 'retail', stockQuantity: 100, inStock: true }
+  { id: 9501, name: 'Blue Lagoon', price: 349, cat: "🍸 Signature Cocktails", type: 'retail', stockQuantity: 100, inStock: true },
+  { id: 9502, name: 'Old Fashioned', price: 399, cat: "🍸 Signature Cocktails", type: 'retail', stockQuantity: 100, inStock: true }
 ];
 
 const INITIAL_CATEGORIES = [
@@ -228,30 +240,44 @@ const INITIAL_MENU_ITEMS = [
 const INITIAL_FLOOR_SECTIONS = ['A/C', 'Non A/C'];
 
 const INITIAL_TABLES = [
-  { id: 1, name: 'Table 1', status: 'blank', type: 'A/C', order: [], pos: { x: 50, y: 50 } },
-  { id: 2, name: 'Table 2', status: 'blank', type: 'A/C', order: [], pos: { x: 200, y: 50 } },
-  { id: 3, name: 'Table 3', status: 'blank', type: 'A/C', order: [], pos: { x: 350, y: 50 } },
-  { id: 4, name: 'Table 4', status: 'blank', type: 'A/C', order: [], pos: { x: 50, y: 180 } },
-  { id: 5, name: 'Table 5', status: 'blank', type: 'A/C', order: [], pos: { x: 200, y: 180 } },
-  { id: 8, name: 'Table 8', status: 'blank', type: 'A/C', order: [], pos: { x: 350, y: 180 } },
-  { id: 9, name: 'Table 9', status: 'blank', type: 'A/C', order: [], pos: { x: 500, y: 50 } },
-  { id: 12, name: 'Table 12', status: 'blank', type: 'A/C', order: [], pos: { x: 500, y: 180 } },
-  { id: 14, name: 'Table 14', status: 'blank', type: 'A/C', order: [], pos: { x: 50, y: 310 } },
-  { id: 102, name: 'Table 2', status: 'blank', type: 'Non A/C', order: [], pos: { x: 200, y: 50 } },
+  { id: 1, name: 'Table 1', status: 'blank', type: 'A/C', order: [], pos: { x: 50, y: 50 }, shape: 'rounded', seats: 4, zoneLabel: 'Window' },
+  { id: 2, name: 'Table 2', status: 'blank', type: 'A/C', order: [], pos: { x: 200, y: 50 }, shape: 'rounded', seats: 4, zoneLabel: 'Center' },
+  { id: 3, name: 'Table 3', status: 'blank', type: 'A/C', order: [], pos: { x: 350, y: 50 }, shape: 'square', seats: 2, zoneLabel: 'Quiet' },
+  { id: 4, name: 'Table 4', status: 'blank', type: 'A/C', order: [], pos: { x: 50, y: 180 }, shape: 'rounded', seats: 4, zoneLabel: 'Family' },
+  { id: 5, name: 'Table 5', status: 'blank', type: 'A/C', order: [], pos: { x: 200, y: 180 }, shape: 'square', seats: 6, zoneLabel: 'Group' },
+  { id: 8, name: 'Table 8', status: 'blank', type: 'A/C', order: [], pos: { x: 350, y: 180 }, shape: 'rounded', seats: 4, zoneLabel: 'Center' },
+  { id: 9, name: 'Table 9', status: 'blank', type: 'A/C', order: [], pos: { x: 500, y: 50 }, shape: 'circle', seats: 2, zoneLabel: 'Couple' },
+  { id: 12, name: 'Table 12', status: 'blank', type: 'A/C', order: [], pos: { x: 500, y: 180 }, shape: 'square', seats: 6, zoneLabel: 'Large' },
+  { id: 14, name: 'Table 14', status: 'blank', type: 'A/C', order: [], pos: { x: 50, y: 310 }, shape: 'rounded', seats: 4, zoneLabel: 'Corner' },
+  { id: 102, name: 'Table 102', status: 'blank', type: 'Non A/C', order: [], pos: { x: 200, y: 50 }, shape: 'rounded', seats: 4, zoneLabel: 'Patio' },
 ];
 
 // --- COMPONENTS ---
 
-const AppSidebar = ({ activeView, onViewChange }) => {
+
+
+const getMinutesElapsed = (createdAt) => {
+  if (!createdAt) return 0;
+  return Math.max(0, Math.floor((Date.now() - createdAt) / 60000));
+};
+
+const getChannelLabel = (order = {}) => {
+  if (order.type === 'Delivery' || String(order.id || order.tableId || '').startsWith('DEL-')) return 'Delivery';
+  if (order.type === 'Takeaway' || String(order.id || order.tableId || '').startsWith('TAK-')) return 'Takeaway';
+  return 'Dine In';
+};
+
+const AppSidebar = ({ activeView, onViewChange, stats }) => {
   const menuGroups = [
     {
       title: 'Daily Operations',
       items: [
-        { id: 'analytics', label: 'Dashboard', icon: Monitor },
-        { id: 'tables', label: 'Running Orders', icon: Clock },
+        { id: 'analytics', label: 'Dashboard', icon: Monitor, badge: stats.liveOrders > 0 ? stats.liveOrders : null },
+        { id: 'tables', label: 'Running Orders', icon: Clock, badge: stats.activeTables > 0 ? stats.activeTables : null },
         { id: 'orderhistory', label: 'All Orders', icon: ShoppingBag },
-        { id: 'nontables', label: 'Online Orders', icon: Smartphone },
-        { id: 'kds', label: 'KOT', icon: Utensils },
+        { id: 'nontables', label: 'Online Orders', icon: Smartphone, badge: stats.activeOnline > 0 ? stats.activeOnline : null },
+        { id: 'kds', label: 'KOT', icon: Utensils, badge: stats.pendingKot > 0 ? stats.pendingKot : null },
+        { id: 'captain', label: 'Captain Orders', icon: Wifi },
         { id: 'dayclose', label: 'Due Payment Settlement', icon: Banknote },
         { id: 'profit-loss', label: 'Profit & Loss', icon: TrendingUp },
       ]
@@ -261,6 +287,7 @@ const AppSidebar = ({ activeView, onViewChange }) => {
       items: [
         { id: 'menusetup', label: 'Menu', icon: Menu },
         { id: 'productsetup', label: 'Inventory', icon: Package },
+        { id: 'floorplan', label: 'Floor Designer', icon: LayoutGrid },
         { id: 'reports', label: 'Reports', icon: BarChart3 },
         { id: 'crm', label: 'CRM', icon: User },
         { id: 'globalsettings', label: 'Settings', icon: LayoutGrid },
@@ -269,61 +296,111 @@ const AppSidebar = ({ activeView, onViewChange }) => {
   ];
 
   return (
-    <div className="no-print" style={{ width: '220px', background: 'white', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', height: '100vh', flexShrink: 0 }}>
-      {/* Brand */}
-      <div style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <div style={{ background: '#94161c', color: 'white', padding: '8px', borderRadius: '10px', boxShadow: '0 4px 6px -1px rgba(148, 22, 28, 0.2)' }}>
+    <div className="no-print" style={{ width: '274px', background: 'linear-gradient(180deg, #111827 0%, #0f172a 100%)', borderRight: '1px solid rgba(148, 163, 184, 0.12)', display: 'flex', flexDirection: 'column', height: '100vh', flexShrink: 0, color: 'white' }}>
+      <div style={{ padding: '24px 22px 18px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ background: 'linear-gradient(135deg, #a3112a 0%, #f97316 100%)', color: 'white', padding: '10px', borderRadius: '14px', boxShadow: '0 14px 28px rgba(163, 17, 42, 0.28)' }}>
           <Store size={20} />
         </div>
-        <div style={{ fontWeight: '950', fontSize: '18px', color: '#1e293b', letterSpacing: '-0.5px' }}>PETPOOJA</div>
+        <div>
+          <div style={{ fontWeight: '950', fontSize: '18px', letterSpacing: '-0.5px' }}>TYDE POS</div>
+          <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', letterSpacing: '0.3px' }}>Restaurant control center</div>
+        </div>
       </div>
 
-      {/* Navigation */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+      <div style={{ margin: '0 18px 18px', padding: '16px', borderRadius: '18px', background: 'linear-gradient(135deg, rgba(163, 17, 42, 0.32), rgba(249, 115, 22, 0.18))', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ fontSize: '11px', fontWeight: '900', color: '#fecaca', textTransform: 'uppercase', letterSpacing: '1.4px', marginBottom: '12px' }}>Shift Snapshot</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div>
+            <div style={{ fontSize: '24px', fontWeight: '950' }}>{stats.liveOrders}</div>
+            <div style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: '700' }}>Live Orders</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '24px', fontWeight: '950' }}>{formatCurrency(stats.liveRevenue)}</div>
+            <div style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: '700' }}>Open Value</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 12px 12px' }}>
         {menuGroups.map((group, idx) => (
           <div key={idx} style={{ marginBottom: '28px' }}>
-            <div style={{ fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px', paddingLeft: '12px' }}>{group.title}</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <div style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.3px', marginBottom: '12px', paddingLeft: '12px' }}>{group.title}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {group.items.map(item => (
                 <button
                   key={item.id}
                   onClick={() => onViewChange(item.id)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '12px',
-                    border: 'none', background: activeView === item.id ? '#fef2f2' : 'transparent',
-                    color: activeView === item.id ? '#94161c' : '#64748b',
-                    cursor: 'pointer', transition: 'all 0.2s', fontWeight: activeView === item.id ? '900' : '700', fontSize: '13px', textAlign: 'left'
+                    display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '14px',
+                    border: activeView === item.id ? '1px solid rgba(249, 115, 22, 0.28)' : '1px solid transparent',
+                    background: activeView === item.id ? 'linear-gradient(135deg, rgba(163, 17, 42, 0.26), rgba(249, 115, 22, 0.12))' : 'transparent',
+                    color: activeView === item.id ? '#fff7ed' : '#cbd5e1',
+                    cursor: 'pointer', transition: 'all 0.2s', fontWeight: activeView === item.id ? '900' : '700', fontSize: '13px', textAlign: 'left', width: '100%'
                   }}
                 >
-                  <item.icon size={18} style={{ opacity: activeView === item.id ? 1 : 0.6 }} />
-                  {item.label}
+                  <item.icon size={18} style={{ opacity: activeView === item.id ? 1 : 0.75 }} />
+                  <span style={{ flex: 1 }}>{item.label}</span>
+                  {item.badge ? (
+                    <span style={{ minWidth: '26px', padding: '3px 8px', borderRadius: '999px', background: activeView === item.id ? 'rgba(255,255,255,0.18)' : 'rgba(148,163,184,0.18)', color: 'inherit', fontSize: '11px', fontWeight: '900' }}>
+                      {item.badge}
+                    </span>
+                  ) : null}
                 </button>
               ))}
             </div>
           </div>
         ))}
       </div>
+
+      <div style={{ padding: '0 18px 22px' }}>
+        <div style={{ padding: '14px 16px', borderRadius: '18px', background: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(148, 163, 184, 0.16)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span style={{ fontSize: '12px', color: '#cbd5e1', fontWeight: '800' }}>Inventory Watch</span>
+            <span style={{ fontSize: '12px', color: stats.lowStock > 0 ? '#fbbf24' : '#86efac', fontWeight: '900' }}>{stats.lowStock}</span>
+          </div>
+          <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.5 }}>Low-stock items, kitchen queue, and floor traffic stay visible from one place.</div>
+        </div>
+      </div>
     </div>
   );
 };
 
-const AppTopNavbar = ({ globalSearch, onSearchChange, onToggleSidebar, onViewChange }) => (
-  <div className="no-print" style={{ height: '70px', background: 'white', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', padding: '0 24px', position: 'sticky', top: 0, zIndex: 1000, gap: '20px' }}>
+
+const TimeElapsed = ({ createdAt }) => {
+  const [elapsed, setElapsed] = React.useState('');
+  
+  React.useEffect(() => {
+    if (!createdAt) return;
+    const interval = setInterval(() => {
+      const diff = Math.floor((Date.now() - createdAt) / 1000);
+      const m = Math.floor(diff / 60);
+      const s = diff % 60;
+      setElapsed(m + 'm ' + s + 's');
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [createdAt]);
+  
+  if (!elapsed) return null;
+  return <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#f59e0b', background: '#fef3c7', padding: '2px 6px', borderRadius: '4px', display: 'inline-block' }}><Clock size={10} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '3px' }}/> {elapsed}</div>;
+};
+
+const AppTopNavbar = ({ globalSearch, onSearchChange, onToggleSidebar, onViewChange, stats }) => (
+  <div className="no-print" style={{ minHeight: '86px', background: 'rgba(255,255,255,0.82)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(226, 232, 240, 0.9)', display: 'flex', alignItems: 'center', padding: '14px 24px', position: 'sticky', top: 0, zIndex: 1000, gap: '18px' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-      <button onClick={onToggleSidebar} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', color: '#1f2937' }}><Menu size={24} /></button>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{ background: '#94161c', color: 'white', padding: '4px 8px', borderRadius: '4px', fontWeight: '900', fontSize: '12px' }}>TYDE</div>
-        <span style={{ fontWeight: '950', fontSize: '16px', color: '#1f2937', letterSpacing: '0.5px' }}>CAFE</span>
+      <button onClick={onToggleSidebar} style={{ background: 'white', border: '1px solid #e2e8f0', cursor: 'pointer', padding: '10px', color: '#1f2937', borderRadius: '14px', boxShadow: '0 10px 24px rgba(15, 23, 42, 0.06)' }}><Menu size={20} /></button>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ background: 'linear-gradient(135deg, #94161c 0%, #f97316 100%)', color: 'white', padding: '5px 9px', borderRadius: '8px', fontWeight: '900', fontSize: '12px' }}>TYDE</div>
+          <span style={{ fontWeight: '950', fontSize: '18px', color: '#0f172a', letterSpacing: '0.2px' }}>Restaurant POS</span>
+        </div>
+        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '700' }}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
       </div>
     </div>
 
-    <button onClick={() => onViewChange('tables')} style={{ background: '#94161c', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 16px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}>New Order</button>
+    <button onClick={() => onViewChange('tables')} style={{ background: 'linear-gradient(135deg, #94161c 0%, #be123c 100%)', color: 'white', border: 'none', borderRadius: '14px', padding: '11px 18px', fontWeight: '900', fontSize: '13px', cursor: 'pointer', boxShadow: '0 12px 28px rgba(163, 17, 42, 0.24)' }}>New Order</button>
 
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
-      {/* Removed Online Sync Button */}
-
-      
-      <div style={{ background: '#f8fafc', padding: '10px 18px', borderRadius: '14px', border: '1px solid #e2e8f0', flex: 1, display: 'flex', alignItems: 'center', gap: '12px', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
+      <div style={{ background: '#f8fafc', padding: '12px 18px', borderRadius: '16px', border: '1px solid #e2e8f0', flex: 1, display: 'flex', alignItems: 'center', gap: '12px', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
         <Search size={18} color="#94a3b8" />
         <input 
           type="text" 
@@ -333,18 +410,28 @@ const AppTopNavbar = ({ globalSearch, onSearchChange, onToggleSidebar, onViewCha
           style={{ background: 'transparent', border: 'none', fontSize: '14px', width: '100%', outline: 'none', fontWeight: '500' }} 
         />
       </div>
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ padding: '10px 12px', borderRadius: '14px', background: 'white', border: '1px solid #e2e8f0', minWidth: '110px' }}>
+          <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '900', textTransform: 'uppercase' }}>Live</div>
+          <div style={{ fontSize: '17px', fontWeight: '950', color: '#0f172a' }}>{stats.liveOrders}</div>
+        </div>
+        <div style={{ padding: '10px 12px', borderRadius: '14px', background: 'white', border: '1px solid #e2e8f0', minWidth: '130px' }}>
+          <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '900', textTransform: 'uppercase' }}>Open Value</div>
+          <div style={{ fontSize: '17px', fontWeight: '950', color: '#0f172a' }}>{formatCurrency(stats.liveRevenue)}</div>
+        </div>
+      </div>
     </div>
     
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
       <button 
         onClick={() => onViewChange('tables')} 
-        style={{ border: '2px solid #94161c', color: '#94161c', background: 'white', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+        style={{ border: '1px solid #fecdd3', color: '#94161c', background: '#fff1f2', padding: '10px 16px', borderRadius: '12px', fontSize: '13px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
       >
         <LayoutGrid size={18} /> TABLE ORDER
       </button>
       <button 
         onClick={() => onViewChange('nontables')} 
-        style={{ border: 'none', background: '#94161c', color: 'white', padding: '10px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+        style={{ border: 'none', background: '#0f172a', color: 'white', padding: '10px 18px', borderRadius: '12px', fontSize: '13px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
       >
         <ShoppingBag size={18} /> PICK UP ORDER
       </button>
@@ -366,10 +453,12 @@ const AppTopNavbar = ({ globalSearch, onSearchChange, onToggleSidebar, onViewCha
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderLeft: '1px solid #f1f5f9', paddingLeft: '16px' }}>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '12px', fontWeight: '950', color: '#94161c' }}>Call for Support</div>
-          <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1f2937' }}>+91 8652475772</div>
+          <div style={{ fontSize: '12px', fontWeight: '950', color: '#94161c' }}>Service Watch</div>
+          <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1f2937' }}>{stats.pendingKot} in kitchen queue</div>
         </div>
-        <User size={24} color="#64748b" style={{ cursor: 'pointer' }} />
+        <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: '#fff1f2', display: 'grid', placeItems: 'center', border: '1px solid #fecdd3' }}>
+          <User size={20} color="#94161c" style={{ cursor: 'pointer' }} />
+        </div>
       </div>
     </div>
   </div>
@@ -576,7 +665,7 @@ const OrderHistoryView = ({ orderHistory, activePickups = [], onSelectActive, gl
                   <div style={{ textAlign: 'center', fontSize: '12px', fontWeight: '600', color: '#64748b' }}>
                     #{String(order.id).slice(-6)} • {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • <span style={{ color: isSettled ? '#10b981' : 'var(--primary)' }}>{isSettled ? 'SETTLED' : 'ONGOING'}</span>
                   </div>
-                  <div style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
                     {order.tableId ? `Table ${order.tableId}` : order.type} • {(order.cart || order.order || []).length} items
                   </div>
                   <div style={{ textAlign: 'right', fontWeight: '900', color: '#0f172a', fontSize: '16px' }}>₹{total.toFixed(2)}</div>
@@ -1038,6 +1127,9 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems }) =
 const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
   const [newTableName, setNewTableName] = useState('');
   const [newTableType, setNewTableType] = useState(sections[0] || '');
+  const [newTableSeats, setNewTableSeats] = useState('4');
+  const [newTableShape, setNewTableShape] = useState('rounded');
+  const [newZoneLabel, setNewZoneLabel] = useState('');
   const [tableToRemove, setTableToRemove] = useState(null);
   const [newSectionName, setNewSectionName] = useState('');
   const [editingSection, setEditingSection] = useState(null);
@@ -1045,6 +1137,8 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
   const [designModeSection, setDesignModeSection] = useState(null);
   const [draggedTableId, setDraggedTableId] = useState(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [editingTableId, setEditingTableId] = useState(null);
+  const [editingTableDraft, setEditingTableDraft] = useState({ name: '', seats: '4', shape: 'rounded', zoneLabel: '' });
 
   const addTable = () => {
     if (newTableName.trim() === '' || !newTableType) return;
@@ -1055,10 +1149,16 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
       status: 'blank',
       type: newTableType,
       order: [],
-      pos: { x: 50, y: 50 }
+      pos: { x: 50, y: 50 },
+      seats: parseInt(newTableSeats, 10) || 4,
+      shape: newTableShape,
+      zoneLabel: newZoneLabel.trim()
     };
     setTables([...tables, newTable]);
     setNewTableName('');
+    setNewTableSeats('4');
+    setNewTableShape('rounded');
+    setNewZoneLabel('');
   };
 
   const removeTable = (id) => {
@@ -1140,6 +1240,28 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
 
   const handleCanvasMouseUp = () => setDraggedTableId(null);
 
+  const startEditTable = (table) => {
+    setEditingTableId(table.id);
+    setEditingTableDraft({
+      name: table.name || '',
+      seats: String(table.seats || 4),
+      shape: table.shape || 'rounded',
+      zoneLabel: table.zoneLabel || '',
+    });
+  };
+
+  const saveEditTable = () => {
+    if (!editingTableId) return;
+    setTables(prev => prev.map(table => table.id === editingTableId ? {
+      ...table,
+      name: editingTableDraft.name.trim() || table.name,
+      seats: parseInt(editingTableDraft.seats, 10) || 4,
+      shape: editingTableDraft.shape || 'rounded',
+      zoneLabel: editingTableDraft.zoneLabel.trim(),
+    } : table));
+    setEditingTableId(null);
+  };
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: '#f9fafb' }} className="animate-fade-in no-scrollbar" onMouseMove={handleCanvasMouseMove} onMouseUp={handleCanvasMouseUp}>
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
@@ -1183,7 +1305,7 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
           <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '20px', color: '#1f2937', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <LayoutGrid size={20} color="#7c3aed" /> New Entity
           </h3>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 0.8fr 0.9fr auto', gap: '12px', alignItems: 'center' }}>
             <input
               type="text"
               placeholder="Table Label (e.g. VIP-1)"
@@ -1199,6 +1321,30 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
               {!newTableType && <option value="" disabled>Select Location</option>}
               {sections.map(sec => <option key={sec} value={sec}>{sec} Area</option>)}
             </select>
+            <input
+              type="number"
+              min="1"
+              value={newTableSeats}
+              onChange={e => setNewTableSeats(e.target.value)}
+              placeholder="Seats"
+              style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '14px', background: '#f8fafc' }}
+            />
+            <select
+              value={newTableShape}
+              onChange={e => setNewTableShape(e.target.value)}
+              style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontWeight: 'bold', fontSize: '14px', color: '#1f2937' }}
+            >
+              <option value="rounded">Rounded</option>
+              <option value="square">Square</option>
+              <option value="circle">Circle</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Zone label"
+              value={newZoneLabel}
+              onChange={e => setNewZoneLabel(e.target.value)}
+              style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '14px', background: '#f8fafc' }}
+            />
             <button onClick={addTable} style={{ background: '#111827', color: 'white', padding: '14px 28px', borderRadius: '12px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>Create Table</button>
           </div>
         </div>
@@ -1237,12 +1383,14 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
                     onMouseDown={(e) => handleTableMouseDown(e, table.id)}
                     style={{
                       position: 'absolute', left: `${table.pos?.x || 0}px`, top: `${table.pos?.y || 0}px`,
-                      width: '100px', height: '100px', background: 'white', borderRadius: 'var(--table-radius)', border: '2px solid var(--primary)',
+                      width: table.shape === 'square' ? '112px' : '100px', height: '100px', background: 'white', borderRadius: table.shape === 'square' ? '18px' : table.shape === 'circle' ? '999px' : '28px', border: '2px solid var(--primary)',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'grab',
                       boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', userSelect: 'none'
                     }}
                   >
                     <div style={{ fontSize: '14px', fontWeight: '900', color: 'var(--primary)' }}>{table.name}</div>
+                    <div style={{ fontSize: '11px', fontWeight: '800', color: '#64748b' }}>{table.seats || 4} seats</div>
+                    {table.zoneLabel ? <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>{table.zoneLabel}</div> : null}
                     <button
                       onMouseDown={e => e.stopPropagation()}
                       onClick={() => removeTable(table.id)}
@@ -1254,12 +1402,19 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
                 ))}
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '16px' }}>
                 {tables.filter(t => t.type === section).map(table => (
-                  <div key={table.id} style={{ background: '#f8fafc', borderRadius: 'var(--table-radius)', padding: '16px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: '900', color: '#1e293b' }}>{table.name}</span>
-                    <button onClick={() => removeTable(table.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}>
-                      <X size={16} />
+                  <div key={table.id} style={{ background: '#f8fafc', borderRadius: '18px', padding: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: '900', color: '#1e293b' }}>{table.name}</span>
+                      <button onClick={() => removeTable(table.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}>
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '700' }}>{table.seats || 4} seats • {table.shape || 'rounded'}</div>
+                    {table.zoneLabel ? <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700' }}>{table.zoneLabel}</div> : null}
+                    <button onClick={() => startEditTable(table)} style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'white', color: '#111827', fontWeight: '900', cursor: 'pointer' }}>
+                      Edit Table
                     </button>
                   </div>
                 ))}
@@ -1267,6 +1422,27 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
             )}
           </div>
         ))}
+        {editingTableId && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+            <div className="animate-fade-in" style={{ background: 'white', padding: '28px', borderRadius: '16px', width: '420px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '900', marginBottom: '18px', color: '#1f2937' }}>Edit Table</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <input value={editingTableDraft.name} onChange={e => setEditingTableDraft(prev => ({ ...prev, name: e.target.value }))} placeholder="Table name" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #d1d5db' }} />
+                <input type="number" min="1" value={editingTableDraft.seats} onChange={e => setEditingTableDraft(prev => ({ ...prev, seats: e.target.value }))} placeholder="Seats" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #d1d5db' }} />
+                <select value={editingTableDraft.shape} onChange={e => setEditingTableDraft(prev => ({ ...prev, shape: e.target.value }))} style={{ padding: '12px', borderRadius: '10px', border: '1px solid #d1d5db' }}>
+                  <option value="rounded">Rounded</option>
+                  <option value="square">Square</option>
+                  <option value="circle">Circle</option>
+                </select>
+                <input value={editingTableDraft.zoneLabel} onChange={e => setEditingTableDraft(prev => ({ ...prev, zoneLabel: e.target.value }))} placeholder="Zone label" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #d1d5db' }} />
+              </div>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                <button onClick={() => setEditingTableId(null)} style={{ flex: 1, padding: '12px', background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
+                <button onClick={saveEditTable} style={{ flex: 1, padding: '12px', background: '#111827', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>Save</button>
+              </div>
+            </div>
+          </div>
+        )}
         {tableToRemove && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
             <div className="animate-fade-in" style={{ background: 'white', padding: '28px', borderRadius: '12px', width: '340px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
@@ -1297,6 +1473,7 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
 /* --- SYSTEM SETTINGS VIEW --- */
 /* --- ADVANCED GLOBAL SETTINGS VIEW --- */
 const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullReset }) => {
+  const [activeTab, setActiveTab] = useState('design');
   const [localSettings, setLocalSettings] = useState(settings);
 
   const handleChange = (e) => {
@@ -1306,163 +1483,119 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
 
   const handleSave = () => {
     onSaveSettings(localSettings);
-    alert('Global Design & System Settings Saved Successfully!');
+    alert('Settings Saved Successfully!');
   };
 
   return (
-    <div className="view-container animate-fade-in no-scrollbar">
-      <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <LayoutGrid size={28} color="var(--primary)" /> Advanced Global Settings
-        </h2>
-
-        <div style={{ background: 'white', padding: '32px', borderRadius: 'var(--radius-md)', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px', color: '#1f2937' }}>
-            <Monitor size={20} color="var(--primary)" /> Color Theme Control
-          </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Primary / Highlight Color</label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input type="color" name="accentColor" value={localSettings.accentColor} onChange={handleChange} style={{ width: '40px', height: '40px', border: 'none', background: 'none', cursor: 'pointer' }} />
-                <input type="text" name="accentColor" value={localSettings.accentColor} onChange={handleChange} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', color: '#111827' }} />
-              </div>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Secondary Color</label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input type="color" name="secondaryColor" value={localSettings.secondaryColor || '#7c3aed'} onChange={handleChange} style={{ width: '40px', height: '40px', border: 'none', background: 'none', cursor: 'pointer' }} />
-                <input type="text" name="secondaryColor" value={localSettings.secondaryColor || '#7c3aed'} onChange={handleChange} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', color: '#111827' }} />
-              </div>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>App Background</label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input type="color" name="bgColor" value={localSettings.bgColor || '#f9fafb'} onChange={handleChange} style={{ width: '40px', height: '40px', border: 'none', background: 'none', cursor: 'pointer' }} />
-                <input type="text" name="bgColor" value={localSettings.bgColor || '#f9fafb'} onChange={handleChange} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', color: '#111827' }} />
-              </div>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Main Text Color</label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input type="color" name="textColor" value={localSettings.textColor || '#1f2937'} onChange={handleChange} style={{ width: '40px', height: '40px', border: 'none', background: 'none', cursor: 'pointer' }} />
-                <input type="text" name="textColor" value={localSettings.textColor || '#1f2937'} onChange={handleChange} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', color: '#111827' }} />
-              </div>
-            </div>
-          </div>
-
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px', marginTop: '16px', display: 'flex', alignItems: 'center', gap: '10px', color: '#1f2937' }}>
-            <LayoutGrid size={20} color="var(--primary)" /> Component & Floor Plan Design
-          </h3>
-          <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Global Corner Styling (Roundness)</label>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              {['0', '4', '8', '12', '24'].map(r => (
-                <button
-                  key={r}
-                  onClick={() => setLocalSettings(prev => ({ ...prev, borderRadius: r }))}
-                  style={{
-                    flex: 1, padding: '10px', borderRadius: `${r}px`, border: `2px solid ${localSettings.borderRadius === r ? localSettings.accentColor : '#e5e7eb'}`,
-                    background: localSettings.borderRadius === r ? `${localSettings.accentColor}10` : 'white',
-                    color: '#111827',
-                    fontSize: '11px', fontWeight: 'bold', cursor: 'pointer'
-                  }}
-                >
-                  {r === '0' ? 'Square' : r === '24' ? 'Pill' : `${r}px`}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div style={{ marginTop: '12px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Table Shape (Floor Plan & Ordering)</label>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              {['square', 'rounded', 'circle'].map(shape => (
-                <button
-                  key={shape}
-                  onClick={() => setLocalSettings(prev => ({ ...prev, tableShape: shape }))}
-                  style={{
-                    flex: 1, padding: '10px', textTransform: 'capitalize',
-                    borderRadius: shape === 'square' ? '4px' : shape === 'circle' ? '50px' : '16px',
-                    border: `2px solid ${localSettings.tableShape === shape ? localSettings.accentColor : '#e5e7eb'}`,
-                    background: localSettings.tableShape === shape ? `${localSettings.accentColor}10` : 'white',
-                    color: '#111827',
-                    fontSize: '11px', fontWeight: 'bold', cursor: 'pointer'
-                  }}
-                >
-                  {shape}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px', marginTop: '16px', display: 'flex', alignItems: 'center', gap: '10px', color: '#1f2937' }}>
-            <Info size={20} color="var(--primary)" /> Typography Settings
-          </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Global Interface Font</label>
-              <select name="globalFont" value={localSettings.globalFont || 'Outfit'} onChange={handleChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white', color: '#111827' }}>
-                <option value="Outfit">Outfit (Default Modern)</option>
-                <option value="Inter">Inter (Clean Tech)</option>
-                <option value="'Roboto', sans-serif">Roboto (Material)</option>
-                <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">System Default</option>
-                <option value="'Courier New', Courier, monospace">Classic Terminal</option>
-              </select>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Base Font Size (px)</label>
-              <input type="number" name="fontBaseSize" value={localSettings.fontBaseSize || '14'} onChange={handleChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #d1d5db', color: '#111827' }} />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Base Font Weight</label>
-              <select name="fontBaseWeight" value={localSettings.fontBaseWeight || 'normal'} onChange={handleChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white', color: '#111827' }}>
-                <option value="300">Light (300)</option>
-                <option value="normal">Regular (400)</option>
-                <option value="500">Medium (500)</option>
-                <option value="bold">Bold (700)</option>
-              </select>
-            </div>
-          </div>
-
-          <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '20px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: 'bold', color: '#1f2937', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Info size={18} color="#64748b" /> Global Logic
-            </h3>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
-              <input type="checkbox" name="autoServiceCharge" checked={localSettings.autoServiceCharge} onChange={handleChange} style={{ width: '20px', height: '20px' }} />
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>Auto-Apply Service Charge</div>
-                <div style={{ fontSize: '12px', color: '#64748b' }}>If enabled, default service charge will be added to every new bill.</div>
-              </div>
-            </label>
-          </div>
-
-          <button onClick={handleSave} style={{ marginTop: '20px', padding: '14px', background: localSettings.accentColor, color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: `0 4px 6px -1px ${localSettings.accentColor}30` }}>
-            Save Comprehensive Interface Settings
+    <div className="view-container animate-fade-in no-scrollbar" style={{ padding: 0 }}>
+      {/* Settings Navigation */}
+      <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', background: 'white', padding: '0 32px' }}>
+        {[
+          { id: 'design', label: 'General Design', icon: <Monitor size={18} /> },
+          { id: 'billing', label: 'Bill Designer', icon: <ReceiptText size={18} /> },
+          { id: 'printer', label: 'Printer Setup', icon: <Printer size={18} /> },
+          { id: 'system', label: 'System & Safety', icon: <Settings2 size={18} /> }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{ 
+              display: 'flex', alignItems: 'center', gap: '8px', padding: '16px 24px', fontSize: '14px', fontWeight: '900', border: 'none', background: 'none', cursor: 'pointer',
+              color: activeTab === tab.id ? localSettings.accentColor : '#64748b',
+              borderBottom: `3px solid ${activeTab === tab.id ? localSettings.accentColor : 'transparent'}`,
+              transition: 'all 0.2s'
+            }}
+          >
+            {tab.icon} {tab.label}
           </button>
+        ))}
+      </div>
 
-          <div style={{ borderTop: '2px solid #fee2e2', marginTop: '40px', paddingTop: '24px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#dc2626', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertTriangle size={20} color="#dc2626" /> Danger Zone: Data Management
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div style={{ padding: '16px', background: '#fff1f2', borderRadius: '12px', border: '1px solid #fecaca' }}>
-                 <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#991b1b', marginBottom: '4px' }}>Clear Analytics & History</div>
-                 <div style={{ fontSize: '11px', color: '#b91c1c', marginBottom: '12px', opacity: 0.8 }}>Wipe all past orders. Active orders will remain.</div>
-                 <button onClick={onClearHistory} style={{ width: '100%', padding: '10px', background: 'white', border: '1px solid #fecaca', color: '#dc2626', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>Clear All Orders</button>
+      <div style={{ padding: '32px' }}>
+        {activeTab === 'design' && (
+          <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px', color: '#1f2937' }}>
+                <Monitor size={20} color="var(--primary)" /> Color Theme Control
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Primary / Highlight Color</label>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input type="color" name="accentColor" value={localSettings.accentColor} onChange={handleChange} style={{ width: '40px', height: '40px', border: 'none', background: 'none', cursor: 'pointer' }} />
+                    <input type="text" name="accentColor" value={localSettings.accentColor} onChange={handleChange} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', color: '#111827' }} />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Secondary Color</label>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input type="color" name="secondaryColor" value={localSettings.secondaryColor || '#7c3aed'} onChange={handleChange} style={{ width: '40px', height: '40px', border: 'none', background: 'none', cursor: 'pointer' }} />
+                    <input type="text" name="secondaryColor" value={localSettings.secondaryColor || '#7c3aed'} onChange={handleChange} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', color: '#111827' }} />
+                  </div>
+                </div>
               </div>
-              <div style={{ padding: '16px', background: '#7f1d1d', borderRadius: '12px', color: 'white' }}>
-                 <div style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>Full Factory Reset</div>
-                 <div style={{ fontSize: '11px', marginBottom: '12px', opacity: 0.8 }}>Delete EVERYTHING (Settings, Menu, Orders).</div>
-                 <button onClick={onFullReset} style={{ width: '100%', padding: '10px', background: '#dc2626', border: 'none', color: 'white', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>Reset System</button>
+
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px', color: '#1f2937' }}>
+                <LayoutGrid size={20} color="var(--primary)" /> Floor Plan & Shapes
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Corner Styling</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {['0', '8', '24'].map(r => (
+                      <button key={r} onClick={() => setLocalSettings(prev => ({ ...prev, borderRadius: r }))} style={{ flex: 1, padding: '10px', borderRadius: `${r}px`, border: `2px solid ${localSettings.borderRadius === r ? localSettings.accentColor : '#e5e7eb'}`, background: localSettings.borderRadius === r ? `${localSettings.accentColor}10` : 'white', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>{r === '0' ? 'Square' : r === '24' ? 'Pill' : `${r}px`}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Table Geometry</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {['square', 'circle'].map(shape => (
+                      <button key={shape} onClick={() => setLocalSettings(prev => ({ ...prev, tableShape: shape }))} style={{ flex: 1, padding: '10px', borderRadius: shape === 'circle' ? '50px' : '4px', border: `2px solid ${localSettings.tableShape === shape ? localSettings.accentColor : '#e5e7eb'}`, background: localSettings.tableShape === shape ? `${localSettings.accentColor}10` : 'white', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', textTransform: 'capitalize' }}>{shape}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <button onClick={handleSave} style={{ marginTop: '20px', padding: '14px', background: localSettings.accentColor, color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Save Interface Customization</button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'billing' && (
+          <BillDesigner settings={localSettings} onSaveSettings={(s) => { setLocalSettings(s); onSaveSettings(s); }} />
+        )}
+
+        {activeTab === 'printer' && (
+          <PrinterSetup settings={localSettings} />
+        )}
+
+        {activeTab === 'system' && (
+          <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertTriangle size={20} /> Danger Zone: Data Management
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div style={{ padding: '16px', background: '#fff1f2', borderRadius: '12px', border: '1px solid #fecaca' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#991b1b', marginBottom: '4px' }}>Clear Analytics & History</div>
+                  <div style={{ fontSize: '11px', color: '#b91c1c', marginBottom: '12px', opacity: 0.8 }}>Wipe all past orders. Active orders will remain.</div>
+                  <button onClick={onClearHistory} style={{ width: '100%', padding: '10px', background: 'white', border: '1px solid #fecaca', color: '#dc2626', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>Clear All Orders</button>
+                </div>
+                <div style={{ padding: '16px', background: '#fef2f2', border: '2px solid #ef4444', borderRadius: '12px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#991b1b', marginBottom: '4px' }}>WIPE ENTIRE SYSTEM</div>
+                  <div style={{ fontSize: '11px', color: '#b91c1c', marginBottom: '12px', opacity: 0.8 }}>Factory reset everything! This cannot be undone.</div>
+                  <button onClick={onFullReset} style={{ width: '100%', padding: '10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>ERASE ALL DATA</button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
 };
+
 
 /* --- SYSTEM SETTINGS VIEW --- */
 const PrinterSettingsView = ({ settings, onSaveSettings, categories }) => {
@@ -1586,10 +1719,10 @@ const PrinterSettingsView = ({ settings, onSaveSettings, categories }) => {
   );
 };
 
-const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTable, settings, onQuickSettle, onQuickPrint, globalSearch }) => {
+const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTable, settings, onQuickSettle, onQuickPrint, globalSearch, onViewChange, onOpenFloorDesigner }) => {
   const [tableToClear, setTableToClear] = useState(null);
-  const [viewMode, setViewMode] = useState('map'); // 'grid' or 'map'
-  const getTableTotal = (order) => order.reduce((acc, item) => acc + (item.price * item.qty), 0);
+  const [viewMode, setViewMode] = useState('map');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const filterMatch = (t) => {
     if (!globalSearch) return true;
@@ -1598,48 +1731,121 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
     return name.includes(search) || String(t.id).includes(search) || (t.customerName || '').toLowerCase().includes(search) || (t.phone || '').includes(search);
   };
 
-  const filteredTables = tables.filter(filterMatch);
+  const matchesStatus = (table) => {
+    const minutes = getMinutesElapsed(table.createdAt);
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'vacant') return table.status === 'blank';
+    if (statusFilter === 'occupied') return table.status !== 'blank';
+    if (statusFilter === 'printed') return table.status === 'printed';
+    if (statusFilter === 'delayed') return table.status !== 'blank' && minutes >= 45;
+    return true;
+  };
+
+  const filteredTables = tables.filter(table => filterMatch(table) && matchesStatus(table));
+  const occupiedTables = tables.filter(table => table.status !== 'blank');
+  const printedTables = tables.filter(table => table.status === 'printed');
+  const delayedTables = tables.filter(table => table.status !== 'blank' && getMinutesElapsed(table.createdAt) >= 45);
+  const occupancyRate = tables.length > 0 ? Math.round((occupiedTables.length / tables.length) * 100) : 0;
+  const openRevenue = occupiedTables.reduce((acc, table) => acc + getOrderTotal(table.order), 0);
+  const avgOpenTicket = occupiedTables.length > 0 ? openRevenue / occupiedTables.length : 0;
+  const statusFilters = [
+    { id: 'all', label: 'All tables' },
+    { id: 'occupied', label: 'Occupied' },
+    { id: 'printed', label: 'Ready to bill' },
+    { id: 'delayed', label: 'Delayed' },
+    { id: 'vacant', label: 'Vacant' },
+  ];
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '32px', background: '#fcfcfd' }} className="animate-fade-in no-scrollbar">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+    <div style={{ flex: 1, overflowY: 'auto', padding: '28px', background: 'linear-gradient(180deg, #f8fafc 0%, #fff7ed 100%)' }} className="animate-fade-in no-scrollbar">
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '14px', marginBottom: '24px' }}>
+        <StatCard label="Occupancy" value={`${occupancyRate}%`} icon={LayoutGrid} color="#f97316" subtext={`${occupiedTables.length}/${tables.length} tables active`} />
+        <StatCard label="Open Tickets" value={formatCurrency(openRevenue)} icon={CreditCard} color="#a3112a" subtext={`Avg open bill ${formatCurrency(avgOpenTicket)}`} />
+        <StatCard label="Ready To Settle" value={printedTables.length} icon={CheckSquare} color="#10b981" subtext="Printed bills awaiting payment" />
+        <StatCard label="Delayed Tables" value={delayedTables.length} icon={AlertTriangle} color="#f59e0b" subtext="Orders older than 45 minutes" />
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', gap: '16px', flexWrap: 'wrap' }}>
         <div>
-          <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#111827', letterSpacing: '-0.5px' }}>Spatial Tables</h2>
-          <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-            {['map', 'grid'].map(m => (
+          <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#111827', letterSpacing: '-0.6px' }}>Service Floor</h2>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '12px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '6px', marginRight: '16px', borderRight: '1px solid #e2e8f0', paddingRight: '16px' }}>
+              {['map', 'grid'].map(mode => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    border: '1px solid',
+                    borderColor: viewMode === mode ? '#94161c' : '#e2e8f0',
+                    cursor: 'pointer',
+                    background: viewMode === mode ? '#fff1f2' : 'white',
+                    color: viewMode === mode ? '#94161c' : '#64748b'
+                  }}
+                >
+                  {mode === 'map' ? 'Map View' : 'Grid'}
+                </button>
+              ))}
+            </div>
+
+            {statusFilters.map(filter => (
               <button
-                key={m}
-                onClick={() => setViewMode(m)}
+                key={filter.id}
+                onClick={() => setStatusFilter(filter.id)}
                 style={{
-                  padding: '8px 16px', borderRadius: '12px', fontSize: '11px', fontWeight: '900', border: 'none', cursor: 'pointer',
-                  background: viewMode === m ? 'black' : '#f1f5f9', color: viewMode === m ? 'white' : '#64748b'
+                  padding: '10px 14px',
+                  borderRadius: '999px',
+                  fontSize: '12px',
+                  fontWeight: '900',
+                  border: statusFilter === filter.id ? '1px solid #fecaca' : '1px solid #e2e8f0',
+                  cursor: 'pointer',
+                  background: statusFilter === filter.id ? '#fff1f2' : 'white',
+                  color: statusFilter === filter.id ? '#9f1239' : '#64748b'
                 }}
               >
-                {m.toUpperCase()} VIEW
+                {filter.label}
               </button>
             ))}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '16px', fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '3px' }}></div> VACANT</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', background: 'var(--primary)', borderRadius: '3px' }}></div> RUNNING</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', background: '#10b981', borderRadius: '3px' }}></div> PRINTED</div>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={onOpenFloorDesigner}
+            style={{ padding: '10px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', background: 'white', color: '#111827', fontSize: '12px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <LayoutGrid size={16} /> Edit Floor Plan
+          </button>
+          <div style={{ display: 'flex', gap: '16px', fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '3px' }}></div> Vacant</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', background: '#fed7aa', borderRadius: '3px' }}></div> Running</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', background: '#bbf7d0', borderRadius: '3px' }}></div> Printed</div>
+          </div>
         </div>
       </div>
 
       {(floorPlanSections || []).map(section => (
         <div key={section} style={{ marginBottom: '48px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '24px', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9' }}>{section} SECTION</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '2px' }}>{section} section</h3>
+            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '800' }}>
+              {filteredTables.filter(table => table.type === section).length} visible tables
+            </div>
+          </div>
 
           {viewMode === 'map' ? (
             <div style={{
-              position: 'relative', height: '550px', background: 'white', borderRadius: '32px', border: '1px solid #f1f5f9', overflow: 'auto',
-              backgroundImage: 'radial-gradient(#f1f5f9 1px, transparent 1px)', backgroundSize: '30px 30px'
+              position: 'relative', height: '550px', background: 'rgba(255,255,255,0.82)', borderRadius: '32px', border: '1px solid #f1f5f9', overflow: 'auto',
+              backgroundImage: 'radial-gradient(#e2e8f0 1px, transparent 1px)', backgroundSize: '28px 28px', boxShadow: '0 20px 40px rgba(15, 23, 42, 0.08)'
             }}>
               {filteredTables.filter(t => t.type === section).map(table => {
-                const tableTotal = getTableTotal(table.order);
+                const tableTotal = getOrderTotal(table.order);
                 const isRunning = table.status !== 'blank';
                 const isPrinted = table.status === 'printed';
+                const minutes = getMinutesElapsed(table.createdAt);
 
                 return (
                   <div
@@ -1649,55 +1855,57 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
                       position: 'absolute',
                       left: `${table.pos?.x || 0}px`,
                       top: `${table.pos?.y || 0}px`,
-                      width: '120px',
-                      height: '120px',
-                      background: isPrinted ? '#f0fdf4' : isRunning ? 'var(--primary)10' : 'white',
+                      width: '155px',
+                      minHeight: '138px',
+                      background: isPrinted ? '#f0fdf4' : isRunning ? '#fff7ed' : 'white',
                       borderRadius: 'var(--table-radius)',
-                      border: `2px solid ${isPrinted ? '#10b981' : isRunning ? 'var(--primary)' : '#f1f5f9'}`,
+                      border: `2px solid ${isPrinted ? '#10b981' : isRunning ? '#f97316' : '#f1f5f9'}`,
                       display: 'flex',
                       flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '12px',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      padding: '14px',
                       cursor: 'pointer',
-                      boxShadow: isRunning ? '0 10px 15px -3px rgba(124, 58, 237, 0.15)' : '0 4px 6px -1px rgba(0,0,0,0.02)',
-                      transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                      boxShadow: isRunning ? '0 20px 28px rgba(249, 115, 22, 0.15)' : '0 4px 6px -1px rgba(0,0,0,0.02)',
+                      transition: 'all 0.25s ease'
                     }}
                     onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05) translateY(-5px)'; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1) translateY(0)'; }}
                   >
-                    <div style={{ fontSize: '14px', fontWeight: '900', color: isRunning ? '#1f2937' : '#94a3b8' }}>{table.name}</div>
-                    {tableTotal > 0 && (
-                      <div style={{ marginTop: '8px', fontSize: '14px', fontWeight: '950', color: isPrinted ? '#10b981' : 'var(--primary)' }}>₹{tableTotal}</div>
-                    )}
+                    <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '15px', fontWeight: '900', color: '#1f2937' }}>{table.name}</div>
+                        <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase' }}>{isPrinted ? 'Ready to bill' : isRunning ? 'Running' : 'Vacant'}</div>
+                      </div>
+                      {isRunning ? <TimeElapsed createdAt={table.createdAt} /> : null}
+                    </div>
+
+                    <div style={{ width: '100%' }}>
+                      <div style={{ fontSize: '20px', fontWeight: '950', color: isPrinted ? '#059669' : isRunning ? '#c2410c' : '#94a3b8', marginBottom: '4px' }}>{tableTotal > 0 ? formatCurrency(tableTotal) : '--'}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700' }}>{table.order?.length || 0} items{minutes >= 45 ? ' • Late' : ''}</div>
+                    </div>
+
                     {isRunning && (
-                      <>
-                        <div style={{ position: 'absolute', top: '8px', left: '8px' }}>
-                          <TimeElapsed createdAt={table.createdAt} />
-                        </div>
-                        <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', gap: '4px' }}>
-                          <div title="Print Bill" onClick={(e) => { e.stopPropagation(); onQuickPrint(table); }} style={{ padding: '4px', background: 'white', borderRadius: '4px', cursor: 'pointer', border: '1px solid #e2e8f0' }}>
-                            <Printer size={12} color="#64748b" />
-                          </div>
-                          <div title="Settle Bill" onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} style={{ padding: '4px', background: 'var(--primary)', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>
-                            <CheckSquare size={12} />
-                          </div>
-                        </div>
-                        <div style={{ position: 'absolute', bottom: '12px', right: '12px', display: 'flex', gap: '4px' }}>
-                          <div onClick={(e) => { e.stopPropagation(); setTableToClear(table.id); }} style={{ padding: '6px', background: '#fee2e2', borderRadius: '8px', cursor: 'pointer' }}>
-                            <Trash2 size={12} color="#ef4444" />
-                          </div>
-                        </div>
-                      </>
+                      <div style={{ display: 'flex', gap: '8px', marginTop: 'auto', paddingTop: '8px' }}>
+                        <button title="Print Bill" onClick={(e) => { e.stopPropagation(); onQuickPrint(table); }} style={{ padding: '6px', background: 'white', borderRadius: '6px', cursor: 'pointer', border: '1px solid #e2e8f0', display: 'flex' }}>
+                          <Printer size={14} color="#64748b" />
+                        </button>
+                        <button title="Settle Bill" onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} style={{ padding: '6px', background: '#111827', color: 'white', borderRadius: '6px', cursor: 'pointer', border: 'none', display: 'flex' }}>
+                          <CheckSquare size={14} />
+                        </button>
+                        <button title="Clear Table" onClick={(e) => { e.stopPropagation(); setTableToClear(table.id); }} style={{ padding: '6px', background: '#fef2f2', color: '#ef4444', borderRadius: '6px', cursor: 'pointer', border: '1px solid #fee2e2', display: 'flex' }}>
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     )}
                   </div>
                 );
               })}
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '16px' }}>
               {filteredTables.filter(t => t.type === section).map(table => {
-                const tableTotal = getTableTotal(table.order);
+                const tableTotal = getOrderTotal(table.order);
                 const isRunning = table.status !== 'blank';
                 const isPrinted = table.status === 'printed';
 
@@ -1706,18 +1914,24 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
                     key={table.id}
                     onClick={() => onSelectTable(table)}
                     className={`pp-table-card ${isRunning ? (isPrinted ? 'status-printed' : 'status-running') : 'status-blank'}`}
-                    style={{ height: '110px', padding: '16px', borderRadius: 'var(--table-radius)', border: '1px solid #f1f5f9', position: 'relative' }}
+                    style={{ minHeight: '148px', padding: '18px', borderRadius: '24px', border: '1px solid #f1f5f9', position: 'relative', background: isPrinted ? '#f0fdf4' : isRunning ? '#fff7ed' : 'white' }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div style={{ fontSize: '14px', fontWeight: '900', color: '#4b5563' }}>{table.name}</div>
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: '900', color: '#4b5563' }}>{table.name}</div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>{table.type}</div>
+                      </div>
                       {isRunning && <TimeElapsed createdAt={table.createdAt} />}
                     </div>
-                    {tableTotal > 0 && <div style={{ fontSize: '16px', fontWeight: '950', marginTop: 'auto' }}>₹{tableTotal}</div>}
+                    <div style={{ marginTop: 'auto' }}>
+                      <div style={{ fontSize: '20px', fontWeight: '950', color: isPrinted ? '#059669' : '#111827' }}>{tableTotal > 0 ? formatCurrency(tableTotal) : '--'}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700' }}>{table.order?.length || 0} line items</div>
+                    </div>
                     {isRunning && (
                       <>
-                        <div style={{ position: 'absolute', top: '35px', right: '10px', display: 'flex', gap: '6px' }}>
+                        <div style={{ position: 'absolute', top: '44px', right: '14px', display: 'flex', gap: '6px' }}>
                           <div title="Print Bill" onClick={(e) => { e.stopPropagation(); onQuickPrint(table); }} style={{ padding: '4px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '4px', cursor: 'pointer' }}><Printer size={12} color="#64748b" /></div>
-                          <div title="Settle Bill" onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} style={{ padding: '4px', background: 'var(--primary)', color: 'white', borderRadius: '4px', cursor: 'pointer' }}><CheckSquare size={12} /></div>
+                          <div title="Settle Bill" onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} style={{ padding: '4px', background: '#111827', color: 'white', borderRadius: '4px', cursor: 'pointer' }}><CheckSquare size={12} /></div>
                         </div>
                         <div onClick={(e) => { e.stopPropagation(); setTableToClear(table.id); }} style={{ position: 'absolute', bottom: '10px', right: '10px', padding: '6px', background: '#fee2e2', borderRadius: '8px', cursor: 'pointer' }}>
                           <Trash2 size={12} color="#ef4444" />
@@ -1802,9 +2016,9 @@ const KitchenDisplay = ({ tables, nonTableOrders, onMarkReady }) => {
   );
 };
 
-const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange, onQuickSettle, onQuickPrint, globalSearch }) => {
+const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange, onQuickSettle, onQuickPrint, onClearOrder, globalSearch }) => {
   const [localSearch, setLocalSearch] = useState('');
-  const getOrderTotal = (orderArr) => orderArr.reduce((acc, item) => acc + (item.price * item.qty), 0);
+  const getOrderTotal = (orderArr) => (orderArr || []).reduce((acc, item) => acc + ((item.price || 0) * (item.qty || 0)), 0);
 
   const searchVal = globalSearch || localSearch;
 
@@ -1816,7 +2030,8 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
   );
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: '#f8fafc' }} className="animate-fade-in no-scrollbar">
+    <div style={{ flex: 1, overflowY: 'auto', padding: '28px', background: '#f8fafc' }} className="animate-fade-in no-scrollbar">
+      
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
           <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1e293b' }}>Pickup Orders Dashboard</h2>
@@ -1859,8 +2074,8 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
             <div style={{ color: '#94a3b8', fontSize: '15px', fontWeight: '500' }}>No matching pickup orders found.</div>
           </div>
         )}
-        {[...filteredOrders].reverse().map(order => {
-          const tableTotal = getOrderTotal(order.order);
+        {[...filteredOrders].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)).map(order => {
+          const tableTotal = getOrderTotal(order.order || []);
           let bg = order.type === 'Delivery' ? '#fff1f2' : '#f0f9ff';
           let text = order.type === 'Delivery' ? '#be123c' : '#0369a1';
           let border = order.type === 'Delivery' ? '#ffe4e6' : '#e0f2fe';
@@ -1873,37 +2088,57 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
           return (
             <div
               key={order.id}
-              onClick={() => onSelectOrder(order)}
               style={{
-                background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '20px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', flexDirection: 'column'
+                position: 'relative', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', minHeight: '180px', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', overflow: 'hidden'
               }}
               onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.1)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '12px', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#1e293b' }}>{order.customerName || order.name}</div>
+              {/* Main Clickable Area */}
+              <div 
+                onClick={() => onSelectOrder(order)}
+                style={{ flex: 1, padding: '20px', cursor: 'pointer' }}
+              >
+                <div style={{ paddingRight: '120px' }}>
+                  <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#1e293b', marginBottom: '4px' }}>{order.customerName || order.name}</div>
                   <TimeElapsed createdAt={order.createdAt} />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-                  <div style={{ fontSize: '10px', background: bg, color: text, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold', border: `1px solid ${border}`, textTransform: 'uppercase' }}>{order.type}</div>
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    <div title="Print Bill" onClick={(e) => { e.stopPropagation(); onQuickPrint(order); }} style={{ padding: '6px', background: '#f8fafc', borderRadius: '6px', cursor: 'pointer', border: '1px solid #e2e8f0' }}><Printer size={12} color="#64748b" /></div>
-                    <div title="Settle Bill" onClick={(e) => { e.stopPropagation(); onQuickSettle(order); }} style={{ padding: '6px', background: 'var(--primary)', color: 'white', borderRadius: '6px', cursor: 'pointer' }}><CheckSquare size={12} /></div>
-                  </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '16px', marginTop: '12px' }}>
+                  <Clock size={12} color="#64748b" />
+                  <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>{statusLabel}</span>
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusColor }}></div>
+                </div>
+
+                <div style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <User size={14} color="#94a3b8" /> {order.phone || 'Walk-In'}
+                </div>
+
+                <div style={{ borderTop: '1px solid #f1f5f9', width: '100%', paddingTop: '12px', marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>{(order.order || []).reduce((acc, i) => acc + (i.qty || 0), 0)} Items</div>
+                  <div style={{ fontWeight: '800', fontSize: '16px', color: '#94161c' }}>₹{tableTotal}</div>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '16px', marginTop: '4px' }}>
-                <Clock size={12} color="#64748b" />
-                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>{statusLabel}</span>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusColor }}></div>
-              </div>
-              <div style={{ fontSize: '13px', color: '#475569', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <User size={14} color="#94a3b8" /> {order.phone || 'Walk-In'}
-              </div>
-              <div style={{ borderTop: '1px solid #f1f5f9', width: '100%', paddingTop: '12px', marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '12px', color: '#64748b' }}>{order.order.reduce((acc, i) => acc + i.qty, 0)} Items</div>
-                <div style={{ fontWeight: '800', fontSize: '16px', color: '#94161c' }}>₹{tableTotal}</div>
+
+              {/* Absolute Action Controls (Upper Right) */}
+              <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px' }}>
+                <div style={{ fontSize: '10px', background: bg, color: text, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold', border: `1px solid ${border}`, textTransform: 'uppercase' }}>{order.type}</div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button 
+                    title="Delete" 
+                    onClick={(e) => { e.stopPropagation(); if(confirm(`Wipe order ${order.id}?`)) onClearOrder(order.id); }} 
+                    style={{ padding: '8px', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '8px', cursor: 'pointer', display: 'flex' }}
+                  >
+                    <Trash2 size={16} color="#ef4444" />
+                  </button>
+                  <button 
+                    title="Settle" 
+                    onClick={(e) => { e.stopPropagation(); onQuickSettle(order); }} 
+                    style={{ padding: '8px', background: 'var(--primary)', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'white', display: 'flex' }}
+                  >
+                    <CheckSquare size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           );
@@ -1913,489 +2148,10 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
   );
 };
 
-/* --- DIRECT ESC/POS PRINTING HARDWARE ENGINE --- */
-// Connects bypassing Browser Dialog directly to USB/Serial EPSON/STAR format POS Thermal hardware
-const printPosToSerial = async (orderData, type = 'BILL') => {
-  let seqNumber = 1;
-  try {
-    const key = type === 'BILL' ? 'pos_bill_sequence' : 'pos_kot_sequence';
-    seqNumber = await get(key) || 1;
-    await set(key, seqNumber + 1);
-  } catch (e) { }
-  const formattedSeq = seqNumber.toString().padStart(4, '0');
-
-  let settings = { billHeader: 'TYDE CAFE', billFooter: 'Thank You for Visiting!', categorizedKOT: false, billLayout: 'standard' };
-  try {
-    const rawSettings = await get('pos_printer_settings');
-    if (rawSettings) {
-      settings = rawSettings;
-    }
-  } catch (e) {
-    console.error("Failed to parse printer settings", e);
-  }
-
-  try {
-    if (!('serial' in navigator)) throw new Error('Web Serial API not supported.');
-    const port = await navigator.serial.requestPort();
-    await port.open({ baudRate: 9600 });
-
-    const writer = port.writable.getWriter();
-    const textEncoder = new TextEncoder();
-
-    const init = new Uint8Array([0x1B, 0x40]);
-    const boldOn = new Uint8Array([0x1B, 0x45, 1]);
-    const boldOff = new Uint8Array([0x1B, 0x45, 0]);
-    const centerAlign = new Uint8Array([0x1B, 0x61, 1]);
-    const leftAlign = new Uint8Array([0x1B, 0x61, 0]);
-    const rightAlign = new Uint8Array([0x1B, 0x61, 2]);
-    const cutPaper = new Uint8Array([0x1D, 0x56, 0x41, 0x08]);
-
-    const w = async (bytes) => await writer.write(bytes);
-    const wT = async (text) => await writer.write(textEncoder.encode(text));
-
-    if (type === 'KOT') {
-      let groupsToPrint = [];
-
-      if (settings.printerStations && settings.printerStations.length > 0) {
-        // Station logic
-        const mainItems = [];
-        const stationsMap = {}; // stationName -> items
-
-        orderData.items.forEach(item => {
-          let assignedStation = null;
-          for (const st of settings.printerStations) {
-            if (st.categories.includes(item.cat)) {
-              assignedStation = st.name;
-              break;
-            }
-          }
-
-          if (assignedStation) {
-            if (!stationsMap[assignedStation]) stationsMap[assignedStation] = [];
-            stationsMap[assignedStation].push(item);
-          } else {
-            mainItems.push(item);
-          }
-        });
-
-        // Push separated groups
-        Object.entries(stationsMap).forEach(([stName, items]) => {
-          groupsToPrint.push({ title: `Station: ${stName}`, items });
-        });
-
-        // Push remaining main items on 1 KOT
-        if (mainItems.length > 0) {
-          groupsToPrint.push({ title: 'Main Kitchen', items: mainItems });
-        }
-      } else {
-        // Print all items together on 1 KOT
-        groupsToPrint = [{ title: 'All Items', items: orderData.items }];
-      }
-
-      // Loop through and print each required KOT slip and CUT PAPER between them
-      for (const group of groupsToPrint) {
-        if (group.items.length === 0) continue;
-
-        await w(init);
-        await w(centerAlign);
-
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
-        const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-        await wT(`${dateStr} ${timeStr}\n`);
-
-        await wT(`${settings.billHeader || 'Tyde Cafe'}\n`);
-        await wT(`KOT - #${formattedSeq}\n`);
-        await wT(`${orderData.orderType || 'Dine In'}\n`);
-        await wT(`Table No: ${orderData.tableName}\n`);
-        if (orderData.orderId) await wT(`Order No: ${orderData.orderId}\n`);
-        if (orderData.customerName) await wT(`Customer Name: ${orderData.customerName}\n`);
-        await wT("--------------------------------\n");
-
-        await w(leftAlign);
-        await wT("Item        Special Note   Qty\n");
-        await wT("--------------------------------\n");
-
-        for (const item of group.items) {
-          const nameStr = item.name.substring(0, 11).padEnd(12, ' ');
-          let noteText = item.note ? item.note.substring(0, 14) : '--';
-          const noteStr = noteText.padEnd(15, ' ');
-          const qtyStr = item.qty.toString().padStart(5, ' ');
-          await wT(`${nameStr}${noteStr}${qtyStr}\n`);
-        }
-        await wT("--------------------------------\n");
-        await w(centerAlign);
-        await wT("\n\n\n\n\n");
-
-        // This command physically cuts the paper for the specific slip on modern thermal printers
-        await w(cutPaper);
-      }
-    } else {
-      // Standard Print (Bill or Single KOT)
-      await w(init);
-      await w(centerAlign);
-
-      const now = new Date();
-      const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }).replace(/\//g, '/');
-      const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-
-      if (type === 'BILL') {
-        if (settings.billLayout === 'bold') await w(boldOn);
-        await wT(`${settings.billHeader || 'Tyde Cafe'}\n`);
-        if (settings.billLayout === 'bold') await w(boldOff);
-        await wT("Nerul Ferry Terminal\n");
-        await wT("--------------------------------\n");
-        await w(leftAlign);
-        if (orderData.customerName) {
-          await wT(`Customer: ${orderData.customerName}\n`);
-        }
-        if (orderData.customerPhone) {
-          await wT(`Phone: ${orderData.customerPhone}\n`);
-        }
-        if (orderData.customerName || orderData.customerPhone) {
-          await wT("--------------------------------\n");
-        }
-        const paddedDate = `Date: ${dateStr}`.padEnd(16, ' ');
-        const orderInfoLabel = `${orderData.orderType || 'Dine In'}: ${orderData.tableName || ''}`;
-        await wT(`${paddedDate}${orderInfoLabel}\n`);
-
-        await wT(`${timeStr}\n`);
-        await wT(`Cashier: biller   Bill No.: ${formattedSeq}\n`);
-        await wT("--------------------------------\n");
-        await wT("Item              Qty  Price Amount\n");
-        await wT("--------------------------------\n");
-
-        let totalQty = 0;
-        for (const item of orderData.items) {
-          totalQty += item.qty;
-          const nameStr = item.name.substring(0, 16).padEnd(17, ' ');
-          const qtyStr = item.qty.toString().padStart(3, ' ');
-          const priceStr = item.price.toFixed(2).padStart(6, ' ');
-          const amtStr = (item.price * item.qty).toFixed(2).padStart(7, ' ');
-          await wT(`${nameStr}${qtyStr} ${priceStr} ${amtStr}\n`);
-        }
-        await wT("--------------------------------\n");
-        await w(rightAlign);
-
-        const subtotalStr = (orderData.subtotal || 0).toFixed(2).padStart(8, ' ');
-        await wT(` Total Qty: ${totalQty.toString().padEnd(3, ' ')}   Sub   ${subtotalStr}\n`);
-        await wT(`                  Total          \n`);
-
-        if (orderData.serviceCharge > 0) {
-          const serviceChargeStr = (orderData.serviceCharge || 0).toFixed(2).padStart(8, ' ');
-          await wT(` Service Charge          ${serviceChargeStr}\n`);
-          await wT(`     (Optional)                  \n`);
-        }
-
-        await wT("--------------------------------\n");
-
-        const roundOffStr = (orderData.roundOff > 0 ? '+' : '') + (orderData.roundOff || 0).toFixed(2).padStart(4, ' ');
-        await wT(`              Round off     ${roundOffStr}\n`);
-
-        await w(boldOn);
-        const gTotalStr = (orderData.grandTotal || 0).toFixed(2).padStart(8, ' ');
-        await wT(`      Grand Total     Rs.${gTotalStr}\n`);
-        await w(boldOff);
-        await wT("--------------------------------\n");
-        await w(centerAlign);
-        await wT(`   ${settings.billFooter || 'Sea you soon -- under the moon'} \n`);
-
-      } else {
-        // --- KOT PRINTING ---
-        if (settings.billLayout === 'bold') await w(boldOn);
-        await wT(`${dateStr} ${timeStr}\n`);
-
-        const kotNo = Math.floor(1 + Math.random() * 99);
-        await wT(`KOT - ${kotNo}\n`);
-
-        await wT(`${orderData.orderType || 'Dine In'}\n`);
-        if (orderData.isReprint) await wT(`*** DUPLICATE KOT ***\n`);
-        if (orderData.tableName) await wT(`Table: ${orderData.tableName}\n`);
-        if (orderData.orderId) await wT(`Order#: ${orderData.orderId}\n`);
-        if (orderData.customerName) await wT(`Customer: ${orderData.customerName}\n`);
-        if (settings.billLayout === 'bold') await w(boldOff);
-
-        if (settings.billLayout !== 'minimal') {
-          await wT("--------------------------------\n");
-        } else {
-          await wT("\n");
-        }
-
-        await w(leftAlign);
-
-        if (settings.billLayout === 'compact' || settings.billLayout === 'minimal') {
-          if (settings.billLayout !== 'minimal') await wT("Item           Qty\n--------------------------------\n");
-          for (const item of orderData.items) {
-            const nameStr = item.name.substring(0, 15).padEnd(16, ' ');
-            await wT(`${nameStr}${item.qty}\n`);
-          }
-        } else if (settings.billLayout === 'modern') {
-          await wT("Qty   Item\n--------------------------------\n");
-          for (const item of orderData.items) {
-            const qtyStr = item.qty.toString().padEnd(6, ' ');
-            const nameStr = item.name.substring(0, 25);
-            await wT(`${qtyStr}${nameStr}\n`);
-          }
-        } else if (settings.billLayout === 'bold') {
-          await w(boldOn);
-          await wT("ITEM                  QTY\n================================\n");
-          for (const item of orderData.items) {
-            const nameStr = item.name.substring(0, 20).padEnd(22, ' ');
-            const qtyStr = item.qty.toString();
-            await wT(`${nameStr}${qtyStr}\n`);
-          }
-          await w(boldOff);
-          await wT("================================\n");
-        } else {
-          // standard layout matched perfectly to user provided image
-          await wT("Item        Special Note   Qty\n");
-          await wT("--------------------------------\n");
-          for (const item of orderData.items) {
-            const nameStr = item.name.substring(0, 11).padEnd(12, ' ');
-            let noteText = item.note ? item.note.substring(0, 14) : '--';
-            const noteStr = noteText.padEnd(15, ' ');
-            const qtyStr = item.qty.toString().padStart(5, ' ');
-            await wT(`${nameStr}${noteStr}${qtyStr}\n`);
-          }
-        }
-
-        if (settings.billLayout !== 'minimal' && settings.billLayout !== 'bold') {
-          await wT("--------------------------------\n");
-        }
-      }
-
-      // Only printing KOT layout per user request (no grand total or pricing footer)
-
-      await wT("\n\n\n\n\n");
-      await w(cutPaper);
-    }
-
-    writer.releaseLock();
-    await port.close();
-  } catch (error) {
-    console.warn("Direct Printing Hardware Handshake Failed. Emulating instead.", error);
-
-    // Fallback: Generate a simplified HTML representation for the browser print queue
-    // tailored to 80mm thermal paper widths
-    let printContent = `
-      <div style="width: 80mm; font-family: ${settings.printFontFamily || 'Helvetica, Arial, sans-serif'}; font-size: ${settings.printFontSize || '13'}px; font-weight: ${settings.printFontWeight || 'normal'}; color: #000; background: white; margin: 0 auto;">
-        `;
-
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
-    const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-
-    printContent += `<div style="text-align: center;">`;
-
-    if (type === 'BILL') {
-      const totalQty = orderData.items.reduce((acc, item) => acc + item.qty, 0);
-
-      printContent += `
-          <h2 style="font-size: 18px; font-weight: bold; margin: 0 0 5px 0;">${settings.billHeader || 'Tyde Cafe'}</h2>
-          <div style="font-size: 14px; margin-bottom: 10px;">Nerul Ferry Terminal</div>
-
-          <div style="border-top: 1px solid black; margin: 8px 0;"></div>
-          <div style="text-align: left; font-size: 14px;">
-            ${(orderData.customerName && orderData.customerName !== 'Walk-In') ? `<div style="font-weight: bold;">Customer: ${orderData.customerName}</div>` : ''}
-            ${orderData.customerPhone ? `<div>Phone: ${orderData.customerPhone}</div>` : ''}
-            ${!(orderData.customerName && orderData.customerName !== 'Walk-In') && !orderData.customerPhone ? '<div>Customer: Walk-In</div>' : ''}
-          </div>
-          <div style="border-top: 1px solid black; margin: 8px 0;"></div>
-
-          <div style="display: flex; justify-content: space-between; text-align: left; font-size: 14px;">
-            <div style="flex: 1.2;">
-              <div>Date: ${dateStr}</div>
-              <div>${timeStr}</div>
-              <div style="margin-top: 2px;">Cashier: biller</div>
-            </div>
-            <div style="flex: 1;">
-              <div style="font-weight: bold;">${orderData.orderType || 'Dine In'}: ${orderData.tableName || 'B4'}</div>
-              <div style="margin-top: 18px;">Bill No.: ${formattedSeq}</div>
-            </div>
-          </div>
-
-          <div style="border-top: 1px solid black; margin: 8px 0;"></div>
-
-          <table style="width: 100%; text-align: left; font-size: 13px; border-collapse: collapse;">
-            <tr>
-              <th style="font-weight: normal; padding-bottom: 4px;">Item</th>
-              <th style="font-weight: normal; text-align: right; padding-bottom: 4px;">Qty.</th>
-              <th style="font-weight: normal; text-align: right; padding-bottom: 4px;">Price</th>
-              <th style="font-weight: normal; text-align: right; padding-bottom: 4px;">Amount</th>
-            </tr>
-            <tr><td colspan="4" style="border-top: 1px solid black; margin: 8px 0;"></td></tr>
-            `;
-      for (let item of orderData.items) {
-        printContent += `<tr>
-             <td style="padding-top: 4px;">${item.name}</td>
-             <td style="text-align: right; padding-top: 4px;">${item.qty}</td>
-             <td style="text-align: right; padding-top: 4px;">${item.price.toFixed(2)}</td>
-             <td style="text-align: right; padding-top: 4px;">${(item.price * item.qty).toFixed(2)}</td>
-           </tr>`;
-      }
-      printContent += `
-          </table>
-
-          <div style="border-top: 1px solid black; margin: 8px 0;"></div>
-
-          <div style="display: flex; font-size: 13px; text-align: right;">
-            <div style="flex: 3; padding-right: 15px;">
-              <div style="margin-bottom: 15px;">Total Qty: ${totalQty}</div>
-              ${orderData.serviceCharge > 0 ? `
-              <div>Service Charge</div>
-              <div>(Optional)</div>
-              ` : ''}
-            </div>
-            <div style="flex: 2; display: flex;">
-              <div style="flex: 1; text-align: left;">
-                <div>Sub</div>
-                <div>Total</div>
-              </div>
-              <div style="flex: 1.5; text-align: right;">
-                <div style="margin-bottom: 15px;"><br>${(orderData.subtotal || 0).toFixed(2)}</div>
-                ${orderData.serviceCharge > 0 ? `
-                 <div>${(orderData.serviceCharge || 0).toFixed(2)}</div>
-                 ` : ''}
-              </div>
-            </div>
-          </div>
-
-          <div style="border-top: 1px solid black; margin: 8px 0;"></div>
-
-          <div style="display: flex; justify-content: flex-end; font-size: 12px; margin-bottom: 4px;">
-            <div style="margin-right: 15px;">Round off</div>
-            <div>${orderData.roundOff > 0 ? '+' : ''}${(orderData.roundOff || 0).toFixed(2)}</div>
-          </div>
-
-          <div style="display: flex; justify-content: flex-end; align-items: center;">
-            <div style="font-size: 15px; font-weight: bold; margin-right: 15px;">Grand Total</div>
-            <div style="font-size: 16px; font-weight: bold;">₹${(orderData.grandTotal || 0).toFixed(2)}</div>
-          </div>
-
-          <div style="border-top: 1px solid black; margin: 8px 0;"></div>
-
-          <div style="font-size: 13px; margin-top: 4px;">${settings.billFooter || 'Sea you soon &mdash; under the moon'}</div>
-          `;
-
-    } else { // KOT
-      let groupsToPrint = [];
-
-      if (settings.printerStations && settings.printerStations.length > 0) {
-        // Station logic
-        const mainItems = [];
-        const stationsMap = {}; // stationName -> items
-
-        orderData.items.forEach(item => {
-          let assignedStation = null;
-          for (const st of settings.printerStations) {
-            if (st.categories.includes(item.cat)) {
-              assignedStation = st.name;
-              break;
-            }
-          }
-
-          if (assignedStation) {
-            if (!stationsMap[assignedStation]) stationsMap[assignedStation] = [];
-            stationsMap[assignedStation].push(item);
-          } else {
-            mainItems.push(item);
-          }
-        });
-
-        // Push separated groups
-        Object.entries(stationsMap).forEach(([stName, items]) => {
-          groupsToPrint.push({ title: `Station: ${stName}`, items });
-        });
-
-        if (mainItems.length > 0) {
-          groupsToPrint.push({ title: 'Main Kitchen', items: mainItems });
-        }
-      } else {
-        groupsToPrint = [{ title: 'All Items', items: orderData.items }];
-      }
-
-      for (let i = 0; i < groupsToPrint.length; i++) {
-        const group = groupsToPrint[i];
-        if (group.items.length === 0) continue;
-
-        printContent += `
-          <div style="${i < groupsToPrint.length - 1 ? 'page-break-after: always; margin-bottom: 20px;' : ''}">
-            <div style="font-size: 14px; font-weight: bold;">${dateStr} ${timeStr}</div>
-            <h2 style="margin: 5px 0; font-size: 22px; font-weight: 900;">KOT - ${formattedSeq}</h2>
-            <div style="font-size: 16px; font-weight: bold;">${orderData.orderType || 'Dine In'} ${orderData.isReprint ? '(REPRINT)' : ''}</div>
-            ${orderData.tableName ? `<div style="font-size: 16px; font-weight: bold;">Table: ${orderData.tableName}</div>` : ''}
-            ${orderData.orderId ? `<div style="font-size: 16px; font-weight: bold;">Order No: ${orderData.orderId}</div>` : ''}
-            ${orderData.customerName ? `<div style="font-size: 16px; font-weight: bold;">Customer: ${orderData.customerName}</div>` : ''}
-            <div>--------------------------------</div>
-            <table style="width: 100%; text-align: left; font-size: 16px; font-weight: bold;">
-              <tr>
-                <th style="width: 70%">Item</th>
-                <th style="text-align: right;">Qty</th>
-              </tr>
-              <tr><td colspan="2">--------------------------------</td></tr>
-              `;
-        for (let item of group.items) {
-          printContent += `<tr>
-               <td style="padding-top: 6px;">
-                <div>${item.name}</div>
-                ${item.note ? `<div style="font-size: 12px; font-style: italic; color: #333;">*${item.note}</div>` : ''}
-               </td>
-               <td style="text-align: right; padding-top: 6px;">${item.qty}</td>
-             </tr>`;
-        }
-        printContent += `
-            </table>
-            <div>--------------------------------</div>
-          </div>
-          `;
-      }
-    }
-
-    printContent += `</div></div>`;
-
-    // Create iframe to isolate print styles
-    const printFrame = document.createElement('iframe');
-    printFrame.style.position = 'fixed';
-    printFrame.style.right = '0';
-    printFrame.style.bottom = '0';
-    printFrame.style.width = '0';
-    printFrame.style.height = '0';
-    printFrame.style.border = '0';
-
-    document.body.appendChild(printFrame);
-
-    const frameDoc = printFrame.contentWindow.document;
-    frameDoc.open();
-    frameDoc.write(`
-      <html>
-        <head>
-          <style>
-            @page {margin: 0; }
-            body {margin: 0; padding: 4mm; }
-          </style>
-        </head>
-        <body>
-          ${printContent}
-        </body>
-      </html>
-      `);
-    frameDoc.close();
-
-    // Focus and print the iframe
-    printFrame.contentWindow.focus();
-    printFrame.contentWindow.print();
-
-    // Cleanup
-    setTimeout(() => {
-      document.body.removeChild(printFrame);
-    }, 1000);
-  }
-};
-
 
 const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, onSaveOrder, onSettleTable, onChangeTable, MENU_ITEMS, CATEGORIES, customers, settings }) => {
   const [cart, setCart] = useState(initialOrder || []);
-  const [activeCat, setActiveCat] = useState("Quick Snack's");
+  const [activeCat, setActiveCat] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const isPickup = table?.type === 'Takeaway' || table?.type === 'Delivery';
   const [orderNote, setOrderNote] = useState(table?.note || '');
@@ -2438,6 +2194,15 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   const [discountAuth, setDiscountAuth] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [isPaid, setIsPaid] = useState(false);
+
+  useEffect(() => {
+    setCart(initialOrder || []);
+    setOrderNote(table?.note || '');
+    setCustomerPhone(table?.phone || '');
+    setCustomerName(table?.customerName || '');
+    setRedeemedPoints(0);
+    setApplyServiceCharge(table?.type === 'Takeaway' || table?.type === 'Delivery' ? false : (settings?.autoServiceCharge ?? true));
+  }, [initialOrder, table?.id, table?.note, table?.phone, table?.customerName, table?.type, settings?.autoServiceCharge]);
 
   // Calculations
   const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
@@ -2599,22 +2364,35 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
     }
   };
 
-  const filteredItems = MENU_ITEMS.filter(item =>
-    (searchQuery.trim() !== '' || activeCat === 'All' || item.cat === activeCat) &&
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const availableCategories = ['All', ...CATEGORIES.filter((cat, index) => CATEGORIES.indexOf(cat) === index)];
+  const filteredItems = MENU_ITEMS
+    .filter(item =>
+      (activeCat === 'All' || item.cat === activeCat) &&
+      item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (a.inStock === b.inStock) return a.name.localeCompare(b.name);
+      return a.inStock ? -1 : 1;
+    });
 
   return (
-    <div className="animate-fade-in" style={{ flex: 1, display: 'flex', background: '#f3f4f6', position: 'relative' }}>
+    <div className="animate-fade-in" style={{ flex: 1, display: 'flex', background: '#f3f4f6', position: 'relative', height: '100%', overflow: 'hidden' }}>
 
       {/* Category Sidebar */}
-      <div className="menu-sidebar no-print">
-        {CATEGORIES.map(cat => (
+      <div className="no-print" style={{ width: '180px', background: 'white', display: 'flex', flexDirection: 'column', overflowY: 'auto', borderRight: '1px solid #e2e8f0', zIndex: 10 }}>
+        <div style={{ padding: '20px 16px', fontSize: '11px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Menu</div>
+        {availableCategories.map(cat => (
           <button
             key={cat}
-            className={`menu-cat-btn ${activeCat === cat ? 'active' : ''}`}
             onClick={() => setActiveCat(cat)}
-            style={{ fontWeight: activeCat === cat ? '700' : '500' }}
+            style={{ 
+              padding: '16px 20px', border: 'none', background: 'transparent', textAlign: 'left', fontSize: '14px', 
+              fontWeight: activeCat === cat ? '800' : '500', 
+              color: activeCat === cat ? '#94161c' : '#475569',
+              borderLeft: `4px solid ${activeCat === cat ? '#94161c' : 'transparent'}`,
+              backgroundColor: activeCat === cat ? '#fff1f2' : 'transparent',
+              cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}
           >
             {cat}
           </button>
@@ -2622,21 +2400,22 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       </div>
 
       {/* Main Item Grid Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid #e5e7eb' }}>
-        <div style={{ padding: '8px 12px', background: 'white', borderBottom: '1px solid #e5e7eb' }} className="no-print">
-          <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', padding: '6px 12px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Search size={14} color="#6b7280" />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid #e5e7eb', background: '#f8fafc' }}>
+        <div style={{ padding: '16px 24px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} className="no-print">
+          <div style={{ fontWeight: '800', fontSize: '18px', color: '#1e293b' }}>{activeCat}</div>
+          <div style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', padding: '10px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px', width: '300px' }}>
+            <Search size={16} color="#64748b" />
             <input
               type="text"
-              placeholder="Search item"
+              placeholder="Search anything..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ background: 'transparent', border: 'none', outline: 'none', width: '100%', fontSize: '13px' }}
+              style={{ background: 'transparent', border: 'none', outline: 'none', width: '100%', fontSize: '14px', color: '#1e293b' }}
             />
           </div>
         </div>
 
-        <div className="items-grid no-scrollbar" style={{ overflowY: 'auto', flex: 1, background: '#f3f4f6' }}>
+        <div className="items-grid no-scrollbar" style={{ overflowY: 'auto', flex: 1, padding: '24px', alignContent: 'flex-start' }}>
           {filteredItems.map(item => {
             const isRetail = item.type === 'retail';
             let liveStock = null;
@@ -2658,17 +2437,26 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                 }}
                 style={{
                   background: 'white',
+                  borderRadius: '16px',
+                  border: '1px solid #e2e8f0',
+                  padding: '16px',
                   opacity: isAvailable ? 1 : 0.5,
-                  cursor: isAvailable ? 'pointer' : 'not-allowed'
+                  cursor: isAvailable ? 'pointer' : 'not-allowed',
+                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)',
+                  display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                  height: '140px',
+                  transition: 'transform 0.1s, box-shadow 0.1s'
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.05)'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.02)'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
               >
-                <div style={{ fontSize: '12px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
-                  {item.name} {item.modifiers && <span style={{ color: '#94161c', fontSize: '10px' }}>*</span>}
-                  {isRetail && <span style={{ marginLeft: '6px', background: '#3b82f6', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '9px' }}>Stock: {liveStock}</span>}
+                <div style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b', marginBottom: '8px', lineHeight: '1.4' }}>
+                  {item.name} {item.modifiers && <span style={{ color: '#94161c', fontSize: '12px', marginLeft: '4px' }}>*</span>}
+                  {isRetail && <div style={{ marginTop: '6px', display: 'inline-block', background: '#f0f9ff', color: '#0284c7', padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '800' }}>Stock: {liveStock}</div>}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 'bold' }}>₹{item.price}</div>
-                  {!isAvailable && <div style={{ fontSize: '10px', color: 'red', fontWeight: 'bold' }}>Out of Stock</div>}
+                  <div style={{ fontSize: '15px', fontWeight: '900', color: '#0f172a' }}>₹{item.price}</div>
+                  {!isAvailable && <div style={{ fontSize: '10px', color: '#ef4444', fontWeight: '800', background: '#fef2f2', padding: '2px 6px', borderRadius: '4px' }}>Sold Out</div>}
                 </div>
               </div>
             );
@@ -2680,7 +2468,12 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       <div className="billing-panel no-print">
         <div style={{ background: '#94161c', color: 'white', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{table?.name || 'New Order'}</div>
-          <button onClick={onBack} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>Close</button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {(String(table?.id).startsWith('TAK-') || String(table?.id).startsWith('DEL-')) && (
+                <button onClick={() => { if(confirm(`Confirm deletion of order ${table.id}?`)) onSaveOrder(table.id, [], 'blank'); }} style={{ background: '#ef4444', border: 'none', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}><Trash2 size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }}/>Delete</button>
+            )}
+            <button onClick={onBack} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}>Close</button>
+          </div>
         </div>
 
         <div style={{ padding: '8px 12px', display: 'flex', borderBottom: '1px solid #e5e7eb', alignItems: 'center', gap: '12px' }}>
@@ -2749,7 +2542,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
           )}
           {isPickup && (!customerName || customerPhone.length < 10) && (
             <div style={{ fontSize: '10px', color: '#dc2626', fontWeight: 'bold', marginTop: '4px' }}>
-              ⚠ Required for pickup orders
+              âš  Required for pickup orders
             </div>
           )}
         </div>
@@ -3014,11 +2807,11 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
 
 /* --- ANALYTICS DASHBOARD --- */
 const StatCard = ({ label, value, icon: Icon, color, subtext }) => (
-  <div style={{ background: 'white', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0', position: 'relative' }}>
-    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '900', marginBottom: '12px', textTransform: 'uppercase' }}>{label}</div>
-    <div style={{ fontSize: '28px', fontWeight: '950', color: '#1e293b' }}>{value}</div>
-    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '8px', fontWeight: '700' }}>{subtext}</div>
-    <div style={{ position: 'absolute', top: '24px', right: '24px', width: '40px', height: '40px', borderRadius: '12px', background: `${color}10`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+  <div style={{ background: 'rgba(255,255,255,0.88)', padding: '22px', borderRadius: '24px', border: '1px solid #e2e8f0', position: 'relative', boxShadow: '0 18px 32px rgba(15, 23, 42, 0.06)' }}>
+    <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '900', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1.2px' }}>{label}</div>
+    <div style={{ fontSize: '28px', fontWeight: '950', color: '#1e293b', letterSpacing: '-0.8px' }}>{value}</div>
+    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', fontWeight: '700', lineHeight: 1.5 }}>{subtext}</div>
+    <div style={{ position: 'absolute', top: '22px', right: '22px', width: '42px', height: '42px', borderRadius: '14px', background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Icon size={20} color={color} />
     </div>
   </div>
@@ -3035,582 +2828,46 @@ const InsightItem = ({ title, value, sub }) => (
   </div>
 );
 
-const AnalyticsDashboard = ({ orderHistory, menuItems }) => {
-  const [rangeType, setRangeType] = useState('Today'); // Today, Yesterday, Last 7 Days, Last 30 Days, This Month, Custom, All Time
-  const [customRange, setCustomRange] = useState({ start: new Date().toISOString().split('T')[0], end: new Date().toISOString().split('T')[0] });
-  const [selectedProduct, setSelectedProduct] = useState(null);
 
-  // Helper: Get range bounds
-  const getRangeBounds = () => {
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    let start = new Date();
-    start.setHours(0, 0, 0, 0);
-    let end = new Date(today);
 
-    switch (rangeType) {
-      case 'Today':
-        break;
-      case 'Yesterday':
-        start.setDate(start.getDate() - 1);
-        end.setDate(end.getDate() - 1);
-        break;
-      case 'Last 7 Days':
-        start.setDate(start.getDate() - 6);
-        break;
-      case 'Last 30 Days':
-        start.setDate(start.getDate() - 29);
-        break;
-      case 'This Month':
-        start = new Date(today.getFullYear(), today.getMonth(), 1);
-        break;
-      case 'Custom':
-        start = new Date(customRange.start);
-        start.setHours(0, 0, 0, 0);
-        end = new Date(customRange.end);
-        end.setHours(23, 59, 59, 999);
-        break;
-      case 'All Time':
-        start = new Date(0);
-        break;
-      default:
-        break;
+
+
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('POS ErrorBoundary Caught:', error, errorInfo);
+    this.setState({ errorInfo });
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '50px', background: '#fee2e2', color: '#991b1b', height: '100vh', fontFamily: 'monospace' }}>
+          <h2>Something went wrong in the POS Application.</h2>
+          <details open style={{ whiteSpace: 'pre-wrap' }}>
+            <summary>Click to view details (PLEASE SCREENSHOT THIS FOR SUPPORT)</summary>
+            <br/>
+            {this.state.error && this.state.error.toString()}
+            <br/><br/>
+            {this.state.errorInfo && this.state.errorInfo.componentStack}
+          </details>
+          <br/>
+          <button onClick={() => window.location.reload()} style={{ padding: '10px 20px', background: '#991b1b', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Reload POS</button>
+        </div>
+      );
     }
-    return { start, end };
-  };
-
-  const { start, end } = getRangeBounds();
-
-  // Filter History
-  const filteredHistory = orderHistory.filter(o => {
-    const ts = new Date(o.timestamp);
-    return ts >= start && ts <= end;
-  });
-
-  // Basic Metrics
-  const totalNetSales = filteredHistory.reduce((acc, o) => acc + (o.grandTotal || 0), 0);
-  const totalDiscounts = filteredHistory.reduce((acc, o) => acc + (o.discountAmt || 0), 0);
-  const totalGrossSales = totalNetSales + totalDiscounts;
-  const totalOrders = filteredHistory.length;
-  const avgOrderVal = totalOrders > 0 ? (totalNetSales / totalOrders) : 0;
-
-  // Payment Breakdown
-  const cashSales = filteredHistory.filter(o => o.paymentMethod === 'Cash').reduce((acc, o) => acc + (o.grandTotal || 0), 0);
-  const onlineSales = totalNetSales - cashSales;
-
-  // Product Analytics
-  const productStats = {};
-  filteredHistory.forEach(order => {
-    order.order?.forEach(item => {
-      if (!productStats[item.name]) {
-        productStats[item.name] = { name: item.name, qty: 0, revenue: 0, cat: item.cat };
-      }
-      productStats[item.name].qty += (item.qty || 0);
-      productStats[item.name].revenue += (item.qty * item.price);
-    });
-  });
-
-  const sortedProducts = Object.values(productStats).sort((a, b) => b.revenue - a.revenue);
-  const topProducts = sortedProducts.slice(0, 5);
-  const bottomProducts = [...sortedProducts].reverse().slice(0, 5);
-
-  // Category Analytics
-  const categoryStats = {};
-  Object.values(productStats).forEach(p => {
-    if (!categoryStats[p.cat]) categoryStats[p.cat] = 0;
-    categoryStats[p.cat] += p.revenue;
-  });
-  const categoryData = Object.entries(categoryStats).map(([name, value]) => ({ name, value }));
-
-  // Chart Data: Hourly
-  const hourlyData = Array.from({ length: 24 }).map((_, i) => {
-    const hour = i;
-    const label = `${hour % 12 || 12} ${hour >= 12 ? 'PM' : 'AM'}`;
-    const revenue = filteredHistory.filter(o => new Date(o.timestamp).getHours() === hour)
-                                   .reduce((acc, o) => acc + o.grandTotal, 0);
-    return { label, revenue, hour };
-  });
-
-  // Chart Data: Daily Trends
-  const dailyTrends = [];
-  const curr = new Date(start);
-  while (curr <= end) {
-    const dateStr = curr.toISOString().split('T')[0];
-    const revenue = filteredHistory.filter(o => new Date(o.timestamp).toISOString().split('T')[0] === dateStr)
-                                   .reduce((acc, o) => acc + o.grandTotal, 0);
-    dailyTrends.push({ label: new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), revenue, fullDate: dateStr });
-    curr.setDate(curr.getDate() + 1);
-    if (dailyTrends.length > 90) break; // Hard limit to avoid crash
+    return this.props.children;
   }
+}
 
-  const chartData = rangeType === 'Today' || rangeType === 'Yesterday' ? hourlyData : dailyTrends;
+function MainApp() {
 
-  // Peak Hour Insight
-  const peakHour = [...hourlyData].sort((a, b) => b.revenue - a.revenue)[0];
-  const bestDay = dailyTrends.length > 0 ? [...dailyTrends].sort((a, b) => b.revenue - a.revenue)[0] : null;
-
-  return (
-    <div style={{ flex: 1, overflowY: 'auto', background: '#f8fafc', display: 'flex', flexDirection: 'column' }} className="no-scrollbar">
-      {/* Top Filter Bar */}
-      <div style={{ background: 'white', padding: '16px 32px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: '950', color: '#1e293b', letterSpacing: '-0.5px' }}>Command Center</h2>
-          <div style={{ display: 'flex', background: '#f1f5f9', padding: '4px', borderRadius: '10px', gap: '4px' }}>
-            {['Today', 'Yesterday', 'Last 7 Days', 'Last 30 Days', 'This Month', 'Custom', 'All Time'].map(r => (
-              <button
-                key={r}
-                onClick={() => setRangeType(r)}
-                style={{
-                  padding: '6px 14px', borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: '800', cursor: 'pointer',
-                  background: rangeType === r ? 'white' : 'transparent',
-                  color: rangeType === r ? '#a3112a' : '#64748b',
-                  boxShadow: rangeType === r ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                  transition: 'all 0.2s'
-                }}
-              >{r}</button>
-            ))}
-          </div>
-        </div>
-        
-        {rangeType === 'Custom' && (
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <input type="date" value={customRange.start} onChange={e => setCustomRange({...customRange, start: e.target.value})} style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
-            <span style={{ fontSize: '12px', fontWeight: '900' }}>→</span>
-            <input type="date" value={customRange.end} onChange={e => setCustomRange({...customRange, end: e.target.value})} style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: '12px' }}>
-           <button style={{ padding: '8px 16px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '900' }} onClick={() => window.print()}>Export PDF</button>
-        </div>
-      </div>
-
-      <div style={{ padding: '32px', display: 'flex', gap: '32px' }}>
-        <div style={{ flex: 1 }}>
-          {/* Metrics Row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '32px' }}>
-            <StatCard label="Net Revenue" value={`₹${totalNetSales.toLocaleString()}`} icon={TrendingUp} color="#a3112a" subtext={`Gross: ₹${totalGrossSales.toLocaleString()}`} />
-            <StatCard label="Total Orders" value={totalOrders} icon={CheckSquare} color="#3b82f6" subtext={`Avg Value: ₹${avgOrderVal.toFixed(0)}`} />
-            <StatCard label="Online Sales" value={`₹${onlineSales.toLocaleString()}`} icon={CreditCard} color="#8b5cf6" subtext={`${((onlineSales/totalNetSales)*100 || 0).toFixed(1)}% of total`} />
-            <StatCard label="Discounts Given" value={`₹${totalDiscounts.toLocaleString()}`} icon={Info} color="#f59e0b" subtext="Incentives & Waived" />
-          </div>
-
-          {/* Main Trends Chart */}
-          <div style={{ background: 'white', padding: '32px', borderRadius: '20px', border: '1px solid #e2e8f0', marginBottom: '32px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '32px' }}>
-              <div>
-                <h3 style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b' }}>Sales Performance Trend</h3>
-                <p style={{ fontSize: '13px', color: '#64748b', fontWeight: '500' }}>Viewing {rangeType === 'Today' || rangeType === 'Yesterday' ? 'hourly' : 'daily'} revenue fluctuations</p>
-              </div>
-            </div>
-            <div style={{ height: '350px' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: '800' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: '800' }} />
-                  <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} />
-                  <Line type="monotone" dataKey="revenue" stroke="#a3112a" strokeWidth={4} dot={{ r: 6, fill: '#a3112a', strokeWidth: 2, stroke: 'white' }} activeDot={{ r: 8 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '32px' }}>
-            {/* Product Rankings */}
-            <div style={{ background: 'white', padding: '32px', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '950', color: '#1e293b', marginBottom: '24px' }}>Top Selling Products</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {topProducts.length > 0 ? topProducts.map((p, i) => (
-                  <div key={i} onClick={() => setSelectedProduct(p)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', borderRadius: '12px', background: '#f8fafc', cursor: 'pointer', transition: 'all 0.2s', border: '1px solid transparent' }} onMouseEnter={e => e.currentTarget.style.borderColor = '#cbd5e1'}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#a3112a10', color: '#a3112a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '950' }}>{i+1}</div>
-                      <div>
-                        <div style={{ fontSize: '14px', fontWeight: '900', color: '#1e293b' }}>{p.name}</div>
-                        <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700' }}>{p.cat}</div>
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '14px', fontWeight: '950', color: '#1e293b' }}>₹{p.revenue.toLocaleString()}</div>
-                      <div style={{ fontSize: '11px', color: '#10b981', fontWeight: '900' }}>{p.qty} Sold</div>
-                    </div>
-                  </div>
-                )) : <p style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center' }}>No sales data for this range</p>}
-              </div>
-            </div>
-
-            {/* Category Breakdown */}
-            <div style={{ background: 'white', padding: '32px', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '950', color: '#1e293b', marginBottom: '24px' }}>Sales by Category</h3>
-              <div style={{ height: '240px' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsPieChart>
-                    <Pie data={categoryData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={['#a3112a', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4'][index % 6]} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip />
-                  </RechartsPieChart>
-                </ResponsiveContainer>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '20px' }}>
-                {categoryData.slice(0, 4).map((c, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: '800' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: ['#a3112a', '#3b82f6', '#10b981', '#f59e0b'][i % 4] }} />
-                    <span style={{ color: '#64748b' }}>{c.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Intelligence Sidebar */}
-        <div style={{ width: '360px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div style={{ background: 'white', padding: '32px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-            <h4 style={{ fontSize: '15px', fontWeight: '950', color: '#1e293b', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Info size={18} color="#a3112a" /> AI Insights
-            </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <InsightItem title="Peak Sales Window" value={peakHour?.revenue > 0 ? `${peakHour.label} is your busiest time.` : 'Insufficient data'} sub={`Revenue: ₹${peakHour?.revenue.toLocaleString()}`} />
-              <InsightItem title="Operational Efficiency" value="Average Turnover" sub="35.2 mins per order" />
-              {bestDay && (
-                <InsightItem title="Peak Performance Day" value={bestDay.label} sub={`Highest revenue: ₹${bestDay.revenue.toLocaleString()}`} />
-              )}
-              {bottomProducts.length > 0 && (
-                <InsightItem title="Inventory Warning" value={`${bottomProducts[0].name} is slow`} sub="Consider promoting or removing." />
-              )}
-            </div>
-          </div>
-
-          <div style={{ background: '#1e293b', padding: '32px', borderRadius: '24px', color: 'white' }}>
-            <h4 style={{ fontSize: '15px', fontWeight: '900', marginBottom: '20px' }}>Performance Comparison</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                  <span style={{ opacity: 0.7 }}>Vs Previous Period</span>
-                  <span style={{ color: '#10b981', fontWeight: '950' }}>+12.4%</span>
-               </div>
-               <div style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px' }}>
-                  <div style={{ width: '75%', height: '100%', background: '#10b981', borderRadius: '3px' }} />
-               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Drill-down Modal */}
-      {selectedProduct && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: 'white', width: '400px', borderRadius: '24px', padding: '32px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
-               <h3 style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b' }}>Item Analysis</h3>
-               <button onClick={() => setSelectedProduct(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
-            </div>
-            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-              <div style={{ fontSize: '13px', color: '#a3112a', fontWeight: '900' }}>{selectedProduct.cat}</div>
-              <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#1e293b' }}>{selectedProduct.name}</h2>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-               <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '900' }}>TOTAL SOLD</div>
-                  <div style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b' }}>{selectedProduct.qty}</div>
-               </div>
-               <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '900' }}>REVENUE</div>
-                  <div style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b' }}>₹{selectedProduct.revenue.toLocaleString()}</div>
-               </div>
-            </div>
-            <button onClick={() => setSelectedProduct(null)} style={{ width: '100%', padding: '14px', borderRadius: '12px', background: '#a3112a', color: 'white', border: 'none', fontWeight: '950', cursor: 'pointer' }}>Close Analysis</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-/* --- DAY CLOSE WIZARD --- */
-const DayCloseWizard = ({ orderHistory, onCompleteDayClose }) => {
-  const [cashCount, setCashCount] = useState('');
-  const [isCompleted, setIsCompleted] = useState(false);
-
-  const payments = { Cash: 0, Card: 0, UPI: 0 };
-  let totalDiscounts = 0;
-
-  orderHistory.forEach(order => {
-    payments[order.paymentMethod] = (payments[order.paymentMethod] || 0) + order.grandTotal;
-    totalDiscounts += order.discountAmt || 0;
-  });
-
-  const totalExpectedSales = payments.Cash + payments.Card + payments.UPI;
-  const cashDifference = parseFloat(cashCount || 0) - payments.Cash;
-
-  const handleClose = () => {
-    if (cashCount === '') {
-      alert("Please enter the physical cash counted in the drawer.");
-      return;
-    }
-    setIsCompleted(true);
-  };
-
-  if (isCompleted) {
-    return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f9fafb', padding: '20px' }} className="animate-fade-in">
-        <div style={{ background: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', textAlign: 'center', maxWidth: '400px' }}>
-          <CheckSquare size={48} color="#10b981" style={{ margin: '0 auto 16px' }} />
-          <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>Day Closed Successfully</h2>
-          <p style={{ color: '#6b7280', marginBottom: '24px', fontSize: '14px' }}>All tables have been cleared and reports are saved. The system is ready for the next shift.</p>
-          <button
-            onClick={onCompleteDayClose}
-            style={{ width: '100%', padding: '12px', background: '#94161c', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
-          >
-            Start Fresh Shift
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '30px', background: '#f9fafb', overflowY: 'auto' }} className="animate-fade-in no-scrollbar">
-      <div style={{ background: 'white', padding: '32px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', width: '100%', maxWidth: '600px' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Sunset size={28} color="#94161c" /> End of Day Settlement (Z-Report)
-        </h2>
-        <p style={{ color: '#6b7280', marginBottom: '32px', fontSize: '14px' }}>Validate your cash drawer before wiping the system for the next day. This action cannot be undone.</p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
-          <div style={{ background: '#f3f4f6', padding: '16px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>SYSTEM NET SALES</div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>₹{totalExpectedSales.toFixed(2)}</div>
-          </div>
-          <div style={{ background: '#f3f4f6', padding: '16px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>TOTAL DISCOUNTS GIVEN</div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#94161c' }}>₹{totalDiscounts.toFixed(2)}</div>
-          </div>
-          <div style={{ background: '#f5f3ff', padding: '16px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '12px', color: '#7c3aed', fontWeight: 'bold' }}>UPI / DIGITAL</div>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#5b21b6' }}>₹{payments.UPI.toFixed(2)}</div>
-          </div>
-          <div style={{ background: '#eff6ff', padding: '16px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '12px', color: '#2563eb', fontWeight: 'bold' }}>CREDIT/DEBIT CARDS</div>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#1d4ed8' }}>₹{payments.Card.toFixed(2)}</div>
-          </div>
-        </div>
-
-        <div style={{ borderTop: '2px dashed #e5e7eb', margin: '32px 0' }}></div>
-
-        <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1f2937', marginBottom: '16px' }}>Cash Drawer Verification</h3>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', padding: '16px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px' }}>
-          <div>
-            <div style={{ fontSize: '12px', color: '#059669', fontWeight: 'bold' }}>SYSTEM EXPECTED CASH</div>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#065f46' }}>₹{payments.Cash.toFixed(2)}</div>
-          </div>
-          <Banknote size={32} color="#059669" opacity={0.3} />
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Physical Cash Counted (₹)</label>
-            <input
-              type="number"
-              value={cashCount}
-              onChange={(e) => setCashCount(e.target.value)}
-              placeholder="Enter cash found in drawer..."
-              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '16px', outline: 'none' }}
-              autoComplete="off"
-            />
-          </div>
-
-          {cashCount !== '' && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: cashDifference === 0 ? '#ecfdf5' : cashDifference > 0 ? '#eff6ff' : '#fef2f2', border: `1px solid ${cashDifference === 0 ? '#a7f3d0' : cashDifference > 0 ? '#bfdbfe' : '#fecaca'}`, borderRadius: '6px' }}>
-              <span style={{ fontSize: '14px', fontWeight: 'bold', color: cashDifference === 0 ? '#059669' : cashDifference > 0 ? '#2563eb' : '#dc2626' }}>
-                {cashDifference === 0 ? "Drawer is Perfectly Balanced" : cashDifference > 0 ? "Cash Overage (Surplus)" : "Cash Shortage (Missing)"}
-              </span>
-              <span style={{ fontSize: '14px', fontWeight: 'bold', color: cashDifference === 0 ? '#059669' : cashDifference > 0 ? '#2563eb' : '#dc2626' }}>
-                {cashDifference > 0 ? "+" : ""}
-                ₹{cashDifference.toFixed(2)}
-              </span>
-            </div>
-          )}
-
-        </div>
-
-        <button
-          className="btn-pp btn-pp-primary"
-          onClick={handleClose}
-          style={{ width: '100%', padding: '14px', fontSize: '16px', background: '#94161c' }}
-        >
-          Confirm Day Close & Print Z-Report
-        </button>
-      </div>
-    </div>
-  );
-};
-
-
-const TimeElapsed = ({ createdAt }) => {
-  const [elapsed, setElapsed] = React.useState(0);
-  React.useEffect(() => {
-    if (!createdAt) return;
-    const update = () => {
-      const diff = Math.floor((Date.now() - createdAt) / 60000);
-      setElapsed(diff);
-    };
-    update();
-    const inv = setInterval(update, 60000);
-    return () => clearInterval(inv);
-  }, [createdAt]);
-
-  if (!createdAt) return null;
-  return <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 'bold' }}>{elapsed}m ago</div>;
-};
-
-const QuickPrintModal = ({ table, settings, onClose, onPrint }) => {
-  const [discountVal, setDiscountVal] = React.useState('0');
-  const [discountType, setDiscountType] = React.useState('amount'); // 'amount' or 'percent'
-  const [serviceChargeEnabled, setServiceChargeEnabled] = React.useState(!!settings?.autoServiceCharge);
-
-  if (!table) return null;
-
-  const subtotal = table.order.reduce((acc, i) => acc + (i.price * i.qty), 0);
-  
-  let discountAmt = 0;
-  if (discountType === 'percent') {
-    discountAmt = Math.floor(subtotal * (parseFloat(discountVal) || 0) / 100);
-  } else {
-    discountAmt = parseFloat(discountVal) || 0;
-  }
-
-  const service = serviceChargeEnabled ? Math.floor((subtotal - discountAmt) * (settings.serviceChargeRate || 5) / 100) : 0;
-  const grandTotal = subtotal - discountAmt + service;
-
-  return (
-    <div className="no-print" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10001, backdropFilter: 'blur(4px)' }}>
-      <div style={{ background: 'white', width: '400px', borderRadius: '16px', padding: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#111827' }}>Print & Adjust Bill</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
-          <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
-            <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>Subtotal</div>
-            <div style={{ fontSize: '24px', fontWeight: '950', color: '#111827' }}>₹{subtotal}</div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px' }}>DISCOUNT</div>
-              <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '8px', padding: '4px' }}>
-                <input 
-                  type="text" 
-                  value={discountVal} 
-                  onChange={e => setDiscountVal(e.target.value)}
-                  style={{ background: 'white', border: 'none', flex: 1, padding: '8px', fontSize: '14px', borderRadius: '6px', outline: 'none', fontWeight: '500' }}
-                />
-                <button 
-                  onClick={() => setDiscountType('amount')}
-                  style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: '800', background: discountType === 'amount' ? 'white' : 'transparent', boxShadow: discountType === 'amount' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
-                >₹</button>
-                <button 
-                  onClick={() => setDiscountType('percent')}
-                  style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: '800', background: discountType === 'percent' ? 'white' : 'transparent', boxShadow: discountType === 'percent' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
-                >%</button>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#fdf2f2', borderRadius: '10px' }}>
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: '900', color: '#991b1b' }}>Service Charge ({settings.serviceChargeRate || 5}%)</div>
-              <div style={{ fontSize: '11px', color: '#b91c1c' }}>Auto-calculated on taxable value</div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#991b1b' }}>₹{service}</span>
-              <button 
-                onClick={() => setServiceChargeEnabled(!serviceChargeEnabled)}
-                style={{ width: '36px', height: '20px', borderRadius: '10px', background: serviceChargeEnabled ? '#10b981' : '#cbd5e1', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.3s' }}
-              >
-                <div style={{ position: 'absolute', top: '2px', left: serviceChargeEnabled ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: 'white', transition: 'left 0.3s' }}></div>
-              </button>
-            </div>
-          </div>
-
-          <div style={{ borderTop: '2px dashed #f1f5f9', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '800' }}>PAYABLE AMOUNT</div>
-            <div style={{ fontSize: '24px', fontWeight: '950', color: '#94161c' }}>₹{grandTotal}</div>
-          </div>
-        </div>
-
-        <button 
-          onClick={() => onPrint(discountAmt, service, grandTotal)}
-          style={{ width: '100%', padding: '16px', background: '#94161c', color: 'white', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
-        >
-          <Printer size={20} /> PRINT BILL
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const QuickSettleModal = ({ table, settings, onClose, onSettle }) => {
-  const [method, setMethod] = React.useState('Cash');
-  if (!table) return null;
-
-  const subtotal = table.order.reduce((acc, i) => acc + (i.price * i.qty), 0);
-  const service = settings?.autoServiceCharge ? Math.floor(subtotal * (settings.serviceChargeRate || 5) / 100) : 0;
-  const grandTotal = subtotal + service;
-
-  const [amountPaidStr, setAmountPaidStr] = React.useState('');
-  const amountPaid = parseFloat(amountPaidStr) || 0;
-  const changeDue = amountPaid > grandTotal ? amountPaid - grandTotal : 0;
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-      <div className="animate-fade-in" style={{ background: 'white', padding: '28px', borderRadius: '12px', width: '360px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
-        <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px', color: '#1f2937' }}>Settle: {table.name}</h3>
-        <div style={{ fontSize: '24px', fontWeight: '900', color: 'var(--primary)', marginBottom: '20px' }}>₹{grandTotal}</div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '24px' }}>
-          {['Cash', 'Card', 'UPI'].map(m => (
-            <button
-              key={m}
-              onClick={() => setMethod(m)}
-              style={{ padding: '12px', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', border: `2px solid ${method === m ? 'var(--primary)' : '#e2e8f0'}`, background: method === m ? 'var(--primary)10' : 'white', color: method === m ? 'var(--primary)' : '#64748b', cursor: 'pointer' }}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ marginBottom: '24px' }}>
-          <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Amount Paid by Customer (₹)</label>
-          <input
-            type="number"
-            value={amountPaidStr}
-            onChange={(e) => setAmountPaidStr(e.target.value)}
-            placeholder={`e.g. ${grandTotal}`}
-            style={{ boxSizing: 'border-box', width: '100%', padding: '12px', borderRadius: '8px', border: '2px solid #e2e8f0', fontSize: '16px', fontWeight: 'bold', outline: 'none' }}
-          />
-          {amountPaid >= grandTotal && (
-            <div style={{ marginTop: '8px', fontSize: '14px', fontWeight: 'bold', color: '#10b981' }}>
-              Change to Return: ₹{changeDue}
-            </div>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '12px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
-          <button onClick={() => onSettle(method, amountPaid, changeDue)} style={{ flex: 1, padding: '12px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Settle Bill</button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default function App() {
   const [view, setView] = useState('tables');
   const [selectedTable, setSelectedTable] = useState(null);
   const [quickSettleTable, setQuickSettleTable] = useState(null);
@@ -3624,24 +2881,163 @@ export default function App() {
     }
   };
 
-  const [showSidebar, setShowSidebar] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
   const [isDbLoaded, setIsDbLoaded] = useState(false);
   const [tables, setTables] = useState(INITIAL_TABLES);
   const [orderHistory, setOrderHistory] = useState([]);
   const [nonTableOrders, setNonTableOrders] = useState([]);
   const [settings, setSettings] = useState({
+    // BRANDING & BASIC
     billHeader: 'TYDE CAFE',
     billFooter: 'Thank You for Visiting!',
+    resName: 'Tyde Cafe',
+    headerText: 'Nerul Ferry Terminal',
+    footerText: 'Sea you soon - under the moon',
+    showResName: true,
+    showRetailOnTop: false,
+    showResNameBold: true,
+    showHeadlineBold: false,
+    showFooterBold: false,
+    printLogo: true,
+    logoWidth: 200,
+    logoHeight: 70,
+    
+    // BILL DESIGNER SPECIFICS
+    billMarginTop: 0,
+    billMarginRight: 5,
+    billMarginBottom: 0,
+    billMarginLeft: 5,
+    billItemHeight: 0,
+    resFont: 14,
+    headFootFont: 13,
+    dateBillFont: 13,
+    itemListFont: 13,
+    grandTotalFont: 14,
+    billFontFamily: 'Verdana',
+    paperSize: '80mm',
+    billMainWidth: 240,
+    billColSr: 10,
+    billColQty: 20,
+    billColPrice: 40,
+    billColAmt: 55,
+    billLineHeight: 5,
+    billExtraGap: 5,
+    billItemsPage: 0,
+    billCalcDecimal: 'Master',
+    showTotalLine: true,
+    complimentaryLbl: 'Complimentary Bill',
+    salesReturnLbl: 'Sales Return Bill',
+    subTotalLbl: 'Sub Total',
+    showSubTotal: 'without',
+    showFssaiLoc: 'footer',
+    showSrNo: false,
+    showCustInfo: true,
+    hideEmptyCustLabels: true,
+    showMaskedPhone: false,
+    showBillerName: true,
+    showQtyBefore: false,
+    showDateTime: 'both', // 'date' or 'both'
+    dateSource: 'created', // 'created' or 'printed'
+    showPersons: false,
+    showAssignLabel: false,
+    showNetTotalMsg: false,
+    showCustNotes: false,
+    showSpecialNotes: true,
+    showTaxCalculation: false,
+    showDiscountReason: false,
+    showAddonPrice: true,
+    showAddonSeparateRow: true,
+    showAddonMultiplication: true,
+    showZeroTaxes: false,
+    showDueAmount: false,
+    
+    // CHARGE DISPLAY TOGGLES (Per Order Type)
+    showDeliveryChargeDineIn: false,
+    showDeliveryChargeTakeaway: true,
+    showDeliveryChargeDelivery: true,
+    showContainerChargeDineIn: false,
+    showContainerChargeTakeaway: true,
+    showContainerChargeDelivery: true,
+    showServiceChargeDineIn: true,
+    showServiceChargeTakeaway: false,
+    showServiceChargeDelivery: false,
+    
+    // FISCAL & DOCUMENTATION
+    printItemWiseDiscount: false,
+    printInvoiceBarcode: false,
+    showSplitBillCount: false,
+    printTipAmount: false,
+    printHSNCode: false,
+    hideZeroPriceItems: true,
+    showOnlinePaymentStatus: true,
+    showSwiggyPasscode: true,
+    showPaymentStatusOnline: true,
+    showSwiggyDeliveryPass: true,
+    hideSwiggyRewards: false,
+    showTaxAfterItem: false,
+    showCustSignature: false,
+    dateTimeFormat: 'DD/MM/YYYY',
+    use24HourFormat: true,
+    showTipSuggestion: 'none', // 'none' or 'every'
+    tipSuggestDineIn: true,
+    tipSuggestTakeaway: false,
+    tipSuggestDelivery: false,
+
+    // TOKEN SLIP CONFIG
+    printTokenSeparatelyDineIn: false,
+    printTokenSeparatelyTakeaway: true,
+    printTokenSeparatelyDelivery: true,
+    tokenMarginTop: 0,
+    tokenMarginRight: 0,
+    tokenMarginBottom: 0,
+    tokenMarginLeft: 0,
+    tokenFontSize: 14,
+
+    // KOT DESIGNER SPECIFICS
+    kotHeader: 'Running Table',
+    kotFooter: '',
+    kotWidth: 250,
+    kotColSr: 10,
+    kotColQty: 30,
+    kotColAmt: 50,
+    kotDecimal: 0,
+    kotMarginTop: 0,
+    kotMarginRight: 0,
+    kotMarginBottom: 0,
+    kotMarginLeft: 10,
+    kotLineHeight: 0,
+    kotFontSize: 13,
+    kotExtraSpace: 0,
+    showAddonGroup: true,
+    showAddonQtyMult: true,
+    showItemTotal: false,
+    showKotOrderType: 'type', // 'type', 'sub', 'both'
+    showKotItemName: 'name', // 'name', 'code', 'both'
+    kotItemPriority: false,
+    kotReadyTiming: true,
+    kotBoldAddons: false,
+    showCustNote: true,
+    showOnlinePay: true,
+    showSwiggyPass: true,
+    hideRewardSwiggy: false,
+    kotAddonFont: 11,
+    highlightOrderId: 'last4',
+
+    // PRINTER HARDWARE
+    printerStationName: 'real pos',
+    printerDeviceName: 'Printer_POS_80C',
+    printerType: 'general', // 'general' or 'dotmatrix'
+    useOnlyForCaptain: false,
+    useForReports: false,
+
+    // SYSTEM THEME
     categorizedKOT: false,
     billLayout: 'standard',
-    printFontFamily: 'Helvetica, Arial, sans-serif',
-    printFontSize: '13',
-    printFontWeight: 'normal',
-    accentColor: '#a3112a',
+    accentColor: '#94161c',
     secondaryColor: '#7c3aed',
-    bgColor: '#f9fafb',
-    textColor: '#1f2937',
-    borderRadius: '12',
+    bgColor: '#f8fafc',
+    textColor: '#1e293b',
+    borderRadius: '16',
     tableShape: 'rounded',
     globalFont: 'Outfit',
     fontBaseSize: '14',
@@ -3650,11 +3046,11 @@ export default function App() {
     serviceChargeRate: 5
   });
   const [menuItems, setMenuItems] = useState(INITIAL_MENU_ITEMS);
+  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
   const [products, setProducts] = useState([...INITIAL_PRODUCTS]);
   const [productCategories, setProductCategories] = useState([...INITIAL_PRODUCT_CATEGORIES]);
-  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
-  const [floorPlanSections, setFloorPlanSections] = useState(INITIAL_FLOOR_SECTIONS);
   const [customers, setCustomers] = useState({});
+  const [floorPlanSections, setFloorPlanSections] = useState(INITIAL_FLOOR_SECTIONS);
 
   useEffect(() => {
     const loadFromIDB = async () => {
@@ -3690,7 +3086,6 @@ export default function App() {
           if (savedSections) setFloorPlanSections(savedSections);
         } else {
           await set('pos_menu_version', MENU_VERSION);
-          // Resets to new defaults above. Optional: save new defaults immediately.
         }
       } catch (err) {
         console.error("Database load error:", err);
@@ -3701,40 +3096,20 @@ export default function App() {
     loadFromIDB();
   }, []);
 
-  // Save changes automatically after load
   useEffect(() => {
-    if (isDbLoaded) set('pos_customers', customers);
-  }, [customers, isDbLoaded]);
-
-  useEffect(() => {
-    if (isDbLoaded) set('pos_tables_v2', tables);
-  }, [tables, isDbLoaded]);
-
-  useEffect(() => {
-    if (isDbLoaded) set('pos_order_history', orderHistory);
-  }, [orderHistory, isDbLoaded]);
-
-  useEffect(() => {
-    if (isDbLoaded) set('pos_nontable_orders_v2', nonTableOrders);
-  }, [nonTableOrders, isDbLoaded]);
-
-  useEffect(() => {
-    if (isDbLoaded) set('pos_printer_settings', settings);
-  }, [settings, isDbLoaded]);
-
-  useEffect(() => {
-    if (isDbLoaded) set('pos_menu_items', menuItems);
-  }, [menuItems, isDbLoaded]);
-
-  useEffect(() => {
-    if (isDbLoaded) set('pos_categories', categories);
-    if (isDbLoaded) set('pos_retail_products', products);
-    if (isDbLoaded) set('pos_retail_categories', productCategories);
-  }, [categories, isDbLoaded]);
-
-  useEffect(() => {
-    if (isDbLoaded) set('pos_floor_sections', floorPlanSections);
-  }, [floorPlanSections, isDbLoaded]);
+    if (isDbLoaded) {
+      set('pos_customers', customers);
+      set('pos_tables_v2', tables);
+      set('pos_order_history', orderHistory);
+      set('pos_nontable_orders_v2', nonTableOrders);
+      set('pos_printer_settings', settings);
+      set('pos_menu_items', menuItems);
+      set('pos_categories', categories);
+      set('pos_retail_products', products);
+      set('pos_retail_categories', productCategories);
+      set('pos_floor_sections', floorPlanSections);
+    }
+  }, [customers, tables, orderHistory, nonTableOrders, settings, menuItems, categories, products, productCategories, floorPlanSections, isDbLoaded]);
 
   if (!isDbLoaded) {
     return (
@@ -3745,16 +3120,27 @@ export default function App() {
       </div>
     );
   }
+  const deleteAnyOrder = (idToDelete) => {
+    const tid = String(idToDelete || '').trim().toUpperCase();
+    if (!tid) return;
 
-
-  const clearTableFast = (tableId) => {
-    setTables(prev => prev.map(t => {
-      if (t.id === tableId) {
-        return { ...t, order: [], status: 'blank', createdAt: null };
-      }
-      return t;
-    }));
+    if (tid.startsWith('TAK-') || tid.startsWith('DEL-')) {
+      setNonTableOrders(prev => prev.filter(o => String(o.id).trim().toUpperCase() !== tid));
+      setView('nontables');
+    } else {
+      setTables(prev => prev.map(t => {
+        if (String(t.id).trim().toUpperCase() === tid) {
+          return { ...t, order: [], status: 'blank', createdAt: null };
+        }
+        return t;
+      }));
+      setView('tables');
+    }
+    
+    setSelectedTable(null);
   };
+
+  const clearTableFast = (idToDelete) => deleteAnyOrder(idToDelete);
 
   const handleSelectTable = (table) => {
     setSelectedTable(table);
@@ -3780,13 +3166,20 @@ export default function App() {
   // Removed handleSimulateAggregator
 
   const saveOrderToTable = (tableId, orderItems, newStatus, extraData = {}) => {
-    if (String(tableId).startsWith('DEL-') || String(tableId).startsWith('TAK-')) {
+    const tid = String(tableId || '').trim().toUpperCase();
+    if (!tid) return;
+
+    if (orderItems.length === 0) {
+      deleteAnyOrder(tid);
+      return;
+    }
+
+    if (tid.startsWith('DEL-') || tid.startsWith('TAK-')) {
       setNonTableOrders(prev => {
-        const existing = prev.find(o => o.id === tableId);
+        const existing = prev.find(o => String(o.id).trim().toUpperCase() === tid);
         if (existing) {
-          if (orderItems.length === 0) return prev.filter(o => o.id !== tableId);
            return prev.map(o => {
-             if (o.id === tableId) {
+             if (String(o.id).trim().toUpperCase() === tid) {
                const shouldResetTimer = o.status === 'blank' || !o.createdAt;
                return { ...o, order: orderItems, status: newStatus, customerName: extraData.customerName, phone: extraData.customerPhone, note: extraData.note, createdAt: shouldResetTimer ? Date.now() : o.createdAt };
              }
@@ -3798,15 +3191,15 @@ export default function App() {
       setView('nontables');
     } else {
       setTables(prev => prev.map(t => {
-        if (t.id === tableId) {
+        if (String(t.id).trim().toUpperCase() === tid) {
           const shouldResetTimer = t.status === 'blank' || !t.createdAt;
           return { ...t, order: orderItems, status: newStatus, customerName: extraData.customerName, phone: extraData.customerPhone, note: extraData.note, createdAt: shouldResetTimer ? Date.now() : t.createdAt };
         }
         return t;
       }));
-      setSelectedTable(null);
       setView('tables');
     }
+    setSelectedTable(null);
   };
 
   const settleTable = (tableId, orderDetails) => {
@@ -3900,68 +3293,114 @@ export default function App() {
     setQuickPrintTable(table);
   };
 
+  const handleQuickSettleResult = (tableId, orderDetails) => {
+    settleTable(tableId, orderDetails);
+    setQuickSettleTable(null);
+  };
+
+  // Stats calculation for badges
+  const stats = {
+    liveOrders: nonTableOrders.length,
+    activeTables: tables.filter(t => t.status !== 'blank').length,
+    activeOnline: nonTableOrders.length,
+    pendingKot: tables.filter(t => t.status === 'running').length + nonTableOrders.filter(o => o.status === 'running').length
+  };
+
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100vw', background: '#f8fafc', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: '100vh', background: '#f8fafc', overflow: 'hidden' }}>
       <GlobalStyles settings={settings} />
-      {showSidebar && <AppSidebar activeView={view} onViewChange={setView} />}
-      
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <AppTopNavbar 
-          globalSearch={globalSearch} 
-          onSearchChange={handleGlobalSearch} 
-          onToggleSidebar={() => setShowSidebar(!showSidebar)}
-          onViewChange={setView}
+
+      {/* Quick Settlement Modals */}
+      {quickSettleTable && (
+        <QuickSettleModal 
+          table={quickSettleTable} 
+          settings={settings} 
+          onClose={() => setQuickSettleTable(null)} 
+          onSettle={handleQuickSettleResult} 
         />
-        
-        <main style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-          {quickPrintTable && (
-            <QuickPrintModal 
-              table={quickPrintTable}
-              settings={settings}
-              onClose={() => setQuickPrintTable(null)}
-              onPrint={async (discountAmt, serviceCharge, grandTotal) => {
-                const subtotal = quickPrintTable.order.reduce((acc, i) => acc + (i.price * i.qty), 0);
-                await printPosToSerial({
-                  tableName: (quickPrintTable.name && quickPrintTable.name.trim() !== '') ? quickPrintTable.name : `Table ${quickPrintTable.id}`,
-                  orderType: quickPrintTable.type === 'Delivery' ? 'Delivery' : (quickPrintTable.type === 'Takeaway' ? 'Pick Up' : 'Dine In'),
-                  items: quickPrintTable.order,
-                  subtotal,
-                  discountAmt,
-                  serviceCharge,
-                  grandTotal,
-                  orderId: quickPrintTable.id,
-                  phone: quickPrintTable.phone,
-                  customerName: quickPrintTable.customerName
-                });
-                setTables(prev => prev.map(t => t.id === quickPrintTable.id ? { ...t, status: 'printed' } : t));
-                setQuickPrintTable(null);
-              }}
-            />
-          )}
+      )}
+      {quickPrintTable && (
+        <QuickPrintModal 
+          table={quickPrintTable} 
+          settings={settings} 
+          onClose={() => setQuickPrintTable(null)} 
+          onPrint={(discountAmt, service, grandTotal) => {
+            printPosToSerial({ 
+              ...quickPrintTable, 
+              items: quickPrintTable.order, 
+              tableName: quickPrintTable.name,
+              subtotal: getOrderTotal(quickPrintTable.order),
+              discountAmt,
+              serviceCharge: service,
+              grandTotal,
+              roundOff: 0
+            }, 'BILL');
+            setQuickPrintTable(null);
+          }} 
+        />
+      )}
 
-          {quickSettleTable && (
-            <QuickSettleModal
-              table={quickSettleTable}
-              settings={settings}
-              onClose={() => setQuickSettleTable(null)}
-              onSettle={(paymentMethod, amountPaid, changeDue) => {
-                const subtotal = quickSettleTable.order.reduce((acc, i) => acc + (i.price * i.qty), 0);
-                const service = settings?.autoServiceCharge ? Math.floor(subtotal * (settings.serviceChargeRate || 5) / 100) : 0;
-                const grandTotal = subtotal + service;
-                settleTable(quickSettleTable.id, { cart: quickSettleTable.order, subtotal, discountAmt: 0, redeemedPoints: 0, discountAuth: false, taxes: service, grandTotal, paymentMethod, amountPaid, changeDue, timestamp: new Date().toISOString(), phone: quickSettleTable.phone, customerName: quickSettleTable.customerName, note: quickSettleTable.note });
-                setQuickSettleTable(null);
-              }}
-            />
-          )}
+      {showSidebar && (
+        <AppSidebar
+          activeView={view}
+          onViewChange={setView}
+          stats={stats}
+        />
+      )}
 
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Main Header */}
+        <header style={{ height: '72px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', zIndex: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button onClick={() => setShowSidebar(!showSidebar)} style={{ p: '8px', borderRadius: '12px', background: '#f1f5f9', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+              <Menu size={20} />
+            </button>
+            <h1 style={{ fontSize: '20px', fontWeight: '950', color: '#1e293b', letterSpacing: '-0.5px' }}>
+              {view === 'tables' && 'Floor Plan'}
+              {view === 'nontables' && 'Online & External Orders'}
+              {view === 'analytics' && 'Operational Intelligence'}
+              {view === 'ordering' && `Table ${selectedTable?.name}`}
+              {view === 'kds' && 'Live Kitchen (KDS)'}
+              {view === 'captain' && 'Captain Orders — Live Feed'}
+              {view === 'globalsettings' && 'System Configuration'}
+              {view === 'dayclose' && 'End of Day'}
+            </h1>
+          </div>
+
+          {/* RIGHT SIDE GROUP: Search & Navigation Pills */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '14px', padding: '4px 16px', alignItems: 'center', border: '1px solid #e2e8f0' }}>
+              <Search size={16} color="#94a3b8" />
+              <input
+                type="text"
+                value={globalSearch}
+                onChange={(e) => handleGlobalSearch(e.target.value)}
+                placeholder="Search orders, phones..."
+                style={{ background: 'none', border: 'none', padding: '10px', outline: 'none', fontSize: '13px', fontWeight: '600', width: '240px' }}
+              />
+            </div>
+
+            {/* GLOBAL NAVIGATION PILLS */}
+            <div style={{ display: 'flex', gap: '8px', background: '#f1f5f9', padding: '6px', borderRadius: '16px', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)', border: '1px solid #e2e8f0' }}>
+              <button onClick={() => setView('tables')} style={{ padding: '10px 24px', borderRadius: '12px', background: view === 'tables' ? '#94161c' : 'transparent', color: view === 'tables' ? 'white' : '#64748b', fontWeight: '900', border: 'none', cursor: 'pointer', fontSize: '14px', transition: 'all 0.2s', boxShadow: view === 'tables' ? '0 4px 12px rgba(148,22,28,0.2)' : 'none' }}>
+                Table View
+              </button>
+              <button onClick={() => setView('nontables')} style={{ padding: '10px 24px', borderRadius: '12px', background: view === 'nontables' ? '#94161c' : 'transparent', color: view === 'nontables' ? 'white' : '#64748b', fontWeight: '900', border: 'none', cursor: 'pointer', fontSize: '14px', transition: 'all 0.2s', boxShadow: view === 'nontables' ? '0 4px 12px rgba(148,22,28,0.2)' : 'none' }}>
+                Pick up / Online Orders
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <main style={{ flex: 1, overflowY: 'auto' }}>
           {view === 'tables' && (
-            <TableManagement tables={tables} floorPlanSections={floorPlanSections} onSelectTable={handleSelectTable} onClearTable={clearTableFast} settings={settings} onQuickSettle={setQuickSettleTable} onQuickPrint={handleQuickPrint} globalSearch={globalSearch} />
+            <TableManagement tables={tables} floorPlanSections={floorPlanSections} onSelectTable={handleSelectTable} onClearTable={clearTableFast} settings={settings} onQuickSettle={setQuickSettleTable} onQuickPrint={handleQuickPrint} globalSearch={globalSearch} onViewChange={setView} onOpenFloorDesigner={() => setView('floorplan')} />
           )}
           {view === 'nontables' && (
-            <NonTableManagement orders={nonTableOrders} onSelectOrder={handleSelectTable} onCreateOrder={handleCreateNonTableOrder} onViewChange={setView} onQuickSettle={setQuickSettleTable} onQuickPrint={handleQuickPrint} globalSearch={globalSearch} />
+            <NonTableManagement orders={nonTableOrders} onSelectOrder={handleSelectTable} onCreateOrder={handleCreateNonTableOrder} onViewChange={setView} onQuickSettle={setQuickSettleTable} onQuickPrint={handleQuickPrint} onClearOrder={clearTableFast} globalSearch={globalSearch} />
           )}
           {view === 'analytics' && (
-            <AnalyticsDashboard orderHistory={orderHistory} menuItems={menuItems} />
+            <ReportsHub orderHistory={orderHistory} menuItems={menuItems} tables={tables} nonTableOrders={nonTableOrders} products={products} />
           )}
           {view === 'dayclose' && (
             <DayCloseWizard
@@ -3974,6 +3413,36 @@ export default function App() {
           )}
           {view === 'kds' && (
             <KitchenDisplay tables={tables} nonTableOrders={nonTableOrders} onMarkReady={markOrderReady} />
+          )}
+          {view === 'captain' && (
+            <CaptainOrders
+              settings={settings}
+              onInjectOrder={(apiOrder) => {
+                // Map the API order into the POS table system
+                const tableNum = String(apiOrder.table_number);
+                const matchingTable = tables.find(t => t.name === `Table ${tableNum}` || String(t.id) === tableNum);
+                if (matchingTable) {
+                  const mappedItems = apiOrder.items.map(item => ({
+                    id: Date.now() + Math.random(),
+                    name: item.name,
+                    qty: item.quantity,
+                    price: item.price,
+                    note: apiOrder.notes || ''
+                  }));
+                  setTables(prev => prev.map(t => {
+                    if (t.id === matchingTable.id) {
+                      return {
+                        ...t,
+                        order: [...(t.order || []), ...mappedItems],
+                        status: 'running',
+                        createdAt: t.createdAt || Date.now()
+                      };
+                    }
+                    return t;
+                  }));
+                }
+              }}
+            />
           )}
           {view === 'orderhistory' && (
             <OrderHistoryView orderHistory={orderHistory} activePickups={nonTableOrders} onSelectActive={handleSelectTable} globalSearch={globalSearch} tables={tables} />
@@ -4043,3 +3512,9 @@ export default function App() {
     </div>
   );
 }
+
+
+
+
+
+export default function App() { return <ErrorBoundary><MainApp /></ErrorBoundary>; }

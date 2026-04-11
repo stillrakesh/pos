@@ -442,3 +442,27 @@ body {
     display: block !important;
   }
 }
+
+@media (max-width: 1200px) {
+  .billing-panel {
+    width: 380px;
+  }
+
+  .items-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .menu-sidebar {
+    width: 140px;
+  }
+
+  .billing-panel {
+    width: 340px;
+  }
+
+  .pp-table-card {
+    min-height: 96px;
+  }
+}

@@ -1,0 +1,77 @@
+import express from 'express';
+import cors from 'cors';
+import { initDatabase, forceSave } from './db.js';
+import ordersRouter from './routes/orders.js';
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// ─── Middleware ──────────────────────────────────────────────
+app.use(cors({
+  origin: '*', // Allow captain app from any origin
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+app.use(express.json({ limit: '1mb' }));
+
+// Request logging (lightweight, colored)
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const color = res.statusCode >= 400 ? '\x1b[31m' : '\x1b[32m';
+    console.log(`  ${color}${req.method}\x1b[0m ${req.originalUrl} → ${res.statusCode} (${duration}ms)`);
+  });
+  next();
+});
+
+// ─── Routes ─────────────────────────────────────────────────
+app.use('/api/orders', ordersRouter);
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString() 
+  });
+});
+
+// 404 fallback for API routes
+app.use('/api/{*path}', (req, res) => {
+  res.status(404).json({ 
+    error: 'NOT_FOUND', 
+    message: `Route ${req.method} ${req.originalUrl} not found` 
+  });
+});
+
+// ─── Graceful Shutdown ──────────────────────────────────────
+function shutdown(signal) {
+  console.log(`\n  ⚡ ${signal} received — saving database...`);
+  forceSave();
+  process.exit(0);
+}
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+// ─── Bootstrap ──────────────────────────────────────────────
+async function start() {
+  await initDatabase();
+
+  app.listen(PORT, () => {
+    console.log('');
+    console.log('  ┌──────────────────────────────────────────────┐');
+    console.log(`  │  🔥 TYDE POS API Server                       │`);
+    console.log(`  │  → http://localhost:${PORT}                    │`);
+    console.log(`  │  → Orders API: http://localhost:${PORT}/api/orders │`);
+    console.log('  │  → Health:     /api/health                    │');
+    console.log('  └──────────────────────────────────────────────┘');
+    console.log('');
+  });
+}
+
+start().catch(err => {
+  console.error('  ❌ Failed to start server:', err);
+  process.exit(1);
+});
