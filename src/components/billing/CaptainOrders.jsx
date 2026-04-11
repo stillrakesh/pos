@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Wifi, WifiOff, Printer, CheckSquare, Clock, Zap, Volume2, VolumeX, RefreshCw, AlertTriangle } from 'lucide-react';
 import { fetchOrders, updateOrderStatus } from '../../utils/apiClient';
-import { printViaQzTray, isQzConnected } from '../../utils/qzTrayPrinter';
 import { printPosToSerial } from '../../utils/printerUtils';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -104,18 +103,9 @@ const CaptainOrders = ({ settings, onInjectOrder }) => {
         notes: order.notes || ''
       };
 
-      // Try QZ Tray first (silent, no user prompt)
-      if (isQzConnected()) {
-        const result = await printViaQzTray(kotData, 'KOT', settings);
-        if (!result.success) {
-          throw new Error(result.message);
-        }
-        setPrintMethod('qz-tray');
-      } else {
-        // Fallback to Web Serial
-        await printPosToSerial(kotData, 'KOT');
-        setPrintMethod('web-serial');
-      }
+      // Print via unified engine (QZ Tray silent → browser fallback)
+      await printPosToSerial(kotData, 'KOT');
+      setPrintMethod('qz-tray');
 
       // Update status on server
       await updateOrderStatus(order.id, 'PRINTED');
