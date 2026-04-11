@@ -4,6 +4,6 @@
     { "source": "/api/tables", "destination": "/api/tables.js" },
     { "source": "/api/menu", "destination": "/api/menu.js" },
     { "source": "/api/orders", "destination": "/api/orders.js" },
-    { "source": "/api/signing/(.*)", "destination": "/server/routes/signing.js" }
+    { "source": "/api/signing/(.*)", "destination": "/api/signing.js" }
   ]
 }
