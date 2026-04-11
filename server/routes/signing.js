@@ -1,39 +1,52 @@
-import { Router } from 'express';
-import { signMessage, getCertificate, isSigningConfigured } from '../qzSigning.js';
+const express = require('express');
+const router = express.Router();
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 
-const router = Router();
+// Paths to your QZ files
+const certPath = path.join(__dirname, '..', 'signing', 'digital-certificate.txt');
+const keyPath = path.join(__dirname, '..', 'signing', 'private-key.pem');
 
-// GET /api/signing/certificate — Return the QZ Tray certificate
+// Route to serve the certificate to the frontend
 router.get('/certificate', (req, res) => {
-  const cert = getCertificate();
-  if (!cert) {
-    return res.status(404).send('Certificate not configured');
+  try {
+    if (fs.existsSync(certPath)) {
+      const cert = fs.readFileSync(certPath, 'utf8');
+      res.set('Content-Type', 'text/plain');
+      res.send(cert);
+    } else {
+      console.error('Certificate file not found at:', certPath);
+      res.status(404).send('');
+    }
+  } catch (err) {
+    console.error('Error reading certificate:', err);
+    res.status(500).send('');
   }
-  res.type('text/plain').send(cert);
 });
 
-// GET /api/signing/sign — Sign a message for QZ Tray
+// Route to sign the print request using the private key
 router.get('/sign', (req, res) => {
-  const { request } = req.query;
-  if (!request) {
-    return res.status(400).send('Missing "request" query parameter');
-  }
+  try {
+    const toSign = req.query.request;
+    if (!toSign) return res.status(400).send('No request to sign');
+    
+    if (!fs.existsSync(keyPath)) {
+      console.error('Private key file not found at:', keyPath);
+      return res.status(404).send('');
+    }
 
-  const signature = signMessage(request);
-  if (!signature) {
-    return res.status(500).send('Signing failed — private key not configured');
+    const privateKey = fs.readFileSync(keyPath, 'utf8');
+    const signer = crypto.createSign('SHA512');
+    signer.update(toSign);
+    const signature = signer.sign(privateKey, 'base64');
+    
+    res.set('Content-Type', 'text/plain');
+    res.send(signature);
+  } catch (err) {
+    console.error('Error during signing:', err);
+    res.status(500).send('');
   }
-
-  res.type('text/plain').send(signature);
 });
 
-// GET /api/signing/status — Check if signing is ready
-router.get('/status', (req, res) => {
-  res.json({
-    configured: isSigningConfigured(),
-    hasCertificate: !!getCertificate(),
-    hasPrivateKey: isSigningConfigured()
-  });
-});
-
-export default router;
+module.exports = router;
