@@ -22,34 +22,45 @@ export async function connectQzTray() {
   if (_connected && qz.websocket.isActive()) return true;
 
   try {
-    // ─── Default Anonymous Mode ──────────────────────────────
-    // We use anonymous mode for now to keep the popup clickable.
-    // If we use an invalid certificate, the "Allow" button breaks.
-    qz.security.setCertificatePromise((resolve) => {
-      resolve();
+    const API_BASE = window.location.port === '5175' 
+      ? 'http://localhost:3001' 
+      : window.location.origin;
+
+    // ─── Certificate and Signing via backend ──────────────────
+    // Points to the server-side signing API which uses your private key.
+    qz.security.setCertificatePromise((resolve, reject) => {
+      fetch(`${API_BASE}/api/signing/certificate`, { cache: 'no-store' })
+        .then(res => res.ok ? res.text() : '')
+        .then(cert => resolve(cert))
+        .catch(() => resolve(''));
     });
 
     qz.security.setSignatureAlgorithm('SHA512');
 
-    qz.security.setSignaturePromise(() => (resolve) => {
-      resolve();
+    qz.security.setSignaturePromise((toSign) => (resolve, reject) => {
+      fetch(`${API_BASE}/api/signing/sign?request=${encodeURIComponent(toSign)}`, { cache: 'no-store' })
+        .then(res => res.ok ? res.text() : '')
+        .then(sig => resolve(sig))
+        .catch(() => resolve(''));
     });
 
+    console.log('[QZ Tray] 🌐 Connecting via WebSocket...');
     await qz.websocket.connect();
+    console.log('[QZ Tray] ✅ WebSocket Connected!');
     _connected = true;
 
     // Load saved printer preference
     const saved = await get(QZ_SETTINGS_KEY);
     if (saved?.printerName) {
+      console.log('[QZ Tray] 💾 Restoring saved printer:', saved.printerName);
       _selectedPrinter = saved.printerName;
       _printerConfig = qz.configs.create(saved.printerName, { forceRaw: true });
     }
 
-    console.log('[QZ Tray] ✅ Connected to QZ Tray');
     return true;
   } catch (err) {
     _connected = false;
-    console.warn('[QZ Tray] ❌ Connection failed:', err.message || err);
+    console.error('[QZ Tray] ❌ Connection failed error:', err);
     return false;
   }
 }
