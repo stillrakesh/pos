@@ -20,14 +20,28 @@ export async function connectQzTray() {
   if (_connected && qz.websocket.isActive()) return true;
 
   try {
-    // Skip certificate signing for local development
-    // In production, you should provide a signed certificate
-    qz.security.setCertificatePromise((resolve) => {
-      resolve('');  // No cert for local dev
+    // ─── Certificate and Signing via backend ──────────────────
+    // The server holds the private key securely and signs requests.
+    // This makes QZ Tray treat the connection as "trusted" so
+    // the "Remember this decision" checkbox becomes enabled.
+    const API_BASE = window.location.port === '5175' 
+      ? 'http://localhost:3001' 
+      : window.location.origin;
+
+    qz.security.setCertificatePromise((resolve, reject) => {
+      fetch(`${API_BASE}/api/signing/certificate`, { cache: 'no-store' })
+        .then(res => res.ok ? res.text() : '')
+        .then(cert => resolve(cert))
+        .catch(() => resolve(''));  // Fallback to unsigned if server unavailable
     });
+
     qz.security.setSignatureAlgorithm('SHA512');
-    qz.security.setSignaturePromise(() => (resolve) => {
-      resolve('');  // No signing for local dev
+
+    qz.security.setSignaturePromise((toSign) => (resolve, reject) => {
+      fetch(`${API_BASE}/api/signing/sign?request=${encodeURIComponent(toSign)}`, { cache: 'no-store' })
+        .then(res => res.ok ? res.text() : '')
+        .then(sig => resolve(sig))
+        .catch(() => resolve(''));  // Fallback to unsigned
     });
 
     await qz.websocket.connect();

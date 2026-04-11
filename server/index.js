@@ -4,6 +4,8 @@ import { initDatabase, forceSave } from './db.js';
 import ordersRouter from './routes/orders.js';
 import tablesRouter from './routes/tables.js';
 import menuRouter from './routes/menu.js';
+import signingRouter from './routes/signing.js';
+import { loadSigningFiles } from './qzSigning.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -32,6 +34,7 @@ app.use((req, res, next) => {
 app.use('/api/orders', ordersRouter);
 app.use('/api/tables', tablesRouter);
 app.use('/api/menu', menuRouter);
+app.use('/api/signing', signingRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -62,6 +65,7 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 // ─── Bootstrap ──────────────────────────────────────────────
 async function start() {
   await initDatabase();
+  loadSigningFiles();
 
   app.listen(PORT, () => {
     console.log('');
