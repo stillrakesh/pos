@@ -22,7 +22,7 @@ export async function connectQzTray() {
   if (_connected && qz.websocket.isActive()) return true;
 
   try {
-    const API_BASE = window.location.port === '5175' 
+    const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       ? 'http://localhost:3001' 
       : window.location.origin;
 
