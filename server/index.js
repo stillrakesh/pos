@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import { initDatabase, forceSave } from './db.js';
 import ordersRouter from './routes/orders.js';
+import tablesRouter from './routes/tables.js';
+import menuRouter from './routes/menu.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,6 +30,8 @@ app.use((req, res, next) => {
 
 // ─── Routes ─────────────────────────────────────────────────
 app.use('/api/orders', ordersRouter);
+app.use('/api/tables', tablesRouter);
+app.use('/api/menu', menuRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -65,6 +69,8 @@ async function start() {
     console.log(`  │  🔥 TYDE POS API Server                       │`);
     console.log(`  │  → http://localhost:${PORT}                    │`);
     console.log(`  │  → Orders API: http://localhost:${PORT}/api/orders │`);
+    console.log(`  │  → Tables API: http://localhost:${PORT}/api/tables │`);
+    console.log(`  │  → Menu API:   http://localhost:${PORT}/api/menu   │`);
     console.log('  │  → Health:     /api/health                    │');
     console.log('  └──────────────────────────────────────────────┘');
     console.log('');
