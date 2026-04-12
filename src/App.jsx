@@ -50,7 +50,7 @@ const GlobalStyles = ({ settings }) => {
         --radius-md: ${radius}px;
         --radius-lg: ${radius * 1.5}px;
         --table-radius: ${tableRadius};
-        --sidebar-width: clamp(220px, 18vw, 260px);
+        --sidebar-width: 240px; /* Rigid Sidebar */
       }
       * {
         font-family: '${font}', 'Inter', system-ui, sans-serif !important;
@@ -59,16 +59,15 @@ const GlobalStyles = ({ settings }) => {
       }
       body {
         margin: 0;
-        background-color: var(--bg-color);
+        background-color: #1e293b;
         color: var(--text-color);
         font-weight: ${baseWeight};
-        font-size: clamp(12px, 0.9vw, 14px);
-        overflow: hidden;
+        font-size: 14px; /* Fixed Base Size */
       }
       .view-container {
         flex: 1;
-        overflow-y: auto;
-        padding: clamp(16px, 2vw, 32px);
+        overflow: auto;
+        padding: 24px; /* Consistent Padding */
         background: var(--bg-color);
       }
       /* Hide scrollbars for a cleaner app look */
@@ -378,70 +377,77 @@ const TimeElapsed = ({ createdAt }) => {
 };
 
 const AppTopNavbar = ({ globalSearch, onSearchChange, onToggleSidebar, onViewChange, stats }) => (
-  <div className="no-print" style={{ minHeight: 'clamp(70px, 8vh, 86px)', background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(226, 232, 240, 0.4)', display: 'flex', alignItems: 'center', padding: '10px clamp(16px, 2vw, 24px)', position: 'sticky', top: 0, zIndex: 1000, gap: 'clamp(10px, 1.5vw, 20px)' }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px, 1.2vw, 16px)' }}>
-      <button onClick={onToggleSidebar} style={{ background: 'white', border: '1px solid #e2e8f0', cursor: 'pointer', padding: 'clamp(6px, 0.8vw, 10px)', color: '#1f2937', borderRadius: '12px', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.04)' }}><Menu size={18} /></button>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontWeight: '950', fontSize: 'clamp(14px, 1.2vw, 18px)', color: '#0f172a', letterSpacing: '-0.3px' }}>TYDE POS</span>
+  <div className="no-print" style={{ 
+    height: '72px', 
+    background: 'white', 
+    borderBottom: '1px solid #e2e8f0', 
+    display: 'flex', 
+    alignItems: 'center', 
+    padding: '0 24px', 
+    position: 'sticky', 
+    top: 0, 
+    zIndex: 1000, 
+    gap: '20px' 
+  }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <button onClick={onToggleSidebar} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'pointer', padding: '10px', color: '#1f2937', borderRadius: '10px' }}><Menu size={20} /></button>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontWeight: '950', fontSize: '20px', color: '#0f172a', letterSpacing: '-0.5px' }}>TYDE POS</span>
         </div>
-        <span style={{ fontSize: 'clamp(9px, 0.7vw, 11px)', color: '#64748b', fontWeight: '700' }}>{new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700' }}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}</span>
       </div>
     </div>
 
-    <button onClick={() => onViewChange('tables')} style={{ background: 'linear-gradient(135deg, #94161c 0%, #be123c 100%)', color: 'white', border: 'none', borderRadius: '12px', padding: 'clamp(8px, 1vw, 11px) clamp(12px, 1.5vw, 18px)', fontWeight: '900', fontSize: 'clamp(11px, 0.9vw, 13px)', cursor: 'pointer', boxShadow: '0 8px 20px rgba(163, 17, 42, 0.2)', whiteSpace: 'nowrap' }}>New Order</button>
+    <button onClick={() => onViewChange('tables')} style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(163, 17, 42, 0.2)' }}>New Order</button>
 
-    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <div style={{ background: '#f8fafc', padding: 'clamp(8px, 1vw, 12px) clamp(12px, 1.5vw, 18px)', borderRadius: '14px', border: '1px solid #e2e8f0', flex: 1, display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <Search size={16} color="#94a3b8" />
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', maxWidth: '500px' }}>
+      <div style={{ background: '#f8fafc', padding: '10px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', width: '100%', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <Search size={18} color="#94a3b8" />
         <input 
           type="text" 
-          placeholder="Smart Search..." 
+          placeholder="Search Table, Order or Customer..." 
           value={globalSearch}
           onChange={e => onSearchChange(e.target.value)}
-          style={{ background: 'transparent', border: 'none', fontSize: 'clamp(12px, 0.85vw, 14px)', width: '100%', outline: 'none', fontWeight: '500' }} 
+          style={{ background: 'transparent', border: 'none', fontSize: '14px', width: '100%', outline: 'none', fontWeight: '500' }} 
         />
       </div>
     </div>
     
-    <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px, 1vw, 16px)' }}>
-      <div style={{ display: 'flex', gap: '6px' }} className="hidden-mobile">
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', gap: '8px' }}>
         <button 
           onClick={() => onViewChange('tables')} 
-          style={{ border: '1px solid #fecdd3', color: '#94161c', background: '#fff1f2', padding: '8px 14px', borderRadius: '10px', fontSize: 'clamp(10px, 0.8vw, 12px)', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          style={{ border: '1px solid #e2e8f0', color: '#1f2937', background: 'white', padding: '8px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
         >
           <LayoutGrid size={16} /> TABLES
         </button>
         <button 
           onClick={() => onViewChange('nontables')} 
-          style={{ border: 'none', background: '#0f172a', color: 'white', padding: '8px 14px', borderRadius: '10px', fontSize: 'clamp(10px, 0.8vw, 12px)', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          style={{ border: 'none', background: '#0f172a', color: 'white', padding: '8px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
         >
           <ShoppingBag size={16} /> PICKUPS
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px', borderLeft: '1px solid #f1f5f9', paddingLeft: '16px' }}>
-        <div onClick={() => onViewChange('dayclose')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer', padding: '0 2px' }}>
-          <Sunset size={16} color="#64748b" />
-          <span style={{ fontSize: '8px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Close</span>
+      <div style={{ display: 'flex', gap: '12px', borderLeft: '1px solid #e2e8f0', paddingLeft: '16px' }}>
+        <div onClick={() => onViewChange('dayclose')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
+          <Sunset size={18} color="#64748b" />
+          <span style={{ fontSize: '9px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Day End</span>
         </div>
-        <div onClick={() => onViewChange('analytics')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer', padding: '0 2px' }}>
-          <BarChart3 size={16} color="#64748b" />
-          <span style={{ fontSize: '8px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Report</span>
-        </div>
-        <div onClick={() => onViewChange('kds')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer', padding: '0 2px' }}>
-          <ChefHat size={16} color="#64748b" />
-          <span style={{ fontSize: '8px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>KOT</span>
+        <div onClick={() => onViewChange('kds')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
+          <ChefHat size={18} color="#64748b" />
+          <span style={{ fontSize: '9px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Queue</span>
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderLeft: '1px solid #f1f5f9', paddingLeft: '16px' }}>
-        <div style={{ textAlign: 'right' }} className="hidden-mobile">
-          <div style={{ fontSize: '11px', fontWeight: '900', color: '#94161c' }}>Live Queue</div>
-          <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#1f2937' }}>{stats.pendingKot} Orders</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '1px solid #e2e8f0', paddingLeft: '16px' }}>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '12px', fontWeight: '900', color: '#94161c' }}>Live</div>
+          <div style={{ fontSize: '13px', fontWeight: '900', color: '#0f172a' }}>{stats.pendingKot} KOT</div>
         </div>
-        <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: '#f8fafc', display: 'grid', placeItems: 'center', border: '1px solid #e2e8f0' }}>
-          <User size={18} color="#64748b" style={{ cursor: 'pointer' }} />
+        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#1e293b', display: 'grid', placeItems: 'center' }}>
+          <User size={20} color="white" />
         </div>
       </div>
     </div>
@@ -1824,14 +1830,13 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
             <div style={{
               position: 'relative', 
               height: '600px', 
-              background: 'rgba(255,255,255,0.85)', 
+              background: '#ffffff', 
               borderRadius: '24px', 
-              border: '1px solid rgba(148, 163, 184, 0.1)', 
+              border: '1px solid #e2e8f0', 
               overflow: 'auto',
               backgroundImage: 'radial-gradient(#e2e8f0 1.5px, transparent 1.5px)', 
               backgroundSize: '24px 24px', 
-              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.08)',
-              padding: '20px'
+              padding: '24px'
             }}>
               {filteredTables.filter(t => t.type === section).map(table => {
                 const tableTotal = getOrderTotal(table.order);
@@ -1843,58 +1848,29 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
                   <div
                     key={table.id}
                     onClick={() => onSelectTable(table)}
+                    className={`pp-table-card ${isRunning ? (isPrinted ? 'status-printed' : 'status-running') : 'status-blank'}`}
                     style={{
                       position: 'absolute',
                       left: `${table.pos?.x || 0}px`,
                       top: `${table.pos?.y || 0}px`,
-                      width: '135px', // Reduced from 155 to prevent overlap
-                      minHeight: '120px', // More compact
-                      background: isPrinted ? '#f0fdf4' : isRunning ? '#fff7ed' : 'white',
-                      borderRadius: '16px',
-                      border: `2px solid ${isPrinted ? '#10b981' : isRunning ? '#f97316' : 'rgba(226, 232, 240, 0.8)'}`,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      padding: '12px',
-                      cursor: 'pointer',
-                      boxShadow: isRunning ? '0 15px 30px -10px rgba(249, 115, 22, 0.3)' : '0 4px 6px -1px rgba(0,0,0,0.03)',
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       zIndex: isRunning ? 10 : 1
                     }}
-                    onMouseEnter={e => { 
-                      e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
-                      e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0,0,0,0.1)';
-                      e.currentTarget.style.zIndex = '50';
-                    }}
-                    onMouseLeave={e => { 
-                      e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                      e.currentTarget.style.boxShadow = isRunning ? '0 15px 30px -10px rgba(249, 115, 22, 0.3)' : '0 4px 6px -1px rgba(0,0,0,0.03)';
-                      e.currentTarget.style.zIndex = isRunning ? '10' : '1';
-                    }}
                   >
-                    <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '15px', fontWeight: '900', color: '#1f2937' }}>{table.name}</div>
-                        <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase' }}>{isPrinted ? 'Ready to bill' : isRunning ? 'Running' : 'Vacant'}</div>
+                    <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ fontWeight: '800', fontSize: '13px' }}>{table.name}</div>
+                      {isRunning && <TimeElapsed createdAt={table.createdAt} />}
+                    </div>
+                    <div style={{ margin: '12px 0', textAlign: 'center' }}>
+                      <div style={{ fontSize: '18px', fontWeight: '950', color: isPrinted ? '#059669' : (isRunning ? '#c2410c' : '#94a3b8') }}>
+                        {tableTotal > 0 ? formatCurrency(tableTotal) : '--'}
                       </div>
-                      {isRunning ? <TimeElapsed createdAt={table.createdAt} /> : null}
+                      <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px' }}>{table.order?.length || 0} items</div>
                     </div>
-
-                    <div style={{ width: '100%' }}>
-                      <div style={{ fontSize: '20px', fontWeight: '950', color: isPrinted ? '#059669' : isRunning ? '#c2410c' : '#94a3b8', marginBottom: '4px' }}>{tableTotal > 0 ? formatCurrency(tableTotal) : '--'}</div>
-                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700' }}>{table.order?.length || 0} items{minutes >= 45 ? ' • Late' : ''}</div>
-                    </div>
-
                     {isRunning && (
-                      <div style={{ display: 'flex', gap: '8px', marginTop: 'auto', paddingTop: '8px' }}>
-                        <button title="Print Bill" onClick={(e) => { e.stopPropagation(); onQuickPrint(table); }} style={{ padding: '6px', background: 'white', borderRadius: '6px', cursor: 'pointer', border: '1px solid #e2e8f0', display: 'flex' }}>
-                          <Printer size={14} color="#64748b" />
-                        </button>
-                        <button title="Settle Bill" onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} style={{ padding: '6px', background: '#111827', color: 'white', borderRadius: '6px', cursor: 'pointer', border: 'none', display: 'flex' }}>
-                          <CheckSquare size={14} />
-                        </button>
-                        <button title="Clear Table" onClick={(e) => { e.stopPropagation(); setTableToClear(table.id); }} style={{ padding: '6px', background: '#fef2f2', color: '#ef4444', borderRadius: '6px', cursor: 'pointer', border: '1px solid #fee2e2', display: 'flex' }}>
-                          <Trash2 size={14} />
-                        </button>
+                      <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '8px', width: '100%', justifyContent: 'center' }}>
+                         <Printer size={14} color="#64748b" onClick={(e) => { e.stopPropagation(); onQuickPrint(table); }} />
+                         <CheckSquare size={14} color="#10b981" onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} />
+                         <Trash2 size={14} color="#ef4444" onClick={(e) => { e.stopPropagation(); setTableToClear(table.id); }} />
                       </div>
                     )}
                   </div>
@@ -1902,7 +1878,7 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
               })}
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '16px' }}>
+            <div className="table-grid no-scrollbar">
               {filteredTables.filter(t => t.type === section).map(table => {
                 const tableTotal = getOrderTotal(table.order);
                 const isRunning = table.status !== 'blank';
@@ -1913,35 +1889,30 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
                     key={table.id}
                     onClick={() => onSelectTable(table)}
                     className={`pp-table-card ${isRunning ? (isPrinted ? 'status-printed' : 'status-running') : 'status-blank'}`}
-                    style={{ minHeight: '148px', padding: '18px', borderRadius: '24px', border: '1px solid #f1f5f9', position: 'relative', background: isPrinted ? '#f0fdf4' : isRunning ? '#fff7ed' : 'white' }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <div style={{ fontSize: '14px', fontWeight: '900', color: '#4b5563' }}>{table.name}</div>
-                        <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>{table.type}</div>
-                      </div>
+                    <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ fontWeight: '800', fontSize: '13px' }}>{table.name}</div>
                       {isRunning && <TimeElapsed createdAt={table.createdAt} />}
                     </div>
-                    <div style={{ marginTop: 'auto' }}>
-                      <div style={{ fontSize: '20px', fontWeight: '950', color: isPrinted ? '#059669' : '#111827' }}>{tableTotal > 0 ? formatCurrency(tableTotal) : '--'}</div>
-                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700' }}>{table.order?.length || 0} line items</div>
+                    <div style={{ margin: '12px 0', textAlign: 'center' }}>
+                      <div style={{ fontSize: '18px', fontWeight: '950', color: isPrinted ? '#059669' : (isRunning ? '#c2410c' : '#94a3b8') }}>
+                        {tableTotal > 0 ? formatCurrency(tableTotal) : '--'}
+                      </div>
+                      <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px' }}>{table.order?.length || 0} line items</div>
                     </div>
                     {isRunning && (
-                      <>
-                        <div style={{ position: 'absolute', top: '44px', right: '14px', display: 'flex', gap: '6px' }}>
-                          <div title="Print Bill" onClick={(e) => { e.stopPropagation(); onQuickPrint(table); }} style={{ padding: '4px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '4px', cursor: 'pointer' }}><Printer size={12} color="#64748b" /></div>
-                          <div title="Settle Bill" onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} style={{ padding: '4px', background: '#111827', color: 'white', borderRadius: '4px', cursor: 'pointer' }}><CheckSquare size={12} /></div>
-                        </div>
-                        <div onClick={(e) => { e.stopPropagation(); setTableToClear(table.id); }} style={{ position: 'absolute', bottom: '10px', right: '10px', padding: '6px', background: '#fee2e2', borderRadius: '8px', cursor: 'pointer' }}>
-                          <Trash2 size={12} color="#ef4444" />
-                        </div>
-                      </>
+                       <div style={{ display: 'flex', gap: '10px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '8px', width: '100%', justifyContent: 'center' }}>
+                         <Printer size={15} color="#64748b" onClick={(e) => { e.stopPropagation(); onQuickPrint(table); }} />
+                         <CheckSquare size={15} color="#10b981" onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} />
+                         <Trash2 size={15} color="#ef4444" onClick={(e) => { e.stopPropagation(); setTableToClear(table.id); }} />
+                       </div>
                     )}
                   </div>
                 );
               })}
             </div>
           )}
+
         </div>
       ))}
 
@@ -2435,32 +2406,23 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
             return (
               <div
                 key={item.id}
-                className={`item-card ${item.type}`}
+                className="item-card veg" // Simplified for common software feel
                 onClick={() => {
                   if (isAvailable || !isRetail) handleItemClick(item);
                 }}
                 style={{
-                  background: 'white',
-                  borderRadius: '16px',
-                  border: '1px solid #e2e8f0',
-                  padding: '16px',
                   opacity: isAvailable ? 1 : 0.5,
                   cursor: isAvailable ? 'pointer' : 'not-allowed',
-                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)',
-                  display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                  height: '140px',
-                  transition: 'transform 0.1s, box-shadow 0.1s'
+                  background: 'white'
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.05)'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.02)'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
               >
-                <div style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b', marginBottom: '8px', lineHeight: '1.4' }}>
-                  {item.name} {item.modifiers && <span style={{ color: '#94161c', fontSize: '12px', marginLeft: '4px' }}>*</span>}
-                  {isRetail && <div style={{ marginTop: '6px', display: 'inline-block', background: '#f0f9ff', color: '#0284c7', padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '800' }}>Stock: {liveStock}</div>}
+                <div style={{ fontSize: '13px', fontWeight: '800', color: '#111827', lineHeight: '1.2' }}>
+                  {item.name}
+                  {isRetail && <div style={{ marginTop: '4px', background: '#f0f9ff', color: '#0284c7', padding: '2px 6px', borderRadius: '4px', fontSize: '10px' }}>Stock: {liveStock}</div>}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                  <div style={{ fontSize: '15px', fontWeight: '900', color: '#0f172a' }}>₹{item.price}</div>
-                  {!isAvailable && <div style={{ fontSize: '10px', color: '#ef4444', fontWeight: '800', background: '#fef2f2', padding: '2px 6px', borderRadius: '4px' }}>Sold Out</div>}
+                  <div style={{ fontSize: '15px', fontWeight: '900', color: '#111827' }}>₹{item.price}</div>
+                  {!isAvailable && <div style={{ fontSize: '10px', color: '#ef4444', fontWeight: '900', background: '#fef2f2', padding: '2px 6px', borderRadius: '4px' }}>OUT</div>}
                 </div>
               </div>
             );

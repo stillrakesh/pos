@@ -38,21 +38,30 @@
 }
 
 body {
-  background-color: var(--bg-main);
+  background-color: #1e293b; /* Dark backdrop for the centered app */
   color: var(--text-main);
   overflow: hidden;
   height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #root {
+  width: 100%;
   height: 100%;
 }
 
 .app-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
+  max-width: 1440px; /* Fixed Max Width for "Software" feel */
+  background: var(--bg-main);
+  box-shadow: 0 0 100px rgba(0,0,0,0.5); /* Lift the app off the background */
+  position: relative;
+  overflow: hidden;
 }
 
 /* Header Styles */
@@ -131,7 +140,7 @@ body {
   font-weight: 600;
 }
 
-/* Table Card Styles */
+/* Rigid Table Card Styles */
 .pp-table-card {
   background: white;
   border: 1px solid var(--border);
@@ -141,13 +150,15 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 110px;
+  width: 180px;  /* FIXED WIDTH */
+  height: 140px; /* FIXED HEIGHT */
   cursor: pointer;
   box-shadow: var(--shadow-sm);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
   position: relative;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0; /* Prevent squeezing */
 }
 
 .pp-table-card:hover {
@@ -443,26 +454,44 @@ body {
   }
 }
 
-@media (max-width: 1200px) {
-  .billing-panel {
-    width: 380px;
-  }
-
-  .items-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  }
+/* Discrete Grid System (No Fluid Stretching) */
+.table-grid {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  width: fit-content;
+  margin: 0 auto; /* Center the grid inside the section */
 }
 
-@media (max-width: 900px) {
-  .menu-sidebar {
-    width: 140px;
-  }
+/* 5 Columns (Large Desktop) */
+@media (min-width: 1300px) {
+  .table-grid { grid-template-columns: repeat(5, 180px); }
+}
 
-  .billing-panel {
-    width: 340px;
-  }
+/* 4 Columns (MacBook Air / Laptops) */
+@media (max-width: 1299px) {
+  .table-grid { grid-template-columns: repeat(4, 180px); }
+}
 
-  .pp-table-card {
-    min-height: 96px;
-  }
+/* 3 Columns (Smaller Laptops) */
+@media (max-width: 1000px) {
+  .table-grid { grid-template-columns: repeat(3, 180px); }
+}
+
+/* 2 Columns (Small Devices) */
+@media (max-width: 750px) {
+  .table-grid { grid-template-columns: repeat(2, 180px); }
+}
+
+.item-card {
+  width: 170px; /* Rigid item cards */
+  height: 135px;
+  flex-shrink: 0;
+}
+
+.items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 170px);
+  gap: 12px;
+  padding: 16px;
 }
