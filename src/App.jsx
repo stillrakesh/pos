@@ -50,8 +50,12 @@ const GlobalStyles = ({ settings }) => {
         --radius-md: ${radius}px;
         --radius-lg: ${radius * 1.5}px;
         --table-radius: ${tableRadius};
-        --sidebar-width: 240px; /* Rigid Sidebar */
+        --sidebar-width: 240px;
       }
+      @media (max-width: 1280px) {
+        :root { --sidebar-width: 200px; }
+      }
+      
       * {
         font-family: '${font}', 'Inter', system-ui, sans-serif !important;
         -webkit-font-smoothing: antialiased;
@@ -59,15 +63,15 @@ const GlobalStyles = ({ settings }) => {
       }
       body {
         margin: 0;
-        background-color: #1e293b;
+        background-color: #0f172a; /* Deep software background */
         color: var(--text-color);
         font-weight: ${baseWeight};
-        font-size: 14px; /* Fixed Base Size */
+        font-size: var(--font-size-base);
       }
       .view-container {
         flex: 1;
         overflow: auto;
-        padding: 24px; /* Consistent Padding */
+        padding: var(--app-padding);
         background: var(--bg-color);
       }
       /* Hide scrollbars for a cleaner app look */
@@ -378,7 +382,7 @@ const TimeElapsed = ({ createdAt }) => {
 
 const AppTopNavbar = ({ globalSearch, onSearchChange, onToggleSidebar, onViewChange, stats }) => (
   <div className="no-print" style={{ 
-    height: '72px', 
+    height: 'var(--header-height)', 
     background: 'white', 
     borderBottom: '1px solid #e2e8f0', 
     display: 'flex', 
