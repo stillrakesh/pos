@@ -151,26 +151,30 @@ body {
   font-weight: 600;
 }
 
-/* STRICT GRID Table Cards (Fixed Size) */
+/* STRICT GRID Table Cards (Square & Spaced) */
+.pp-table-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 220px);
+  gap: 24px; /* LUXURY SPACING to prevent overlap */
+  padding: 24px;
+}
+
 .pp-table-card {
   background: white;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 16px;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 20px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 220px !important;  /* USER STRICT REQUEST */
-  height: 140px !important; /* FIXED DEPTH */
+  justify-content: space-between; /* Space out the header and footer */
+  width: 220px !important;  
+  height: 220px !important; /* SQUARE SHAPE */
   cursor: pointer;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;
-  font-size: 14px;
-  font-weight: 700;
-  flex-shrink: 0;
   overflow: hidden;
+  user-select: none;
 }
 
 .pp-table-card:hover {

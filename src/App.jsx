@@ -1823,12 +1823,9 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
 
       {(floorPlanSections || []).map(section => (
         <div key={section} style={{ marginBottom: '48px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '2px' }}>{section} section</h3>
-            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '800' }}>
-              {filteredTables.filter(table => table.type === section).length} visible tables
-            </div>
-          </div>
+          <h2 style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+            {section} SECTION
+          </h2>
 
           {viewMode === 'map' ? (
             <div style={{
@@ -1882,7 +1879,7 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
               })}
             </div>
           ) : (
-            <div className="table-grid no-scrollbar">
+            <div className="pp-table-grid no-scrollbar">
               {filteredTables.filter(t => t.type === section).map(table => {
                 const tableTotal = getOrderTotal(table.order);
                 const isRunning = table.status !== 'blank';
@@ -1894,21 +1891,28 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
                     onClick={() => onSelectTable(table)}
                     className={`pp-table-card ${isRunning ? (isPrinted ? 'status-printed' : 'status-running') : 'status-blank'}`}
                   >
-                    <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div style={{ fontWeight: '800', fontSize: '13px' }}>{table.name}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+                      <div style={{ fontWeight: '950', fontSize: '16px', color: '#1e293b' }}>{table.name}</div>
                       {isRunning && <TimeElapsed createdAt={table.createdAt} />}
                     </div>
-                    <div style={{ margin: '12px 0', textAlign: 'center' }}>
-                      <div style={{ fontSize: '18px', fontWeight: '950', color: isPrinted ? '#059669' : (isRunning ? '#c2410c' : '#94a3b8') }}>
-                        {tableTotal > 0 ? formatCurrency(tableTotal) : '--'}
+
+                    <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <div style={{ fontSize: '12px', fontWeight: '800', color: isRunning ? (isPrinted ? '#10b981' : '#c2410c') : '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>
+                        {isPrinted ? 'READY TO BILL' : (isRunning ? 'RUNNING' : 'VACANT')}
                       </div>
-                      <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px' }}>{table.order?.length || 0} line items</div>
+                      <div style={{ fontSize: '28px', fontWeight: '950', color: isRunning ? '#1e293b' : '#cbd5e1' }}>
+                        {tableTotal > 0 ? formatCurrency(tableTotal) : '₹0'}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginTop: '4px' }}>
+                        {table.order?.length || 0} items
+                      </div>
                     </div>
+
                     {isRunning && (
-                       <div style={{ display: 'flex', gap: '10px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '8px', width: '100%', justifyContent: 'center' }}>
-                         <Printer size={15} color="#64748b" onClick={(e) => { e.stopPropagation(); onQuickPrint(table); }} />
-                         <CheckSquare size={15} color="#10b981" onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} />
-                         <Trash2 size={15} color="#ef4444" onClick={(e) => { e.stopPropagation(); setTableToClear(table.id); }} />
+                       <div style={{ display: 'flex', gap: '12px', borderTop: '1px dotted rgba(0,0,0,0.1)', paddingTop: '12px', width: '100%', justifyContent: 'center' }}>
+                         <button onClick={(e) => { e.stopPropagation(); onQuickPrint(table); }} style={{ background: 'rgba(0,0,0,0.05)', border: 'none', padding: '8px', borderRadius: '10px', cursor: 'pointer' }}><Printer size={16} color="#64748b" /></button>
+                         <button onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} style={{ background: 'rgba(16, 185, 129, 0.1)', border: 'none', padding: '8px', borderRadius: '10px', cursor: 'pointer' }}><CheckSquare size={16} color="#10b981" /></button>
+                         <button onClick={(e) => { e.stopPropagation(); setTableToClear(table.id); }} style={{ background: 'rgba(239, 68, 68, 0.05)', border: 'none', padding: '8px', borderRadius: '10px', cursor: 'pointer' }}><Trash2 size={16} color="#ef4444" /></button>
                        </div>
                     )}
                   </div>
