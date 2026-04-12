@@ -16,7 +16,7 @@ import { formatCurrency } from '../../utils/formatters';
  * - Audio notification on new orders
  * - Shows connection status indicator
  */
-const CaptainOrders = ({ newOrders = [], setNewOrders, onInjectOrder, settings }) => {
+const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrder, settings }) => {
   const [printedOrders, setPrintedOrders] = useState([]);      // Recently printed (for display)
   const [isOnline, setIsOnline] = useState(false);             // API connection status
   const [autoPrint, setAutoPrint] = useState(true);           // Auto-print toggle
@@ -234,7 +234,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onInjectOrder, settings }
 
           {/* Force refresh */}
           <button
-            onClick={pollNewOrders}
+            onClick={onManualSync}
             style={{
               padding: '10px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.05)', color: '#94a3b8', cursor: 'pointer'

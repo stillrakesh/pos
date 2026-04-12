@@ -3150,6 +3150,14 @@ function MainApp() {
     return () => clearInterval(interval);
   }, [isDbLoaded, settings]);
 
+  const manualSyncCaptainOrders = async () => {
+    try {
+      const { fetchOrders } = await import('./utils/apiClient');
+      const data = await fetchOrders();
+      if (data.success) setNewCaptainOrders(data.orders);
+    } catch (err) { }
+  };
+
   if (!isDbLoaded) {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
@@ -3458,6 +3466,7 @@ function MainApp() {
             <CaptainOrders
               newOrders={newCaptainOrders}
               setNewOrders={setNewCaptainOrders}
+              onManualSync={manualSyncCaptainOrders}
               settings={settings}
               onInjectOrder={(apiOrder) => {
                 // Map the API order into the POS table system
