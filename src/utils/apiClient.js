@@ -71,6 +71,17 @@ export async function createOrder(orderData) {
 }
 
 /**
+ * Fetch live table status from cloud.
+ * @returns {Promise<{success: boolean, tables: Array}>}
+ */
+export async function fetchTables() {
+  const url = `${API_BASE}/tables`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`GET /api/tables failed: ${res.status}`);
+  return res.json();
+}
+
+/**
  * Check if the API server is reachable.
  * @returns {Promise<boolean>}
  */

@@ -3167,50 +3167,62 @@ function MainApp() {
 
     const pollCaptainOrders = async () => {
       try {
-        const { fetchOrders, updateOrderStatus } = await import('./utils/apiClient');
+        const { fetchOrders, updateOrderStatus, fetchTables } = await import('./utils/apiClient');
         const { printViaQzTray } = await import('./utils/qzTrayPrinter');
         
-        // 1. Fetch ALL recent orders (not just NEW) so they stay on the POS screen
-        const data = await fetchOrders(); // Fetching all statuses
+        // 1. Fetch ALL recent orders for processing
+        const data = await fetchOrders(); 
         if (data.success && data.orders.length > 0) {
-          
-          // Separate out truly new ones for auto-printing
           const trulyNew = data.orders.filter(o => o.status === 'NEW' && !processedCaptainIds.current.has(o.id));
-          
-          // Update the list of all orders to show on screen
           setNewCaptainOrders(data.orders);
           
           if (trulyNew.length > 0) {
-            // Auto-print newly arrived orders
             for (const order of trulyNew) {
               if (processedCaptainIds.current.has(order.id)) continue;
               processedCaptainIds.current.add(order.id);
-
               console.log("[Background] Auto-printing Order:", order.id);
-              
-              // Mark as PRINTED on server immediately
               await updateOrderStatus(order.id, 'PRINTED');
 
-              // Print it
               const printData = {
                 tableName: `Table ${order.table_number}`,
                 orderType: 'Dine In',
                 items: order.items.map(i => ({ name: i.name, qty: i.quantity, note: '' })),
                 grandTotal: order.items.reduce((s, i) => s + (i.price * i.quantity), 0)
               };
-              
               await printViaQzTray(printData, 'KOT', settings);
             }
           }
         } else {
           setNewCaptainOrders([]);
         }
+
+        // 2. LIVE SYNC FLOOR STATUS
+        if (view !== 'floorplan') {
+          const tableData = await fetchTables();
+          if (tableData.success && tableData.tables) {
+             setTables(prev => {
+               // Only update if there are actual changes in status or order
+               return prev.map(localT => {
+                 const cloudT = tableData.tables.find(ct => String(ct.id) === String(localT.id));
+                 if (cloudT) {
+                   return {
+                     ...localT,
+                     status: cloudT.status || 'blank',
+                     order: cloudT.order || [],
+                     createdAt: cloudT.createdAt || null
+                   };
+                 }
+                 return localT;
+               });
+             });
+          }
+        }
       } catch (err) { }
     };
 
     const interval = setInterval(pollCaptainOrders, 3500);
     return () => clearInterval(interval);
-  }, [isDbLoaded, settings]);
+  }, [isDbLoaded, settings, view]);
 
   const manualSyncCaptainOrders = async () => {
     try {
