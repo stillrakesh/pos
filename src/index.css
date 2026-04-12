@@ -162,23 +162,25 @@ body {
 
 .pp-table-card {
   background: white !important;
-  border: 1.5px solid #cbd5e1 !important;
-  border-radius: 20px; 
-  padding: 12px; /* Tighter padding for smaller size */
+  border: 1.5px solid #e2e8f0 !important; 
+  border-radius: 12px; 
+  padding: 14px; 
   display: flex;
   flex-direction: column;
   width: 150px !important;  
-  height: 190px !important; /* Sharp vertical profile */
+  height: 190px !important; 
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
 }
 
 .pp-table-card.status-running {
-  border-color: #f97316 !important; /* The precise orange from your photo */
+  background: #fffdfa !important; 
+  border-color: #f97316 !important; 
   border-width: 2px !important;
+  box-shadow: 0 8px 16px rgba(249, 115, 22, 0.08) !important;
 }
 
 .pp-table-card:hover {
@@ -193,13 +195,16 @@ body {
 }
 
 .pp-table-card.status-printed {
-  background: var(--status-printed);
-  border-color: #bbf7d0;
+  background: #f0fdf4 !important; 
+  border-color: #10b981 !important;
+  border-width: 2px !important;
+  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.08) !important;
 }
 
 .pp-table-card.status-kot {
-  background: var(--status-kot-running);
-  border-color: #fde047;
+  background: #fffbeb !important;
+  border-color: #f59e0b !important;
+  border-width: 2px !important;
 }
 
 /* Item Grid */
