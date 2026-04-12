@@ -151,30 +151,33 @@ body {
   font-weight: 600;
 }
 
-/* STRICT GRID Table Cards (Square & Spaced) */
+/* PROFESSIONAL COMPACT GRID */
 .pp-table-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 220px);
-  gap: 24px; /* LUXURY SPACING to prevent overlap */
-  padding: 24px;
+  grid-template-columns: repeat(auto-fill, 180px); /* Compact width */
+  gap: 20px; /* 20px spacing as requested */
+  padding: 20px;
 }
 
 .pp-table-card {
   background: white;
-  border: 1px solid rgba(0,0,0,0.1);
-  border-radius: 20px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 24px; /* More rounded premium look */
   padding: 20px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between; /* Space out the header and footer */
-  width: 220px !important;  
-  height: 220px !important; /* SQUARE SHAPE */
+  width: 180px !important;  
+  height: 230px !important; /* Elegant Vertical Profile */
   cursor: pointer;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  transition: all 0.2s ease-in-out;
   position: relative;
   overflow: hidden;
-  user-select: none;
+}
+
+.pp-table-card.status-running {
+  border-color: #f97316; /* Professional Orange */
+  background: #fff;
 }
 
 .pp-table-card:hover {
