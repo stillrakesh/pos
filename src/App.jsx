@@ -1132,7 +1132,7 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
   const [draggedTableId, setDraggedTableId] = useState(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [editingTableId, setEditingTableId] = useState(null);
-  const [editingTableDraft, setEditingTableDraft] = useState({ name: '', seats: '4', shape: 'rounded', zoneLabel: '' });
+  const [editingTableDraft, setEditingTableDraft] = useState({ name: '', seats: '4', shape: 'rounded', zoneLabel: '', scale: '1.0' });
 
   const addTable = () => {
     if (newTableName.trim() === '' || !newTableType) return;
@@ -1146,7 +1146,8 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
       pos: { x: 50, y: 50 },
       seats: parseInt(newTableSeats, 10) || 4,
       shape: newTableShape,
-      zoneLabel: newZoneLabel.trim()
+      zoneLabel: newZoneLabel.trim(),
+      scale: 1.0
     };
     setTables([...tables, newTable]);
     setNewTableName('');
@@ -1241,6 +1242,7 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
       seats: String(table.seats || 4),
       shape: table.shape || 'rounded',
       zoneLabel: table.zoneLabel || '',
+      scale: String(table.scale || 1.0),
     });
   };
 
@@ -1252,6 +1254,7 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
       seats: parseInt(editingTableDraft.seats, 10) || 4,
       shape: editingTableDraft.shape || 'rounded',
       zoneLabel: editingTableDraft.zoneLabel.trim(),
+      scale: parseFloat(editingTableDraft.scale) || 1.0
     } : table));
     setEditingTableId(null);
   };
@@ -1377,9 +1380,12 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
                     onMouseDown={(e) => handleTableMouseDown(e, table.id)}
                     style={{
                       position: 'absolute', left: `${table.pos?.x || 0}px`, top: `${table.pos?.y || 0}px`,
-                      width: table.shape === 'square' ? '112px' : '100px', height: '100px', background: 'white', borderRadius: table.shape === 'square' ? '18px' : table.shape === 'circle' ? '999px' : '28px', border: '2px solid var(--primary)',
+                      width: `${(table.shape === 'square' ? 112 : 100) * (table.scale || 1)}px`, 
+                      height: `${100 * (table.scale || 1)}px`, 
+                      background: 'white', borderRadius: table.shape === 'square' ? '18px' : table.shape === 'circle' ? '999px' : '28px', border: '2px solid var(--primary)',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'grab',
-                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', userSelect: 'none'
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', userSelect: 'none',
+                      transition: 'all 0.1s'
                     }}
                   >
                     <div style={{ fontSize: '14px', fontWeight: '900', color: 'var(--primary)' }}>{table.name}</div>
@@ -1429,6 +1435,32 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
                   <option value="circle">Circle</option>
                 </select>
                 <input value={editingTableDraft.zoneLabel} onChange={e => setEditingTableDraft(prev => ({ ...prev, zoneLabel: e.target.value }))} placeholder="Zone label" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #d1d5db' }} />
+                
+                <div style={{ marginTop: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#4b5563', marginBottom: '8px' }}>Table Size (Scale)</label>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                    {[0.8, 1.0, 1.3, 1.8].map((s, idx) => (
+                      <button 
+                        key={s} 
+                        onClick={() => setEditingTableDraft(prev => ({ ...prev, scale: String(s) }))}
+                        style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '2px solid', borderColor: parseFloat(editingTableDraft.scale) === s ? '#7c3aed' : '#e5e7eb', background: parseFloat(editingTableDraft.scale) === s ? '#f5f3ff' : 'white', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                      >
+                        {['Small', 'Medium', 'Big', 'Jumbo'][idx]}
+                      </button>
+                    ))}
+                  </div>
+                  <input 
+                    type="range" min="0.5" max="2.5" step="0.1" 
+                    value={editingTableDraft.scale} 
+                    onChange={e => setEditingTableDraft(prev => ({ ...prev, scale: e.target.value }))}
+                    style={{ width: '100%', accentColor: '#7c3aed' }} 
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', fontWeight: 'bold', marginTop: '4px' }}>
+                    <span>Tiny</span>
+                    <span>{editingTableDraft.scale}x</span>
+                    <span>Massive</span>
+                  </div>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
                 <button onClick={() => setEditingTableId(null)} style={{ flex: 1, padding: '12px', background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
@@ -1853,7 +1885,9 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
                       position: 'absolute',
                       left: `${table.pos?.x || 0}px`,
                       top: `${table.pos?.y || 0}px`,
-                      zIndex: isRunning ? 10 : 1
+                      zIndex: isRunning ? 10 : 1,
+                      transform: `scale(${table.scale || 1})`,
+                      transformOrigin: 'top left'
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
