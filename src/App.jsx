@@ -3080,9 +3080,18 @@ function MainApp() {
       set('pos_floor_sections', floorPlanSections);
 
       // ── Cloud Sync for Captain App ────────────────────────
-      // Push tables & menu to Vercel API so Captain App can fetch them
+      // Map tables to the format the Captain App expects
+      const mappedTables = tables.map(t => ({
+        id: t.id,
+        table_number: t.name.replace('Table ', ''), // Just the number
+        capacity: t.seats || 4,
+        status: t.status === 'running' ? 'occupied' : 'vacant',
+        current_order_total: t.order?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0,
+        current_order_items: t.order?.length || 0
+      }));
+
       import('./utils/apiClient').then(({ syncAppData }) => {
-        syncAppData(tables, [...menuItems, ...products], Array.from(new Set([...categories, ...productCategories])));
+        syncAppData(mappedTables, [...menuItems, ...products], Array.from(new Set([...categories, ...productCategories])));
       });
     }
   }, [customers, tables, orderHistory, nonTableOrders, settings, menuItems, categories, products, productCategories, floorPlanSections, isDbLoaded]);
