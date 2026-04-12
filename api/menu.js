@@ -18,7 +18,7 @@ export default function handler(req, res) {
   if (req.method === 'GET') {
     return res.status(200).json({ 
       success: true, 
-      items: menuItems, 
+      menu: menuItems, // Changed from 'items' to 'menu' to match Captain App expectation
       categories: categories 
     });
   }
