@@ -3096,6 +3096,56 @@ function MainApp() {
     }
   }, [customers, tables, orderHistory, nonTableOrders, settings, menuItems, categories, products, productCategories, floorPlanSections, isDbLoaded]);
 
+  const [newCaptainOrders, setNewCaptainOrders] = useState([]);
+  const processedCaptainIds = useRef(new Set());
+
+  // ── Global Background Polling for Captain App ────────────
+  useEffect(() => {
+    if (!isDbLoaded) return;
+
+    const pollCaptainOrders = async () => {
+      try {
+        const { fetchOrders, updateOrderStatus } = await import('./utils/apiClient');
+        const { printViaQzTray } = await import('./utils/qzTrayPrinter');
+        
+        const data = await fetchOrders('NEW');
+        if (data.success && data.orders.length > 0) {
+          const trulyNew = data.orders.filter(o => !processedCaptainIds.current.has(o.id));
+          
+          if (trulyNew.length > 0) {
+            setNewCaptainOrders(prev => [...prev, ...trulyNew]);
+            
+            // Auto-print newly arrived orders
+            for (const order of trulyNew) {
+              if (processedCaptainIds.current.has(order.id)) continue;
+              processedCaptainIds.current.add(order.id);
+
+              console.log("[Background] Auto-printing Order:", order.id);
+              
+              // 1. Mark as PRINTED on server immediately to prevent double-fetch
+              await updateOrderStatus(order.id, 'PRINTED');
+
+              // 2. Actually print
+              const printData = {
+                tableName: `Table ${order.table_number}`,
+                orderType: 'Dine In',
+                items: order.items.map(i => ({ name: i.name, qty: i.quantity, note: '' })),
+                grandTotal: order.items.reduce((s, i) => s + (i.price * i.quantity), 0)
+              };
+              
+              await printViaQzTray(printData, 'KOT', settings);
+            }
+          }
+        }
+      } catch (err) {
+        // Silent catch for background errors to not disrupt user
+      }
+    };
+
+    const interval = setInterval(pollCaptainOrders, 3500);
+    return () => clearInterval(interval);
+  }, [isDbLoaded, settings]);
+
   if (!isDbLoaded) {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
@@ -3105,6 +3155,7 @@ function MainApp() {
       </div>
     );
   }
+
   const deleteAnyOrder = (idToDelete) => {
     const tid = String(idToDelete || '').trim().toUpperCase();
     if (!tid) return;
@@ -3401,6 +3452,8 @@ function MainApp() {
           )}
           {view === 'captain' && (
             <CaptainOrders
+              newOrders={newCaptainOrders}
+              setNewOrders={setNewCaptainOrders}
               settings={settings}
               onInjectOrder={(apiOrder) => {
                 // Map the API order into the POS table system

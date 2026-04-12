@@ -16,8 +16,7 @@ import { formatCurrency } from '../../utils/formatters';
  * - Audio notification on new orders
  * - Shows connection status indicator
  */
-const CaptainOrders = ({ settings, onInjectOrder }) => {
-  const [newOrders, setNewOrders] = useState([]);             // Orders with status=NEW from API
+const CaptainOrders = ({ newOrders = [], setNewOrders, onInjectOrder, settings }) => {
   const [printedOrders, setPrintedOrders] = useState([]);      // Recently printed (for display)
   const [isOnline, setIsOnline] = useState(false);             // API connection status
   const [autoPrint, setAutoPrint] = useState(true);           // Auto-print toggle
@@ -151,53 +150,7 @@ const CaptainOrders = ({ settings, onInjectOrder }) => {
     }
   }, [onInjectOrder]);
 
-  // ── Polling Logic ─────────────────────────────────────────
-  const pollNewOrders = useCallback(async () => {
-    try {
-      const data = await fetchOrders('NEW');
-      setIsOnline(true);
-
-      if (data.orders && data.orders.length > 0) {
-        // Filter out already-processed orders
-        const trulyNew = data.orders.filter(o => !processedIdsRef.current.has(o.id));
-
-        if (trulyNew.length > 0) {
-          setNewOrders(trulyNew);
-
-          // Play notification sound
-          if (audioRef.current) audioRef.current.play();
-
-          // Auto-print each new order sequentially
-          if (autoPrint) {
-            for (const order of trulyNew) {
-              await printOrder(order);
-            }
-          }
-        }
-      } else {
-        setNewOrders(prev => prev.filter(o => !processedIdsRef.current.has(o.id)));
-      }
-    } catch (err) {
-      setIsOnline(false);
-      // Don't spam console on expected connection failures
-      if (err.message && !err.message.includes('Failed to fetch')) {
-        console.warn('[CaptainOrders] Poll error:', err.message);
-      }
-    }
-  }, [autoPrint, printOrder]);
-
-  // ── Start/Stop Polling ─────────────────────────────────────
-  useEffect(() => {
-    // Initial poll
-    pollNewOrders();
-
-    // Poll every 3 seconds
-    pollTimerRef.current = setInterval(pollNewOrders, 3000);
-
-    return () => {
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-    };
-  }, [pollNewOrders]);
+  // ── Polling & Interval removed (now handled globally in App.jsx) ───────
 
   // ── Helpers ─────────────────────────────────────────────
   const getOrderTotal = (items) => items.reduce((acc, i) => acc + (i.price * i.quantity), 0);
