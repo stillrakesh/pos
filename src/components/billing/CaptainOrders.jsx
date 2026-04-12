@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Wifi, WifiOff, Printer, CheckSquare, Clock, Zap, Volume2, VolumeX, RefreshCw, AlertTriangle } from 'lucide-react';
 import { fetchOrders, updateOrderStatus } from '../../utils/apiClient';
 import { printPosToSerial } from '../../utils/printerUtils';
+import { isQzConnected } from '../../utils/qzTrayPrinter';
 import { formatCurrency } from '../../utils/formatters';
 
 /**
