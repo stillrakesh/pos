@@ -19,18 +19,40 @@ export async function fetchOrders(status) {
 
 /**
  * Update order status.
- * @param {number} orderId 
- * @param {'NEW'|'PRINTED'|'COMPLETED'} status 
- * @returns {Promise<{success: boolean, order: Object}>}
  */
 export async function updateOrderStatus(orderId, status) {
-  const res = await fetch(`${API_BASE}/orders/${orderId}/status`, {
+  const url = `${API_BASE}/orders?id=${orderId}`;
+  const res = await fetch(url, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status })
   });
-  if (!res.ok) throw new Error(`PUT /api/orders/${orderId}/status failed: ${res.status}`);
+  if (!res.ok) throw new Error(`PUT /api/orders failed: ${res.status}`);
   return res.json();
+}
+
+/**
+ * Sync POS Data to Cloud (Tables, Menu)
+ */
+export async function syncAppData(tables, menuItems, categories) {
+  try {
+    await fetch(`${API_BASE}/tables`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tables })
+    });
+    
+    await fetch(`${API_BASE}/menu`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: menuItems, cats: categories })
+    });
+    
+    return true;
+  } catch (err) {
+    console.error("Cloud Sync Failed:", err);
+    return false;
+  }
 }
 
 /**

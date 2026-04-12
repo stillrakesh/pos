@@ -3078,6 +3078,12 @@ function MainApp() {
       set('pos_retail_products', products);
       set('pos_retail_categories', productCategories);
       set('pos_floor_sections', floorPlanSections);
+
+      // ── Cloud Sync for Captain App ────────────────────────
+      // Push tables & menu to Vercel API so Captain App can fetch them
+      import('./utils/apiClient').then(({ syncAppData }) => {
+        syncAppData(tables, [...menuItems, ...products], Array.from(new Set([...categories, ...productCategories])));
+      });
     }
   }, [customers, tables, orderHistory, nonTableOrders, settings, menuItems, categories, products, productCategories, floorPlanSections, isDbLoaded]);
 
