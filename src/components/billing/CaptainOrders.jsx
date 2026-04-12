@@ -261,88 +261,79 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onInjectOrder, settings }
       {/* ── CONTENT ──────────────────────────────────── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }} className="no-scrollbar">
         
-        {/* NEW ORDERS SECTION */}
-        {newOrders.length > 0 && (
-          <div style={{ marginBottom: '32px' }}>
-            <div style={{ fontSize: '11px', fontWeight: '900', color: '#ef4444', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* 1. NEW ORDERS SECTION */}
+        {newOrders.filter(o => o.status === 'NEW').length > 0 && (
+          <div style={{ marginBottom: '40px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '900', color: '#ef4444', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', animation: 'pulse 1.5s infinite' }} />
-              INCOMING — AWAITING PRINT
+              URGENT — AWAITING PRINT
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '16px' }}>
-              {newOrders.map(order => (
-                <div 
-                  key={order.id} 
-                  style={{ 
-                    background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(220, 38, 38, 0.04))',
-                    border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '20px', overflow: 'hidden',
-                    animation: 'fadeIn 0.3s ease-out'
-                  }}
-                >
-                  {/* Order Header */}
-                  <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '20px' }}>
+              {newOrders.filter(o => o.status === 'NEW').map(order => (
+                <div key={order.id} style={{ 
+                  background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05))',
+                  border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '24px', overflow: 'hidden',
+                  boxShadow: '0 15px 35px rgba(239, 68, 68, 0.15)', animation: 'fadeIn 0.3s ease-out'
+                }}>
+                  <div style={{ padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                     <div>
-                      <div style={{ fontSize: '18px', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        Table {order.table_number}
-                        <span style={{ fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5' }}>
-                          #{order.id}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', marginTop: '2px' }}>
-                        <Clock size={10} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
-                        {timeAgo(order.created_at)}
-                      </div>
-                    </div>
-                    <div style={{ fontSize: '22px', fontWeight: '950', color: '#fca5a5' }}>
-                      {formatCurrency(getOrderTotal(order.items))}
+                      <div style={{ fontSize: '20px', fontWeight: '950', color: 'white' }}>Table {order.table_number}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '800' }}>ORDER #{order.id} • {timeAgo(order.timestamp)}</div>
                     </div>
                   </div>
-
-                  {/* Items */}
-                  <div style={{ padding: '12px 20px' }}>
+                  <div style={{ padding: '16px 24px' }}>
                     {order.items.map((item, idx) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: idx < order.items.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                        <div style={{ fontWeight: '700', fontSize: '14px' }}>
-                          <span style={{ color: '#fca5a5', fontWeight: '900', marginRight: '6px' }}>{item.quantity}×</span>
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: idx < order.items.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                        <div style={{ fontWeight: '700', fontSize: '15px' }}>
+                          <span style={{ color: '#fca5a5', fontWeight: '900', marginRight: '8px' }}>{item.quantity}×</span>
                           {item.name}
-                        </div>
-                        <div style={{ color: '#94a3b8', fontSize: '13px', fontWeight: '700' }}>
-                          {formatCurrency(item.price * item.quantity)}
                         </div>
                       </div>
                     ))}
-                    {order.notes && (
-                      <div style={{ marginTop: '8px', padding: '8px 12px', background: 'rgba(251, 191, 36, 0.1)', borderRadius: '10px', border: '1px solid rgba(251, 191, 36, 0.15)', fontSize: '12px', color: '#fbbf24', fontStyle: 'italic', fontWeight: '700' }}>
-                        📝 {order.notes}
-                      </div>
-                    )}
                   </div>
+                  <div style={{ padding: '12px 24px 24px' }}>
+                    <button onClick={() => handleManualPrint(order)} style={{ 
+                      width: '100%', padding: '16px', borderRadius: '18px', border: 'none', 
+                      background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', 
+                      fontWeight: '950', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' 
+                    }}>
+                      <Printer size={18} /> PRINT KOT NOW
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-                  {/* Actions */}
-                  <div style={{ padding: '12px 20px 16px', display: 'flex', gap: '10px' }}>
-                    <button
-                      onClick={() => handleManualPrint(order)}
-                      disabled={isPrinting === order.id}
-                      style={{
-                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                        padding: '14px', borderRadius: '14px', border: 'none', cursor: isPrinting === order.id ? 'wait' : 'pointer',
-                        background: isPrinting === order.id ? '#374151' : 'linear-gradient(135deg, #ef4444, #dc2626)',
-                        color: 'white', fontWeight: '950', fontSize: '13px',
-                        boxShadow: isPrinting === order.id ? 'none' : '0 8px 20px rgba(239, 68, 68, 0.3)'
-                      }}
-                    >
-                      <Printer size={16} />
-                      {isPrinting === order.id ? 'PRINTING...' : 'PRINT KOT'}
-                    </button>
-                    <button
-                      onClick={() => handleMarkPrinted(order)}
-                      style={{
-                        padding: '14px 18px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)',
-                        background: 'rgba(255,255,255,0.05)', color: '#94a3b8', cursor: 'pointer',
-                        fontWeight: '800', fontSize: '12px'
-                      }}
-                    >
-                      <CheckSquare size={16} />
-                    </button>
+        {/* 2. PRINTED HISTORY SECTION */}
+        {newOrders.filter(o => o.status === 'PRINTED').length > 0 && (
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: '900', color: '#10b981', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CheckSquare size={14} /> LIVE HISTORY — RECENTLY PUSHED
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {newOrders.filter(o => o.status === 'PRINTED').sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 30).map(order => (
+                <div key={order.id} style={{ 
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '16px 24px', borderRadius: '18px',
+                  background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.1)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981' }} />
+                    <div>
+                      <div style={{ fontWeight: '900', fontSize: '16px', color: '#10b981' }}>Table {order.table_number}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>#{order.id} • {order.items.length} items</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                    <div style={{ textAlign: 'right', fontSize: '12px', color: '#94a3b8', fontWeight: '700' }}>
+                      {timeAgo(order.timestamp)}
+                    </div>
+                    <button onClick={() => handleManualPrint(order)} style={{ 
+                      padding: '8px 16px', borderRadius: '10px', border: '1px solid rgba(16,185,129,0.2)',
+                      background: 'transparent', color: '#10b981', fontSize: '12px', fontWeight: '800', cursor: 'pointer' 
+                    }}>RE-PRINT</button>
                   </div>
                 </div>
               ))}
@@ -351,64 +342,24 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onInjectOrder, settings }
         )}
 
         {/* EMPTY STATE */}
-        {newOrders.length === 0 && printedOrders.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center' }}>
+        {newOrders.length === 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 20px', textAlign: 'center' }}>
             <div style={{ 
-              width: '100px', height: '100px', borderRadius: '30px', 
-              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.08))',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px',
-              border: '1px solid rgba(99, 102, 241, 0.2)'
+              width: '120px', height: '120px', borderRadius: '40px', 
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '32px',
+              border: '1px solid rgba(99, 102, 241, 0.15)'
             }}>
-              <Wifi size={40} color={isOnline ? '#818cf8' : '#64748b'} />
+              <Wifi size={48} color={isOnline ? '#818cf8' : '#64748b'} className={isOnline ? 'animate-pulse' : ''} />
             </div>
-            <h3 style={{ fontSize: '24px', fontWeight: '950', color: '#e2e8f0', marginBottom: '8px' }}>
-              {isOnline ? 'Listening for Orders' : 'Connecting to API...'}
+            <h3 style={{ fontSize: '28px', fontWeight: '950', color: '#e2e8f0', marginBottom: '12px' }}>
+              {isOnline ? 'All Caught Up' : 'Searching for API...'}
             </h3>
-            <p style={{ color: '#64748b', fontSize: '14px', fontWeight: '700', maxWidth: '360px', lineHeight: 1.6 }}>
+            <p style={{ color: '#64748b', fontSize: '16px', fontWeight: '700', maxWidth: '400px', lineHeight: 1.6 }}>
               {isOnline 
-                ? 'New orders from the captain app will appear here automatically and print to the kitchen.' 
-                : 'Make sure the API server is running on port 3001. Run: npm run server'}
+                ? 'No new orders to print right now. History will appear here as soon as a Captain pushes an order.' 
+                : 'Connecting to Vercel...'}
             </p>
-          </div>
-        )}
-
-        {/* RECENTLY PRINTED SECTION */}
-        {printedOrders.length > 0 && (
-          <div>
-            <div style={{ fontSize: '11px', fontWeight: '900', color: '#10b981', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CheckSquare size={14} /> RECENTLY PRINTED
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {printedOrders.map(order => (
-                <div
-                  key={`printed-${order.id}`}
-                  style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '14px 20px', borderRadius: '14px',
-                    background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.1)'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
-                    <div>
-                      <span style={{ fontWeight: '900', fontSize: '14px' }}>Table {order.table_number}</span>
-                      <span style={{ color: '#64748b', fontSize: '12px', marginLeft: '8px' }}>#{order.id}</span>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '700' }}>
-                      {order.items.length} items
-                    </span>
-                    <span style={{ fontWeight: '900', fontSize: '14px', color: '#10b981' }}>
-                      {formatCurrency(getOrderTotal(order.items))}
-                    </span>
-                    <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700' }}>
-                      {order.printedAt ? timeAgo(new Date(order.printedAt).toISOString()) : ''}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         )}
       </div>

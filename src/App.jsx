@@ -3108,13 +3108,17 @@ function MainApp() {
         const { fetchOrders, updateOrderStatus } = await import('./utils/apiClient');
         const { printViaQzTray } = await import('./utils/qzTrayPrinter');
         
-        const data = await fetchOrders('NEW');
+        // 1. Fetch ALL recent orders (not just NEW) so they stay on the POS screen
+        const data = await fetchOrders(); // Fetching all statuses
         if (data.success && data.orders.length > 0) {
-          const trulyNew = data.orders.filter(o => !processedCaptainIds.current.has(o.id));
+          
+          // Separate out truly new ones for auto-printing
+          const trulyNew = data.orders.filter(o => o.status === 'NEW' && !processedCaptainIds.current.has(o.id));
+          
+          // Update the list of all orders to show on screen
+          setNewCaptainOrders(data.orders);
           
           if (trulyNew.length > 0) {
-            setNewCaptainOrders(prev => [...prev, ...trulyNew]);
-            
             // Auto-print newly arrived orders
             for (const order of trulyNew) {
               if (processedCaptainIds.current.has(order.id)) continue;
@@ -3122,10 +3126,10 @@ function MainApp() {
 
               console.log("[Background] Auto-printing Order:", order.id);
               
-              // 1. Mark as PRINTED on server immediately to prevent double-fetch
+              // Mark as PRINTED on server immediately
               await updateOrderStatus(order.id, 'PRINTED');
 
-              // 2. Actually print
+              // Print it
               const printData = {
                 tableName: `Table ${order.table_number}`,
                 orderType: 'Dine In',
@@ -3136,10 +3140,10 @@ function MainApp() {
               await printViaQzTray(printData, 'KOT', settings);
             }
           }
+        } else {
+          setNewCaptainOrders([]);
         }
-      } catch (err) {
-        // Silent catch for background errors to not disrupt user
-      }
+      } catch (err) { }
     };
 
     const interval = setInterval(pollCaptainOrders, 3500);
