@@ -10,7 +10,10 @@ const VALID_STATUSES = ['AVAILABLE', 'OCCUPIED'];
 // ─────────────────────────────────────────────────────────────
 router.get('/', (req, res) => {
   try {
-    const tables = statements.getAllTables();
+    const tables = statements.getAllTables().map(t => {
+      try { t.order_items = JSON.parse(t.order_items); } catch(e) { t.order_items = []; }
+      return t;
+    });
 
     res.json({
       success: true,
@@ -62,8 +65,37 @@ router.get('/:id', (req, res) => {
 // ─────────────────────────────────────────────────────────────
 router.post('/', (req, res) => {
   try {
-    const { table_number, status } = req.body;
+    const { tables, table_number, status } = req.body;
 
+    // BULK SYNC LOGIC (Called by POS on every state change)
+    if (tables && Array.isArray(tables)) {
+      tables.forEach(t => {
+        const table_num = String(t.table_number || t.name || '').replace('Table ', '');
+        const stat = t.status || 'AVAILABLE';
+        const items = t.order_items || '[]';
+        
+        // Find if table exists
+        const all = statements.getAllTables();
+        const existing = all.find(et => String(et.table_number) === table_num);
+        
+        if (existing) {
+          statements.updateTable({
+            id: existing.id,
+            status: stat.toUpperCase(),
+            order_items: items
+          });
+        } else {
+          statements.insertTable({
+            table_number: table_num,
+            status: stat.toUpperCase(),
+            order_items: items
+          });
+        }
+      });
+      return res.json({ success: true, message: 'Bulk sync complete' });
+    }
+
+    // SINGLE TABLE ADD LOGIC
     if (!table_number && table_number !== 0) {
       return res.status(400).json({ 
         error: 'VALIDATION_ERROR', 
@@ -126,7 +158,7 @@ router.put('/:id', (req, res) => {
       });
     }
 
-    const { table_number, status } = req.body;
+    const { table_number, status, order_items } = req.body;
 
     if (status && !VALID_STATUSES.includes(status.toUpperCase())) {
       return res.status(400).json({ 
@@ -138,10 +170,14 @@ router.put('/:id', (req, res) => {
     statements.updateTable({
       id,
       table_number: table_number !== undefined ? String(table_number) : undefined,
-      status: status ? status.toUpperCase() : undefined
+      status: status ? status.toUpperCase() : undefined,
+      order_items: order_items !== undefined ? (typeof order_items === 'string' ? order_items : JSON.stringify(order_items)) : undefined
     });
 
     const updated = statements.getTableById({ id });
+    if (updated && updated.order_items) {
+      try { updated.order_items = JSON.parse(updated.order_items); } catch(e) { updated.order_items = []; }
+    }
 
     res.json({
       success: true,

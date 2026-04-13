@@ -1,6 +1,5 @@
-const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-  ? 'http://localhost:3001/api'
-  : '/api';
+const getBackendUrl = () => localStorage.getItem('backend_url') || 'http://localhost:3001';
+const API_BASE = getBackendUrl().endsWith('/api') ? getBackendUrl() : `${getBackendUrl()}/api`;
 
 /**
  * Fetch all orders, optionally filtered by status.
@@ -18,7 +17,21 @@ export async function fetchOrders(status) {
 }
 
 /**
- * Update order status.
+ * Update order status using PATCH /orders/:id
+ */
+export async function updateOrderStatusPatch(orderId, status) {
+  const url = `${API_BASE}/orders/${orderId}`;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  });
+  if (!res.ok) throw new Error(`PATCH /api/orders/${orderId} failed: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Update order status (legacy PUT)
  */
 export async function updateOrderStatus(orderId, status) {
   const url = `${API_BASE}/orders?id=${orderId}`;
@@ -82,8 +95,50 @@ export async function fetchTables() {
 }
 
 /**
+ * Update table status or full order.
+ */
+export async function updateTableApi(tableId, data) {
+  const url = `${API_BASE}/tables/${tableId}`;
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error(`PUT /api/tables failed: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Fetch all linked devices.
+ */
+export async function fetchDevices() {
+  const res = await fetch(`${API_BASE}/devices`);
+  if (!res.ok) throw new Error(`GET /api/devices failed`);
+  return res.json();
+}
+
+/**
+ * Update device permission.
+ */
+export async function updateDeviceStatus(deviceId, status) {
+  const res = await fetch(`${API_BASE}/devices/${deviceId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  });
+  return res.json();
+}
+
+/**
+ * Remove device.
+ */
+export async function deleteDevice(deviceId) {
+  const res = await fetch(`${API_BASE}/devices/${deviceId}`, { method: 'DELETE' });
+  return res.json();
+}
+
+/**
  * Check if the API server is reachable.
- * @returns {Promise<boolean>}
  */
 export async function checkApiHealth() {
   try {

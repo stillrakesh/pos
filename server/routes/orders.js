@@ -60,6 +60,12 @@ router.post('/', (req, res) => {
     const order = statements.getOrderById({ id: result.lastInsertRowid });
     if (order) order.items = JSON.parse(order.items);
 
+    // 📢 Emit Socket Event
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('order_created', order);
+    }
+
     res.status(201).json({
       success: true,
       order
@@ -83,7 +89,7 @@ router.get('/', (req, res) => {
     let orders;
 
     if (status) {
-      const validStatuses = ['NEW', 'PRINTED', 'COMPLETED'];
+      const validStatuses = ['NEW', 'PREPARING', 'READY', 'SERVED', 'PRINTED', 'COMPLETED'];
       if (!validStatuses.includes(status.toUpperCase())) {
         return res.status(400).json({ 
           error: 'VALIDATION_ERROR', 
@@ -157,20 +163,13 @@ router.get('/:id', (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// PUT /api/orders/:id/status — Update order status
+// PATCH /api/orders/:id — Update order status (real-time)
 // ─────────────────────────────────────────────────────────────
-router.put('/:id/status', (req, res) => {
+router.patch('/:id', (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ 
-        error: 'VALIDATION_ERROR', 
-        message: 'Order ID must be a number' 
-      });
-    }
-
     const { status } = req.body;
-    const validStatuses = ['NEW', 'PRINTED', 'COMPLETED'];
+    const validStatuses = ['NEW', 'PREPARING', 'READY', 'SERVED', 'PRINTED', 'COMPLETED'];
 
     if (!status || !validStatuses.includes(status.toUpperCase())) {
       return res.status(400).json({ 
@@ -182,10 +181,7 @@ router.put('/:id/status', (req, res) => {
     // Verify order exists
     const existing = statements.getOrderById({ id });
     if (!existing) {
-      return res.status(404).json({ 
-        error: 'NOT_FOUND', 
-        message: `Order #${id} not found` 
-      });
+      return res.status(404).json({ error: 'Order not found' });
     }
 
     // Update
@@ -195,17 +191,33 @@ router.put('/:id/status', (req, res) => {
     const updated = statements.getOrderById({ id });
     if (updated) updated.items = JSON.parse(updated.items);
 
-    res.json({
-      success: true,
-      order: updated
-    });
+    // 📢 Emit Socket Event
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('order_updated', updated);
+    }
+
+    res.json({ success: true, order: updated });
   } catch (err) {
-    console.error(`[PUT /api/orders/${req.params.id}/status] Error:`, err);
-    res.status(500).json({ 
-      error: 'SERVER_ERROR', 
-      message: 'Failed to update order status' 
-    });
+    console.error(`[PATCH /api/orders/${req.params.id}] Error:`, err);
+    res.status(500).json({ error: 'Failed to update order status' });
   }
+});
+
+// Keep PUT for backward compatibility (it calls the same logic internally)
+router.put('/:id/status', (req, res) => {
+  // Transfer to PATCH logic essentially
+  const id = parseInt(req.params.id);
+  const { status } = req.body;
+  
+  statements.updateOrderStatus({ id, status: status.toUpperCase() });
+  const updated = statements.getOrderById({ id });
+  if (updated) updated.items = JSON.parse(updated.items);
+  
+  const io = req.app.get('io');
+  if (io) io.emit('order_updated', updated);
+
+  res.json({ success: true, order: updated });
 });
 
 export default router;

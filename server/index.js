@@ -1,14 +1,35 @@
 import express from 'express';
 import cors from 'cors';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import { initDatabase, forceSave } from './db.js';
 import ordersRouter from './routes/orders.js';
 import tablesRouter from './routes/tables.js';
 import menuRouter from './routes/menu.js';
+import devicesRouter from './routes/devices.js';
 import signingRouter from './routes/signing.js';
 import { loadSigningFiles } from './qzSigning.js';
 
 const app = express();
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 3001;
+
+// ─── Socket.IO Setup ──────────────────────────────────────────
+const io = new Server(httpServer, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+  }
+});
+
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  console.log(`  🔌 Device Connected: ${socket.id}`);
+  socket.on('disconnect', () => {
+    console.log(`  🔌 Device Disconnected: ${socket.id}`);
+  });
+});
 
 // ─── Middleware ──────────────────────────────────────────────
 app.use(cors({
@@ -25,7 +46,8 @@ app.use((req, res, next) => {
   res.on('finish', () => {
     const duration = Date.now() - start;
     const color = res.statusCode >= 400 ? '\x1b[31m' : '\x1b[32m';
-    console.log(`  ${color}${req.method}\x1b[0m ${req.originalUrl} → ${res.statusCode} (${duration}ms)`);
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    console.log(`  ${color}${req.method}\x1b[0m ${req.originalUrl} [${clientIp}] → ${res.statusCode} (${duration}ms)`);
   });
   next();
 });
@@ -34,6 +56,7 @@ app.use((req, res, next) => {
 app.use('/api/orders', ordersRouter);
 app.use('/api/tables', tablesRouter);
 app.use('/api/menu', menuRouter);
+app.use('/api/devices', devicesRouter);
 app.use('/api/signing', signingRouter);
 
 // Health check
@@ -67,10 +90,10 @@ async function start() {
   await initDatabase();
   loadSigningFiles();
 
-  app.listen(PORT, () => {
+  httpServer.listen(PORT, () => {
     console.log('');
     console.log('  ┌──────────────────────────────────────────────┐');
-    console.log(`  │  🔥 TYDE POS API Server                       │`);
+    console.log(`  │  🔥 TYDE POS API Server (Socket.IO Ready)     │`);
     console.log(`  │  → http://localhost:${PORT}                    │`);
     console.log(`  │  → Orders API: http://localhost:${PORT}/api/orders │`);
     console.log(`  │  → Tables API: http://localhost:${PORT}/api/tables │`);

@@ -1,8 +1,13 @@
-const express = require('express');
-const router = express.Router();
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
+import { Router } from 'express';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const router = Router();
 
 // Paths to your QZ files
 const certPath = path.join(__dirname, '..', 'signing', 'digital-certificate.txt');
@@ -49,4 +54,4 @@ router.get('/sign', (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

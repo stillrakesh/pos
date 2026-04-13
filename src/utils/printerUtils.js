@@ -93,6 +93,7 @@ export const printPosToSerial = async (orderData, type = 'BILL') => {
     subtotal: orderData.subtotal || 0,
     discountAmt: orderData.discountAmt || 0,
     serviceCharge: orderData.serviceCharge || 0,
+    roundOff: orderData.roundOff || 0,
     grandTotal: orderData.grandTotal || orderData.total || 0,
   };
 
@@ -130,59 +131,208 @@ export const printPosToSerial = async (orderData, type = 'BILL') => {
 function fallbackBrowserPrint(orderData, type, settings) {
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
-  const timeStr = settings.use24HourFormat
-    ? now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-    : now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
-  let html = `<html><head><style>
-    body { font-family: 'Courier New', monospace; font-size: 12px; width: 280px; margin: 0 auto; padding: 10px; }
-    .center { text-align: center; }
-    .bold { font-weight: bold; }
-    .line { border-top: 1px dashed #000; margin: 8px 0; }
-    .row { display: flex; justify-content: space-between; }
-    h2 { margin: 4px 0; font-size: 16px; }
-    @media print { @page { margin: 0; size: 80mm auto; } }
-  </style></head><body>`;
+  const html = `<html><head>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Verdana:wght@400;700&display=swap');
+      
+      body { 
+        font-family: 'Verdana', sans-serif; 
+        width: 240px; 
+        margin: 0; 
+        padding: 0 5px; 
+        color: #000;
+        line-height: 1.1;
+      }
+      .center { text-align: center; }
+      .bold { font-weight: 700; }
+      .line { border-top: 1.5px solid #000; margin: 4px 0; }
+      .thick-line { border-top: 2.2px solid #000; margin: 4px 0; }
+      
+      .flex-row { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: flex-start;
+        font-size: 13px;
+        margin: 3px 0;
+      }
 
-  if (type === 'KOT') {
-    html += `<div class="center"><p>${dateStr} ${timeStr}</p>`;
-    html += `<h2>KOT</h2>`;
-    html += `<p class="bold">${orderData.orderType || 'Dine In'}</p>`;
-    html += `<p class="bold">Table: ${orderData.tableName}</p></div>`;
-    html += `<div class="line"></div>`;
-    for (const item of orderData.items) {
-      html += `<div class="row"><span class="bold">${item.name}</span><span>${item.qty}</span></div>`;
-      if (item.note) html += `<div style="font-size:10px;padding-left:8px">* ${item.note}</div>`;
-    }
-    html += `<div class="line"></div>`;
-  } else {
-    html += `<div class="center">`;
-    html += `<h2>${settings.resName || 'Tyde Cafe'}</h2>`;
-    html += `<p>${settings.headerText || ''}</p></div>`;
-    html += `<div class="line"></div>`;
-    html += `<p>${dateStr} ${timeStr} | Table: ${orderData.tableName}</p>`;
-    html += `<div class="line"></div>`;
-    for (const item of orderData.items) {
-      const amt = (item.qty * item.price).toFixed(2);
-      html += `<div class="row"><span>${item.name}</span><span>${item.qty} x ${item.price} = ${amt}</span></div>`;
-    }
-    html += `<div class="line"></div>`;
-    const total = orderData.grandTotal || orderData.items.reduce((s, i) => s + i.qty * i.price, 0);
-    html += `<div class="row bold"><span>GRAND TOTAL</span><span>Rs.${total.toFixed(2)}</span></div>`;
-    html += `<div class="line"></div>`;
-    html += `<div class="center"><p>${settings.footerText || 'Thank You!'}</p></div>`;
-  }
+      .item-table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        font-size: 13px; 
+        margin: 5px 0;
+      }
+      .item-table th { 
+        border-top: 1.5px solid #000;
+        border-bottom: 1.5px solid #000; 
+        padding: 5px 0;
+        text-align: left; 
+      }
+      .item-table td { 
+        padding: 4px 0;
+        vertical-align: top;
+      }
+      
+      .col-item { width: 115px; }
+      .col-qty { width: 25px; text-align: center; }
+      .col-price { width: 45px; text-align: right; }
+      .col-amt { width: 55px; text-align: right; }
+      
+      .totals-area { 
+        margin-top: 5px; 
+        font-size: 13px; 
+      }
+      
+      .totals-stack {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+      }
+      
+      .grand-total-row { 
+        font-size: 14px; 
+        padding: 6px 0; 
+        border-top: 1.8px solid #000; 
+        border-bottom: 1.8px solid #000; 
+        margin-top: 6px;
+        display: flex;
+        justify-content: space-between;
+      }
+      
+      @media print { 
+        @page { margin: 0; size: 80mm auto; } 
+      }
+    </style></head><body>
+    ${type === 'KOT' ? `
+      <div class="center" style="margin-top: 5px;">
+        <div style="font-size:13px">Running Table</div>
+        <div style="font-size:13px">${dateStr} ${timeStr}</div>
+        <div style="font-size:13px">KOT - ${orderData.orderId || '---'}</div>
+        <div class="bold" style="font-size: 14px; margin-top: 4px;">${orderData.orderType || 'Dine In'}</div>
+        <div class="bold" style="font-size: 14px;">Table No: ${orderData.tableName}</div>
+      </div>
+      <div style="border-top: 1.5px dotted black; margin: 8px 0;"></div>
+      <table class="item-table" style="margin-top: 5px;">
+        <thead>
+          <tr class="bold">
+            <th style="width: 140px; text-align: left;">Item</th>
+            <th style="width: 60px; text-align: right;">Qty</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${orderData.items.map(item => `
+            <tr>
+              <td style="padding: 5px 0;">
+                <span class="bold" style="font-size: 14px;">${item.name}</span>
+                ${item.note ? `<br/><span style="font-size: 12px; font-style: italic; color: #333;">* Note: ${item.note}</span>` : ''}
+              </td>
+              <td style="text-align: right; font-size: 15px;" class="bold">${item.qty}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div style="border-top: 1.5px dotted black; margin-top: 10px;"></div>
+    ` : `
+      <div class="center" style="margin-top: 5px;">
+        <div class="bold" style="font-size: 14px;">${settings.resName || 'Tyde Cafe'}</div>
+        <div style="font-size: 13px;">${settings.headerText || 'Nerul Ferry Terminal'}</div>
+      </div>
+      
+      <div class="line" style="margin-top: 10px;"></div>
+      <div style="font-size: 13px; margin: 5px 0;">Name: ______________________</div>
+      <div class="line"></div>
+      
+      <!-- 2-COLUMN HEADER (3 ROWS) -->
+      <div class="flex-row">
+        <span>Date: ${dateStr}</span>
+        <span class="bold">Dine In: ${orderData.tableName}</span>
+      </div>
+      <div class="flex-row">
+        <span>${timeStr}</span>
+        <span>Bill No.: ${orderData.billNumber || '---'}</span>
+      </div>
+      <div class="flex-row">
+        <span>Cashier: ${orderData.cashier || 'biller'}</span>
+        <span></span>
+      </div>
+      
+      <div class="line" style="margin-bottom: 0;"></div>
+      <table class="item-table">
+        <thead>
+          <tr class="bold">
+            <th class="col-item">Item</th>
+            <th class="col-qty">Qty</th>
+            <th class="col-price">Price</th>
+            <th class="col-amt">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${orderData.items.map(item => `
+            <tr>
+              <td class="col-item">${item.name}</td>
+              <td class="col-qty">${item.qty}</td>
+              <td class="col-price">${item.price.toFixed(0)}</td>
+              <td class="col-amt">${(item.qty * item.price).toFixed(0)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div class="line" style="margin-top: 0;"></div>
+      
+      <div class="totals-area">
+        <!-- SUB TOTAL ROW -->
+        <div class="totals-stack">
+          <div style="flex: 1; padding-left: 50px; display: flex; justify-content: space-between; align-items: flex-start;">
+            <div style="line-height: 1;">Sub<br/>Total</div>
+            <div class="col-amt">${(orderData.subtotal || 0).toFixed(2)}</div>
+          </div>
+        </div>
+        
+        <div class="flex-row">
+          <span>Total Qty: ${orderData.items.reduce((s, i) => s + i.qty, 0)}</span>
+          <span></span>
+        </div>
+        
+        <!-- SERVICE CHARGE ROW -->
+        <div class="totals-stack">
+          <div style="flex: 1; display: flex; justify-content: space-between; align-items: flex-start;">
+             <div style="line-height: 1.1;">Service Charge<br/><span style="font-size: 11px;">(Optional)</span></div>
+             <div class="col-amt">${(orderData.serviceCharge || 0).toFixed(2)}</div>
+          </div>
+        </div>
+        
+        <div class="line" style="margin-top: 10px; border-top-width: 1px;"></div>
+        
+        <div class="flex-row" style="justify-content: flex-end; font-size: 11px; margin-top: 4px;">
+          <span style="margin-right: 15px;">Round off</span>
+          <span class="col-amt">${(orderData.roundOff || 0) >= 0 ? '+' : ''}${parseFloat(orderData.roundOff || 0).toFixed(2)}</span>
+        </div>
+        
+        <div class="grand-total-row bold">
+          <span>Grand Total</span>
+          <span style="font-size: 16px;">${settings.currencySymbol || '₹'}${ (orderData.grandTotal || 0).toFixed(2) }</span>
+        </div>
+      </div>
+      
+      <div class="center" style="font-size: 13px; margin-top: 15px; margin-bottom: 10px;">
+        ${settings.footerText || 'Sea you soon — under the moon'}
+      </div>
+    `}
+    <div style="height: 20px;"></div>
+    <script>
+      window.onload = () => {
+        window.print();
+        setTimeout(() => window.close(), 500);
+      };
+    </script>
+    </body></html>`;
 
-  html += `</body></html>`;
-
-  const printWindow = window.open('', '_blank', 'width=350,height=600');
+  const printWindow = window.open('', '_blank', 'width=350,height=800');
   if (printWindow) {
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 300);
   }
 }

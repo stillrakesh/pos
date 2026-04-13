@@ -22,9 +22,8 @@ export async function connectQzTray() {
   if (_connected && qz.websocket.isActive()) return true;
 
   try {
-    const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:3001' 
-      : window.location.origin;
+    const getBackendUrl = () => localStorage.getItem('backend_url') || 'http://localhost:3001';
+    const API_BASE = getBackendUrl();
 
     // ─── Certificate and Signing via backend ──────────────────
     // Points to the server-side signing API which uses your private key.
@@ -169,42 +168,43 @@ export async function testPrint(settings) {
 // ─── Command Generators (ESC/POS) ────────────────────────────────
 
 function generateKotCommands(order, settings) {
-  const esc = '\u001B'; // ESC
-  const gs = '\u001D';  // GS
+  const esc = '\u001B';
+  const gs = '\u001D';
   const center = esc + 'a' + '\u0001';
   const left = esc + 'a' + '\u0000';
   const boldOn = esc + 'E' + '\u0001';
   const boldOff = esc + 'E' + '\u0000';
   const sizeNormal = gs + '!' + '\u0000';
-  const sizeLarge = gs + '!' + '\u0011'; // Double height, double width
+  const sizeLarge = gs + '!' + '\u0011';
   
   const now = new Date();
-  const dateStr = now.toLocaleDateString('en-GB');
+  const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
   const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
+  // Header per image: Running Table -> Date Time -> KOT ID -> Role -> Table No
   let data = [
     center, 
-    sizeNormal, dateStr + ' ' + timeStr + '\n',
-    sizeLarge, boldOn, 'K O T\n',
-    sizeNormal, '--------------------------------\n',
+    sizeNormal, 'Running Table\n',
+    dateStr + ' ' + timeStr + '\n',
+    'KOT - ' + (order.orderId || '---') + '\n',
+    boldOn, (order.orderType || 'Dine In') + '\n',
+    'Table No: ' + (order.tableName || '--') + '\n',
+    boldOff, '................................\n', // Dotted line
     left,
-    boldOn, 'Table: ' + (order.tableName || 'N/A') + '\n',
-    'Type: ' + (order.orderType || 'Dine In') + '\n',
-    boldOff, '--------------------------------\n',
-    boldOn,
+    'Item           Special Note   Qty\n',
   ];
 
   for (const item of order.items) {
-    data.push(left + item.name.padEnd(26) + ' ' + item.qty + '\n');
-    if (item.note) {
-      data.push('  * ' + item.note + '\n');
-    }
+    const itemName = item.name.substring(0, 14).padEnd(15);
+    const itemNote = (item.note || '--').substring(0, 12).padEnd(14);
+    const itemQty = item.qty.toString().padStart(3);
+    
+    data.push(boldOn, itemName, boldOff, itemNote, itemQty, '\n');
   }
 
   data.push(
-    boldOff, '--------------------------------\n',
     '\n\n\n\n\n',
-    esc + 'm' // Cut paper
+    esc + 'm' // Cut
   );
 
   return data;
@@ -215,46 +215,69 @@ function generateBillCommands(order, settings) {
   const gs = '\u001D';
   const center = esc + 'a' + '\u0001';
   const left = esc + 'a' + '\u0000';
+  const right = esc + 'a' + '\u0002';
   const boldOn = esc + 'E' + '\u0001';
   const boldOff = esc + 'E' + '\u0000';
   const sizeNormal = gs + '!' + '\u0000';
-  const sizeLarge = gs + '!' + '\u0011';
-
+  const sizeLarge = gs + '!' + '\u0011'; // Double width + Double height
+  
   const now = new Date();
-  const dateStr = now.toLocaleDateString('en-GB');
+  const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
   const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
+  // Standard character width for thermal printers is 32-42. We'll use 32 as safe base.
   let data = [
     center,
-    sizeLarge, boldOn, (settings.billHeader || 'Tyde Cafe') + '\n',
-    sizeNormal, boldOff, (settings.address || 'Nerul Ferry Terminal') + '\n',
+    boldOn, (settings.resName || 'Tyde Cafe').toUpperCase() + '\n',
+    boldOff, (settings.headerText || 'Nerul Ferry Terminal') + '\n',
     '--------------------------------\n',
     left,
-    'Bill No: ' + (order.billNumber || '---') + ' | ' + dateStr + '\n',
-    'Table: ' + (order.tableName || 'N/A') + ' | Time: ' + timeStr + '\n',
+    'Name: \n',
     '--------------------------------\n',
-    boldOn, 
-    'Item                      Qty   Amt\n',
-    boldOff, 
+    // ROW 1: Date | Dine In (Bold)
+    'Date: ' + dateStr, (order.tableName || '').padStart(32 - 13 - 10), boldOn, 'Dine In: ' + (order.tableName || '--'), boldOff, '\n',
+    // ROW 2: Time | Bill No.
+    timeStr, ('Bill No.: ' + (order.billNumber || '---')).padStart(32 - timeStr.length), '\n',
+    // ROW 3: Cashier
+    'Cashier: ' + (order.cashier || 'biller'), '\n',
+    '--------------------------------\n',
+    boldOn, 'Item          Qty Price Amount\n', boldOff,
     '--------------------------------\n',
   ];
 
   order.items.forEach(item => {
-    const amt = (item.qty * item.price).toFixed(2);
-    const line = item.name.substring(0, 20).padEnd(21) + 
-                 item.qty.toString().padStart(3) + '   ' + 
-                 amt.padStart(8) + '\n';
-    data.push(line);
+    const amt = (item.qty * item.price).toFixed(0);
+    // Layout: 15 chars name, 3 chars qty, 6 chars price, 8 chars amt
+    const namePart = (item.name.substring(0, 14)).padEnd(15);
+    const qtyPart = (item.qty.toString()).padStart(3);
+    const pricePart = (item.price.toFixed(0)).padStart(6);
+    const amtPart = (amt).padStart(8);
+    data.push(namePart, qtyPart, pricePart, amtPart, '\n');
   });
+
+  const subtotal = (order.subtotal || 0).toFixed(2);
+  const service = (order.serviceCharge || 0).toFixed(2);
+  const roundOffNum = parseFloat(order.roundOff || 0);
+  const roundStr = (roundOffNum >= 0 ? '+' : '') + roundOffNum.toFixed(2);
+  const grandTotal = (order.grandTotal || 0).toFixed(2);
+  const totalQtyItem = order.items.reduce((s, i) => s + i.qty, 0);
 
   data.push(
     '--------------------------------\n',
-    esc + 'a' + '\u0002', // Align right
-    boldOn, 'GRAND TOTAL: Rs. ' + (order.grandTotal || 0).toFixed(2) + '\n',
-    boldOff,
+    // SUB TOTAL STACK
+    '              Sub       ' + subtotal.padStart(8) + '\n',
+    'Total Qty: ' + totalQtyItem.toString().padEnd(3), '  Total\n',
+    
+    // SERVICE CHARGE STACK
+    'Service Charge          ' + service.padStart(8) + '\n',
+    '(Optional)\n',
+    
+    '--------------------------------\n',
+    '             Round off  ' + roundStr.padStart(8) + '\n',
+    center, boldOn, sizeLarge, 'Grand Total  ' + (settings.currencySymbol || 'Rs.') + ' ' + grandTotal, boldOff, sizeNormal, left, '\n',
     '--------------------------------\n',
     center,
-    '\n' + (settings.billFooter || 'Thank You! Visit Again!') + '\n',
+    (settings.footerText || 'Sea you soon - under the moon') + '\n',
     '\n\n\n\n\n',
     esc + 'm' // Cut
   );

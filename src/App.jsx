@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { io } from 'socket.io-client';
 import { 
   Menu, Search, Store, Monitor, LayoutGrid, Clock, Bell, User, Wifi,
   ChevronDown, ChevronUp, Info, CreditCard, Banknote, Printer, Eye, Plus,
@@ -37,6 +38,9 @@ const GlobalStyles = ({ settings }) => {
   let tableRadius = '16px';
   if (tableShape === 'square') tableRadius = '4px';
   if (tableShape === 'circle') tableRadius = '50%';
+
+  
+
 
   return (
     <style>{`
@@ -1498,9 +1502,10 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
 
 /* --- SYSTEM SETTINGS VIEW --- */
 /* --- ADVANCED GLOBAL SETTINGS VIEW --- */
-const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullReset }) => {
+const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullReset, devices = [], onUpdateDeviceStatus, onDeleteDevice, backendUrl, onUpdateBackendUrl, isConnected }) => {
   const [activeTab, setActiveTab] = useState('design');
   const [localSettings, setLocalSettings] = useState(settings);
+  const [localBackendUrl, setLocalBackendUrl] = useState(backendUrl);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -1512,6 +1517,11 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
     alert('Settings Saved Successfully!');
   };
 
+  const handleSaveBackend = () => {
+    onUpdateBackendUrl(localBackendUrl);
+    alert('Backend URL updated! System will reload to reconnect.');
+  };
+
   return (
     <div className="view-container animate-fade-in no-scrollbar" style={{ padding: 0 }}>
       {/* Settings Navigation */}
@@ -1519,7 +1529,9 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
         {[
           { id: 'design', label: 'General Design', icon: <Monitor size={18} /> },
           { id: 'billing', label: 'Bill Designer', icon: <ReceiptText size={18} /> },
+          { id: 'connection', label: 'Backend Server', icon: <Wifi size={18} /> },
           { id: 'printer', label: 'Printer Setup', icon: <Printer size={18} /> },
+          { id: 'devices', label: 'Linked Devices', icon: <Smartphone size={18} /> },
           { id: 'system', label: 'System & Safety', icon: <Settings2 size={18} /> }
         ].map(tab => (
           <button
@@ -1592,8 +1604,112 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
           <BillDesigner settings={localSettings} onSaveSettings={(s) => { setLocalSettings(s); onSaveSettings(s); }} />
         )}
 
+        {activeTab === 'connection' && (
+          <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#1f2937' }}>
+                   <Wifi size={20} color={isConnected ? '#10b981' : '#64748b'} /> Global Backend Configuration
+                </h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: isConnected ? '#10b981' : '#ef4444' }}></div>
+                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: isConnected ? '#10b981' : '#dc2626' }}>
+                    {isConnected ? 'LIVE CONNECTION' : 'DISCONNECTED'}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Backend API & Socket URL</label>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <input
+                    type="text"
+                    value={localBackendUrl}
+                    onChange={(e) => setLocalBackendUrl(e.target.value)}
+                    placeholder="e.g. http://192.168.1.5:3000"
+                    style={{ flex: 1, padding: '14px 18px', borderRadius: '12px', border: '1px solid #d1d5db', fontSize: '15px', color: '#111827', outline: 'none' }}
+                  />
+                  <button
+                    onClick={handleSaveBackend}
+                    style={{ background: '#111827', color: 'white', border: 'none', padding: '0 24px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+                  >
+                    Apply & Sync
+                  </button>
+                </div>
+                <p style={{ fontSize: '11px', color: '#64748b', marginTop: '12px', fontStyle: 'italic' }}>
+                   Note: Enter the IP address and port where your "Restaurant POS Backend" is currently running. For local development, this is typically <b>http://localhost:3001</b>.
+                </p>
+              </div>
+
+              <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>Connection Stats</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                   <div style={{ fontSize: '12px', color: '#64748b' }}>WebSocket Status: <b style={{ color: isConnected ? '#10b981' : '#dc2626' }}>{isConnected ? 'Active' : 'Idle'}</b></div>
+                   <div style={{ fontSize: '12px', color: '#64748b' }}>Current Endpoint: <b>{backendUrl}</b></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'printer' && (
           <PrinterSetup settings={localSettings} />
+        )}
+
+        {activeTab === 'devices' && (
+          <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#1f2937' }}>
+                  <Smartphone size={20} color="var(--primary)" /> Linked Captain Terminals
+                </h3>
+                <span style={{ fontSize: '11px', background: '#f3f4f6', padding: '4px 10px', borderRadius: '12px', color: '#64748b', fontWeight: 'bold' }}>{devices.length} Total</span>
+              </div>
+              
+              {devices.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '48px 0', color: '#94a3b8' }}>
+                  <Smartphone size={48} style={{ opacity: 0.2, marginBottom: '16px' }} />
+                  <p style={{ fontSize: '14px' }}>No Captain devices have requested to connect yet.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {devices.map(device => (
+                    <div key={device.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'white', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Smartphone size={20} color={device.status === 'APPROVED' ? '#10b981' : '#64748b'} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>{device.name}</div>
+                          <div style={{ fontSize: '11px', color: '#94a3b8' }}>ID: {device.id} • Seen: {new Date(device.created_at).toLocaleTimeString()}</div>
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ 
+                          fontSize: '10px', fontWeight: '900', padding: '4px 8px', borderRadius: '6px',
+                          background: device.status === 'APPROVED' ? '#dcfce7' : device.status === 'BLOCKED' ? '#fee2e2' : '#fef9c3',
+                          color: device.status === 'APPROVED' ? '#166534' : device.status === 'BLOCKED' ? '#991b1b' : '#854d0e'
+                        }}>
+                          {device.status}
+                        </span>
+                        
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          {device.status !== 'APPROVED' && (
+                             <button onClick={() => onUpdateDeviceStatus(device.id, 'APPROVED')} style={{ height: '32px', padding: '0 12px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>Approve</button>
+                          )}
+                          {device.status !== 'BLOCKED' && (
+                             <button onClick={() => onUpdateDeviceStatus(device.id, 'BLOCKED')} style={{ height: '32px', padding: '0 12px', background: 'white', color: '#ef4444', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>Block</button>
+                          )}
+                          <button onClick={() => onDeleteDevice(device.id)} style={{ padding: '8px', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {activeTab === 'system' && (
@@ -2009,44 +2125,68 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
 };
 
 /* --- KITCHEN DISPLAY SYSTEM --- */
-const KitchenDisplay = ({ tables, nonTableOrders, onMarkReady }) => {
-  const activeOrders = [...tables, ...nonTableOrders].filter(o => o.order && o.order.length > 0 && o.status !== 'blank' && o.status !== 'printed');
+const KitchenDisplay = ({ orders, onUpdateStatus }) => {
+  const lifecycle = ['NEW', 'PREPARING', 'READY', 'SERVED'];
+  
+  const getNextStatus = (current) => {
+    const idx = lifecycle.indexOf(current.toUpperCase());
+    if (idx !== -1 && idx < lifecycle.length - 1) return lifecycle[idx + 1];
+    return null;
+  };
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: '#111827', color: 'white' }} className="animate-fade-in no-scrollbar">
-      <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <ChefHat size={24} color="#fca5a5" /> Kitchen Display System (KDS)
-      </h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-        {activeOrders.length === 0 && <div style={{ color: '#6b7280', fontStyle: 'italic', gridColumn: '1 / -1' }}>No active orders in queue.</div>}
-        {activeOrders.map(order => (
-          <div key={order.id} style={{ background: '#1f2937', borderRadius: '8px', border: '1px solid #374151', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ background: order.status === 'kot' ? '#b91c1c' : '#4f46e5', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{order.name}</div>
-              <div style={{ fontSize: '12px', fontWeight: 'bold', background: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: '4px' }}>
-                {order.status === 'kot' ? 'NEW KOT' : 'RUNNING'}
-              </div>
-            </div>
-            <div style={{ padding: '16px', flex: 1 }}>
-              {order.order.map((item, idx) => (
-                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #374151', paddingBottom: '8px', marginBottom: '8px' }}>
-                  <div>
-                    <div style={{ fontWeight: 'bold', fontSize: '15px' }}>{item.qty}x {item.name}</div>
-                    {item.note && <div style={{ fontSize: '12px', color: '#fca5a5', fontStyle: 'italic', marginTop: '2px' }}>* NOTE: {item.note}</div>}
-                  </div>
+    <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: '#0f172a', color: 'white' }} className="animate-fade-in no-scrollbar">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+        <h2 style={{ fontSize: '28px', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '12px', letterSpacing: '-0.5px' }}>
+          <ChefHat size={32} color="#f87171" strokeWidth={2.5} /> Live Kitchen Queue
+        </h2>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          {lifecycle.map(s => (
+            <div key={s} style={{ fontSize: '11px', fontWeight: '900', color: '#94a3b8', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>{s}</div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+        {orders.filter(o => o.status !== 'COMPLETED').map(order => {
+          const next = getNextStatus(order.status);
+          
+          return (
+            <div key={order.id} style={{ background: '#1e293b', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)' }}>
+              <div style={{ background: order.status === 'NEW' ? '#dc2626' : order.status === 'PREPARING' ? '#ea580c' : '#16a34a', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: '900', color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', marginBottom: '2px' }}>Table {order.table_number || 'N/A'}</div>
+                  <div style={{ fontWeight: '950', fontSize: '18px' }}>Ord #{String(order.id).slice(-4)}</div>
                 </div>
-              ))}
+                <div style={{ fontSize: '12px', fontWeight: '900', background: 'rgba(0,0,0,0.2)', padding: '6px 12px', borderRadius: '10px' }}>
+                  {order.status}
+                </div>
+              </div>
+              
+              <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {order.items.map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
+                    <div>
+                      <div style={{ fontWeight: '800', fontSize: '16px', color: '#f1f5f9' }}>{item.quantity} × {item.name}</div>
+                      {item.notes && <div style={{ fontSize: '12px', color: '#f87171', fontStyle: 'italic', marginTop: '4px' }}>“{item.notes}”</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {next && (
+                <button
+                  onClick={() => onUpdateStatus(order.id, next)}
+                  style={{ background: '#334155', color: 'white', border: 'none', padding: '20px', fontWeight: '900', fontSize: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', transition: 'all 0.2s', borderTop: '1px solid rgba(255,255,255,0.05)' }}
+                  onMouseOver={(e) => e.currentTarget.style.background = '#475569'}
+                  onMouseOut={(e) => e.currentTarget.style.background = '#334155'}
+                >
+                   {order.status === 'NEW' ? 'START PREPARING' : `MARK AS ${next}`} <ChevronDown size={18} />
+                </button>
+              )}
             </div>
-            <button
-              onClick={() => onMarkReady(order)}
-              style={{ background: '#059669', color: 'white', border: 'none', padding: '16px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', gap: '8px', transition: 'background 0.2s' }}
-              onMouseOver={(e) => e.currentTarget.style.background = '#047857'}
-              onMouseOut={(e) => e.currentTarget.style.background = '#059669'}
-            >
-              <CheckSquare size={20} /> Mark Order Ready
-            </button>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -2863,41 +3003,6 @@ const InsightItem = ({ title, value, sub }) => (
 
 
 
-
-
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
-  }
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-  componentDidCatch(error, errorInfo) {
-    console.error('POS ErrorBoundary Caught:', error, errorInfo);
-    this.setState({ errorInfo });
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{ padding: '50px', background: '#fee2e2', color: '#991b1b', height: '100vh', fontFamily: 'monospace' }}>
-          <h2>Something went wrong in the POS Application.</h2>
-          <details open style={{ whiteSpace: 'pre-wrap' }}>
-            <summary>Click to view details (PLEASE SCREENSHOT THIS FOR SUPPORT)</summary>
-            <br/>
-            {this.state.error && this.state.error.toString()}
-            <br/><br/>
-            {this.state.errorInfo && this.state.errorInfo.componentStack}
-          </details>
-          <br/>
-          <button onClick={() => window.location.reload()} style={{ padding: '10px 20px', background: '#991b1b', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Reload POS</button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
 function MainApp() {
 
   const [view, setView] = useState('tables');
@@ -2905,6 +3010,8 @@ function MainApp() {
   const [quickSettleTable, setQuickSettleTable] = useState(null);
   const [quickPrintTable, setQuickPrintTable] = useState(null);
   const [globalSearch, setGlobalSearch] = useState('');
+  const [socketConnected, setSocketConnected] = useState(false);
+  const [backendUrl, setBackendUrl] = useState(localStorage.getItem('backend_url') || 'http://localhost:3001');
   
   const handleGlobalSearch = (val) => {
     setGlobalSearch(val);
@@ -2915,9 +3022,35 @@ function MainApp() {
 
   const [showSidebar, setShowSidebar] = useState(true);
   const [isDbLoaded, setIsDbLoaded] = useState(false);
+  const handleUpdateDeviceStatus = async (id, status) => {
+    try {
+      const { updateDeviceStatus } = await import('./utils/apiClient');
+      const res = await updateDeviceStatus(id, status);
+      if (res.success) {
+        setDevices(prev => prev.map(d => d.id === id ? { ...d, status } : d));
+      }
+    } catch (err) {
+      alert('Failed to update device status');
+    }
+  };
+
+  const handleDeleteDevice = async (id) => {
+    if (!window.confirm('Forget this device?')) return;
+    try {
+      const { deleteDevice } = await import('./utils/apiClient');
+      const res = await deleteDevice(id);
+      if (res.success) {
+        setDevices(prev => prev.filter(d => d.id !== id));
+      }
+    } catch (err) {
+      alert('Failed to delete device');
+    }
+  };
+
   const [tables, setTables] = useState(INITIAL_TABLES);
   const [orderHistory, setOrderHistory] = useState([]);
   const [nonTableOrders, setNonTableOrders] = useState([]);
+  const [devices, setDevices] = useState([]);
   const [settings, setSettings] = useState({
     // BRANDING & BASIC
     billHeader: 'TYDE CAFE',
@@ -3145,11 +3278,12 @@ function MainApp() {
       // Map tables to the format the Captain App expects
       const mappedTables = tables.map(t => ({
         id: t.id,
-        table_number: t.name.replace('Table ', ''), // Just the number
+        table_number: String(t.name || '').replace('Table ', ''),
         capacity: t.seats || 4,
-        status: t.status === 'running' ? 'occupied' : 'vacant',
-        current_order_total: t.order?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0,
-        current_order_items: t.order?.length || 0
+        status: (t.status === 'running' || t.status === 'printed') ? 'OCCUPIED' : 'AVAILABLE',
+        order_items: JSON.stringify(t.order || []), // SYNC FULL ORDER
+        current_order_total: t.order?.reduce((sum, item) => sum + (item.price * item.qty), 0) || 0,
+        current_order_items: (t.order || []).length
       }));
 
       import('./utils/apiClient').then(({ syncAppData }) => {
@@ -3161,68 +3295,118 @@ function MainApp() {
   const [newCaptainOrders, setNewCaptainOrders] = useState([]);
   const processedCaptainIds = useRef(new Set());
 
-  // ── Global Background Polling for Captain App ────────────
+  // ── Real-time Socket.IO & Orders Integration ──────────────
+  const socketRef = useRef(null);
+  const notificationSound = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'));
+
   useEffect(() => {
     if (!isDbLoaded) return;
 
-    const pollCaptainOrders = async () => {
+    // 1. Initial Fetch on Load
+    const initialFetch = async () => {
       try {
-        const { fetchOrders, updateOrderStatus, fetchTables } = await import('./utils/apiClient');
-        const { printViaQzTray } = await import('./utils/qzTrayPrinter');
-        
-        // 1. Fetch ALL recent orders for processing
-        const data = await fetchOrders(); 
-        if (data.success && data.orders.length > 0) {
-          const trulyNew = data.orders.filter(o => o.status === 'NEW' && !processedCaptainIds.current.has(o.id));
+        const { fetchOrders } = await import('./utils/apiClient');
+        const data = await fetchOrders();
+        if (data.success) {
           setNewCaptainOrders(data.orders);
-          
-          if (trulyNew.length > 0) {
-            for (const order of trulyNew) {
-              if (processedCaptainIds.current.has(order.id)) continue;
-              processedCaptainIds.current.add(order.id);
-              console.log("[Background] Auto-printing Order:", order.id);
-              await updateOrderStatus(order.id, 'PRINTED');
-
-              const printData = {
-                tableName: `Table ${order.table_number}`,
-                orderType: 'Dine In',
-                items: order.items.map(i => ({ name: i.name, qty: i.quantity, note: '' })),
-                grandTotal: order.items.reduce((s, i) => s + (i.price * i.quantity), 0)
-              };
-              await printViaQzTray(printData, 'KOT', settings);
-            }
-          }
-        } else {
-          setNewCaptainOrders([]);
         }
-
-        // 2. LIVE SYNC FLOOR STATUS
-        if (view !== 'floorplan') {
-          const tableData = await fetchTables();
-          if (tableData.success && tableData.tables) {
-             setTables(prev => {
-               // Only update if there are actual changes in status or order
-               return prev.map(localT => {
-                 const cloudT = tableData.tables.find(ct => String(ct.id) === String(localT.id));
-                 if (cloudT) {
-                   return {
-                     ...localT,
-                     status: cloudT.status || 'blank',
-                     order: cloudT.order || [],
-                     createdAt: cloudT.createdAt || null
-                   };
-                 }
-                 return localT;
-               });
-             });
-          }
-        }
-      } catch (err) { }
+      } catch (err) {
+        console.error("Initial fetch failed:", err);
+      }
     };
+    initialFetch();
 
-    const interval = setInterval(pollCaptainOrders, 3500);
-    return () => clearInterval(interval);
-  }, [isDbLoaded, settings, view]);
+    // 2. Connect to Socket.IO
+    const API_BASE_SOCKET = backendUrl;
+    socketRef.current = io(API_BASE_SOCKET, {
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000
+    });
+
+    socketRef.current.on('connect', () => {
+      console.log('✅ Connected to Orders Real-time Engine:', backendUrl);
+      setSocketConnected(true);
+    });
+
+    socketRef.current.on('disconnect', () => {
+      console.log('❌ Disconnected from Server');
+      setSocketConnected(false);
+    });
+
+    // Listen for NEW orders
+    socketRef.current.on('order_created', async (newOrder) => {
+      console.log('🔥 New Order Received:', newOrder);
+      
+      // Update local state
+      setNewCaptainOrders(prev => [newOrder, ...prev]);
+      
+      // Auto-inject into tables if it's a dine-in order
+      if (newOrder.table_number) {
+        setTables(prevTables => {
+          let updatedTables = [...prevTables];
+          const tableIndex = updatedTables.findIndex(t => 
+            String(t.name || '').replace('Table ', '') === String(newOrder.table_number) ||
+            String(t.id) === String(newOrder.table_number)
+          );
+
+          if (tableIndex !== -1) {
+            const table = updatedTables[tableIndex];
+            const nextOrder = [...(table.order || [])];
+            newOrder.items.forEach(newItem => {
+              nextOrder.push({
+                id: Date.now() + Math.random(),
+                name: newItem.name,
+                price: newItem.price || 0,
+                qty: newItem.quantity || 1,
+                type: 'veg',
+                cat: 'Captain Order'
+              });
+            });
+
+            updatedTables[tableIndex] = {
+              ...table,
+              status: 'running',
+              order: nextOrder,
+              createdAt: table.createdAt || Date.now()
+            };
+          }
+          return updatedTables;
+        });
+      }
+
+      // ─── Auto Print KOT ───
+      try {
+        const { printViaQzTray } = await import('./utils/qzTrayPrinter');
+        const kotData = {
+          orderId: newOrder.id,
+          tableName: newOrder.table_number ? `Table ${newOrder.table_number}` : 'Delivery/Takeaway',
+          orderType: newOrder.type || 'Dine In',
+          items: newOrder.items.map(i => ({
+            name: i.name,
+            qty: i.quantity,
+            note: i.notes || ''
+          }))
+        };
+        await printViaQzTray(kotData, 'KOT', settings);
+      } catch (printErr) {
+        console.error("Auto-print failed:", printErr);
+      }
+
+      // Play Sound
+      notificationSound.current.play().catch(e => console.log("Sound play failed:", e));
+    });
+
+    // Listen for Status Updates
+    socketRef.current.on('order_updated', (updatedOrder) => {
+      console.log('🔄 Order Updated:', updatedOrder);
+      setNewCaptainOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+    });
+
+    return () => {
+      if (socketRef.current) socketRef.current.disconnect();
+    };
+  }, [isDbLoaded, backendUrl]);
 
   const manualSyncCaptainOrders = async () => {
     try {
@@ -3231,6 +3415,50 @@ function MainApp() {
       if (data.success) setNewCaptainOrders(data.orders);
     } catch (err) { }
   };
+
+  const [deviceStatus, setDeviceStatus] = useState('CHECKING'); // 'CHECKING', 'PENDING', 'APPROVED', 'BLOCKED'
+  const [deviceId, setDeviceId] = useState(null);
+
+  useEffect(() => {
+    const registerDevice = async () => {
+      try {
+        const { get, set } = await import('idb-keyval');
+        let id = await get('deviceId');
+        if (!id) {
+          id = 'DEV-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+          await set('deviceId', id);
+        }
+        setDeviceId(id);
+
+        const res = await fetch('/api/devices/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, name: window.navigator.userAgent.split(' ')[0] + ' (' + (window.innerWidth < 768 ? 'Mobile' : 'Tablet') + ')' })
+        });
+        const data = await res.json();
+        setDeviceStatus(data.status || 'PENDING');
+      } catch (err) {
+        console.error('Device registration failed:', err);
+      }
+    };
+    registerDevice();
+  }, []);
+
+  useEffect(() => {
+    if (view !== 'globalsettings') return;
+    
+    const pollDevices = async () => {
+      try {
+        const { fetchDevices } = await import('./utils/apiClient');
+        const data = await fetchDevices();
+        if (data.success) setDevices(data.devices);
+      } catch (err) {}
+    };
+
+    pollDevices();
+    const interval = setInterval(pollDevices, 5000);
+    return () => clearInterval(interval);
+  }, [view]);
 
   if (!isDbLoaded) {
     return (
@@ -3428,6 +3656,30 @@ function MainApp() {
     pendingKot: tables.filter(t => t.status === 'running').length + nonTableOrders.filter(o => o.status === 'running').length
   };
 
+  // ── Approval Wall ──────────────────────────────────────────
+  if (deviceStatus === 'PENDING' || deviceStatus === 'BLOCKED') {
+    return (
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', padding: '40px', textAlign: 'center' }}>
+        <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: deviceStatus === 'PENDING' ? '#fef3c7' : '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
+          {deviceStatus === 'PENDING' ? <Clock size={40} color="#d97706" /> : <X size={40} color="#dc2626" />}
+        </div>
+        <h1 style={{ fontSize: '24px', fontWeight: '950', color: '#111827', marginBottom: '12px' }}>
+          {deviceStatus === 'PENDING' ? 'Registration Pending' : 'Access Restricted'}
+        </h1>
+        <p style={{ fontSize: '16px', color: '#64748b', maxWidth: '400px', lineHeight: '1.6', marginBottom: '32px' }}>
+          {deviceStatus === 'PENDING' 
+            ? `Your device (ID: ${deviceId}) is waiting for administrator approval. Please ask the manager to approve this terminal in Settings > Linked Devices.`
+            : 'This device has been blocked from accessing the system. Please contact your administrator.'}
+        </p>
+        {deviceStatus === 'PENDING' && (
+          <div style={{ padding: '12px 24px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '14px', color: '#94a3b8', fontStyle: 'italic' }}>
+            Device ID: <span style={{ color: '#111827', fontWeight: 'bold' }}>{deviceId}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#f8fafc', overflow: 'hidden' }}>
       <GlobalStyles settings={settings} />
@@ -3455,7 +3707,8 @@ function MainApp() {
               discountAmt,
               serviceCharge: service,
               grandTotal,
-              roundOff: 0
+              roundOff: (grandTotal - (getOrderTotal(quickPrintTable.order) - discountAmt + service)).toFixed(2),
+              cashier: settings.cashierName || 'Biller'
             }, 'BILL');
             setQuickPrintTable(null);
           }} 
@@ -3491,6 +3744,14 @@ function MainApp() {
 
           {/* RIGHT SIDE GROUP: Search & Navigation Pills */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {/* Connection Indicator */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: socketConnected ? '#ecfdf5' : '#fef2f2', padding: '8px 14px', borderRadius: '12px', border: '1px solid', borderColor: socketConnected ? '#10b981' : '#ef4444', transition: 'all 0.3s' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: socketConnected ? '#10b981' : '#ef4444', boxShadow: `0 0 10px ${socketConnected ? '#10b981' : '#ef4444'}` }}></div>
+              <span style={{ fontSize: '11px', fontWeight: '900', color: socketConnected ? '#065f46' : '#991b1b', textTransform: 'uppercase' }}>
+                {socketConnected ? 'Connected' : 'Offline'}
+              </span>
+            </div>
+
             <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '14px', padding: '4px 16px', alignItems: 'center', border: '1px solid #e2e8f0' }}>
               <Search size={16} color="#94a3b8" />
               <input
@@ -3534,7 +3795,14 @@ function MainApp() {
             />
           )}
           {view === 'kds' && (
-            <KitchenDisplay tables={tables} nonTableOrders={nonTableOrders} onMarkReady={markOrderReady} />
+            <KitchenDisplay 
+              orders={newCaptainOrders} 
+              onUpdateStatus={async (id, status) => {
+                const { updateOrderStatusPatch } = await import('./utils/apiClient');
+                await updateOrderStatusPatch(id, status);
+                // The socket listener will update the UI state automatically
+              }} 
+            />
           )}
           {view === 'captain' && (
             <CaptainOrders
@@ -3578,6 +3846,16 @@ function MainApp() {
               onSaveSettings={setSettings} 
               onClearHistory={handleClearHistory}
               onFullReset={handleFullReset}
+              devices={devices}
+              onUpdateDeviceStatus={handleUpdateDeviceStatus}
+              onDeleteDevice={handleDeleteDevice}
+              backendUrl={backendUrl}
+              onUpdateBackendUrl={(url) => {
+                localStorage.setItem('backend_url', url);
+                setBackendUrl(url);
+                setTimeout(() => window.location.reload(), 1000);
+              }}
+              isConnected={socketConnected}
             />
           )}
           {view === 'printersettings' && (
@@ -3641,5 +3919,32 @@ function MainApp() {
 
 
 
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(error, errorInfo) { console.error("POS Crash:", error, errorInfo); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '40px', textAlign: 'center', background: '#fff1f2', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <AlertTriangle size={48} color="#e11d48" style={{ marginBottom: '16px' }} />
+          <h1 style={{ color: '#9f1239' }}>System Encountered an Error</h1>
+          <p style={{ color: '#be123c', maxWidth: '500px' }}>{this.state.error?.toString()}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            style={{ marginTop: '20px', padding: '10px 20px', background: '#e11d48', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+          >
+            Reload POS System
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function App() { return <ErrorBoundary><MainApp /></ErrorBoundary>; }

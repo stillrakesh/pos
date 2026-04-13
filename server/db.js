@@ -43,6 +43,17 @@ export async function initDatabase() {
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
       table_number  TEXT NOT NULL UNIQUE,
       status        TEXT NOT NULL DEFAULT 'AVAILABLE',
+      order_items   TEXT DEFAULT '[]',
+      last_updated  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    );
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS devices (
+      id            TEXT PRIMARY KEY,
+      name          TEXT NOT NULL,
+      status        TEXT NOT NULL DEFAULT 'PENDING',
       created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     );
   `);
@@ -64,6 +75,25 @@ export async function initDatabase() {
 
   db.run(`CREATE INDEX IF NOT EXISTS idx_tables_status ON tables(status)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_menu_cat_avail ON menu(category, available)`);
+
+  // --- Migrations: Add missing columns if they don't exist ---
+  try {
+    const tableInfo = rowsToObjects(db.exec("PRAGMA table_info(tables)"));
+    const columnNames = tableInfo.map(c => c.name);
+    
+    if (!columnNames.includes('order_items')) {
+      db.run("ALTER TABLE tables ADD COLUMN order_items TEXT DEFAULT '[]'");
+      console.log('  📊 Migration: Added "order_items" to tables');
+    }
+    if (!columnNames.includes('last_updated')) {
+      // Note: SQLite ALTER TABLE ADD COLUMN does not support strftime as a default.
+      // We add it with a constant string and it will be updated by future PUT requests.
+      db.run("ALTER TABLE tables ADD COLUMN last_updated TEXT NOT NULL DEFAULT '2026-04-12T00:00:00.000Z'");
+      console.log('  📊 Migration: Added "last_updated" to tables');
+    }
+  } catch (err) {
+    console.error('  ❌ Migration error:', err.message);
+  }
 
   // Initial save
   persistToFile();
@@ -182,22 +212,26 @@ export const statements = {
     return rows[0] || null;
   },
 
-  insertTable({ table_number, status }) {
+  insertTable({ table_number, status, order_items }) {
     db.run(
-      `INSERT INTO tables (table_number, status) VALUES (?, ?)`,
-      [table_number, status || 'AVAILABLE']
+      `INSERT INTO tables (table_number, status, order_items, last_updated) VALUES (?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
+      [table_number, status || 'AVAILABLE', order_items || '[]']
     );
     const lastId = db.exec(`SELECT last_insert_rowid() as id`)[0].values[0][0];
     persistToFile();
     return { lastInsertRowid: lastId };
   },
 
-  updateTable({ id, table_number, status }) {
+  updateTable({ id, table_number, status, order_items }) {
     const setClauses = [];
     const params = [];
     if (table_number !== undefined) { setClauses.push('table_number = ?'); params.push(table_number); }
     if (status !== undefined) { setClauses.push('status = ?'); params.push(status); }
-    if (setClauses.length === 0) return { changes: 0 };
+    if (order_items !== undefined) { setClauses.push('order_items = ?'); params.push(order_items); }
+    
+    setClauses.push("last_updated = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')");
+    
+    if (setClauses.length === 1) return { changes: 0 }; // Only last_updated
     params.push(id);
     db.run(`UPDATE tables SET ${setClauses.join(', ')} WHERE id = ?`, params);
     persistToFile();
@@ -208,6 +242,32 @@ export const statements = {
     db.run(`DELETE FROM tables WHERE id = ?`, [id]);
     persistToFile();
     return { changes: db.getRowsModified() };
+  },
+
+  // ─── Device Statements ──────────────────────────────────────
+  
+  getAllDevices() {
+    return rowsToObjects(db.exec(`SELECT * FROM devices ORDER BY created_at DESC`));
+  },
+
+  getDeviceById({ id }) {
+    const result = db.exec(`SELECT * FROM devices WHERE id = ?`, [id]);
+    return rowsToObjects(result)[0] || null;
+  },
+
+  registerDevice({ id, name }) {
+    db.run(`INSERT OR IGNORE INTO devices (id, name, status) VALUES (?, ?, 'PENDING')`, [id, name]);
+    persistToFile();
+  },
+
+  updateDeviceStatus({ id, status }) {
+    db.run(`UPDATE devices SET status = ? WHERE id = ?`, [status, id]);
+    persistToFile();
+  },
+
+  deleteDevice({ id }) {
+    db.run(`DELETE FROM devices WHERE id = ?`, [id]);
+    persistToFile();
   },
 
   // ─── Menu Statements ────────────────────────────────────────

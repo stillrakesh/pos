@@ -78,8 +78,39 @@ router.get('/:id', (req, res) => {
 // ─────────────────────────────────────────────────────────────
 router.post('/', (req, res) => {
   try {
-    const { name, category, price, available } = req.body;
+    const { items, name, category, price, available } = req.body;
 
+    // BULK MENU SYNC
+    if (items && Array.isArray(items)) {
+      items.forEach(mi => {
+        const itemName = mi.name?.trim();
+        const itemCat = (mi.category || mi.cat || 'Uncategorised').trim();
+        const itemPrice = parseFloat(mi.price) || 0;
+        
+        // Find if exists by name (menu items usually unique by name/cat)
+        const all = statements.getAllMenu();
+        const existing = all.find(e => e.name === itemName);
+        
+        if (existing) {
+          statements.updateMenuItem({
+            id: existing.id,
+            category: itemCat,
+            price: itemPrice,
+            available: mi.available !== false
+          });
+        } else {
+          statements.insertMenuItem({
+            name: itemName,
+            category: itemCat,
+            price: itemPrice,
+            available: mi.available !== false
+          });
+        }
+      });
+      return res.json({ success: true, message: 'Menu bulk sync complete' });
+    }
+
+    // SINGLE ITEM ADD
     if (!name || typeof name !== 'string' || !name.trim()) {
       return res.status(400).json({ 
         error: 'VALIDATION_ERROR', 
