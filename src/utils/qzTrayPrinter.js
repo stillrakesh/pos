@@ -1,5 +1,6 @@
 import qz from 'qz-tray';
 import { get, set } from 'idb-keyval';
+import { BASE_URL } from '../constants';
 
 /**
  * qzTrayPrinter.js
@@ -22,8 +23,7 @@ export async function connectQzTray() {
   if (_connected && qz.websocket.isActive()) return true;
 
   try {
-    const getBackendUrl = () => localStorage.getItem('backend_url') || 'http://localhost:3001';
-    const API_BASE = getBackendUrl();
+    const API_BASE = BASE_URL;
 
     // ─── Certificate and Signing via backend ──────────────────
     // Points to the server-side signing API which uses your private key.

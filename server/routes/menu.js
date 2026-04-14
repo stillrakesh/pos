@@ -3,6 +3,18 @@ import { statements } from '../db.js';
 
 const router = Router();
 
+// Helper to get full formatted menu for broadcast
+const getFullMenu = () => {
+  const items = statements.getAllMenu();
+  const cleaned = items.map(item => ({ ...item, available: item.available === 1 }));
+  const grouped = {};
+  for (const item of cleaned) {
+    if (!grouped[item.category]) grouped[item.category] = [];
+    grouped[item.category].push(item);
+  }
+  return { menu: grouped, categories: Object.keys(grouped) };
+};
+
 // ─────────────────────────────────────────────────────────────
 // GET /api/menu — Return available items grouped by category
 //   ?all=true → include unavailable items (for admin/POS)
@@ -135,6 +147,9 @@ router.post('/', (req, res) => {
     const item = statements.getMenuById({ id: result.lastInsertRowid });
     if (item) item.available = item.available === 1;
 
+    const io = req.app.get('io');
+    if (io) io.emit('menu_updated', getFullMenu());
+
     res.status(201).json({
       success: true,
       item
@@ -189,6 +204,9 @@ router.put('/:id', (req, res) => {
     const updated = statements.getMenuById({ id });
     if (updated) updated.available = updated.available === 1;
 
+    const io = req.app.get('io');
+    if (io) io.emit('menu_updated', getFullMenu());
+
     res.json({
       success: true,
       item: updated
@@ -224,6 +242,9 @@ router.delete('/:id', (req, res) => {
     }
 
     statements.deleteMenuItem({ id });
+
+    const io = req.app.get('io');
+    if (io) io.emit('menu_updated', getFullMenu());
 
     res.json({
       success: true,

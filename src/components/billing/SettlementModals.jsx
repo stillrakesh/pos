@@ -9,7 +9,7 @@ export const QuickPrintModal = ({ table, settings, onClose, onPrint }) => {
 
   if (!table) return null;
 
-  const subtotal = table.order.reduce((acc, i) => acc + (i.price * i.qty), 0);
+  const subtotal = (table.orders || table.items || []).reduce((acc, i) => acc + (i.price * i.qty), 0);
   
   let discountAmt = 0;
   if (discountType === 'percent') {
@@ -95,7 +95,8 @@ export const QuickSettleModal = ({ table, settings, onClose, onSettle }) => {
 
   if (!table) return null;
 
-  const subtotal = table.order.reduce((acc, i) => acc + (i.price * i.qty), 0);
+  const cartItems = (table.orders || table.items || []);
+  const subtotal = cartItems.reduce((acc, i) => acc + (i.price * i.qty), 0);
   const service = settings?.autoServiceCharge ? Math.floor(subtotal * (settings.serviceChargeRate || 5) / 100) : 0;
   const grandTotal = subtotal + service;
 
@@ -113,7 +114,7 @@ export const QuickSettleModal = ({ table, settings, onClose, onSettle }) => {
         </div>
         
         <div style={{ fontSize: '32px', fontWeight: '950', color: '#a3112a', marginBottom: '4px' }}>{formatCurrency(grandTotal)}</div>
-        <p style={{ fontSize: '13px', color: '#64748b', fontWeight: '700', marginBottom: '24px' }}>Quick settlement for {table.order.length} items</p>
+        <p style={{ fontSize: '13px', color: '#64748b', fontWeight: '700', marginBottom: '24px' }}>Quick settlement for {cartItems.length} items</p>
 
         {/* FAST SETTLE BUTTONS */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' }}>

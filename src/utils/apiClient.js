@@ -1,18 +1,16 @@
-const getBackendUrl = () => localStorage.getItem('backend_url') || 'http://localhost:3001';
-const API_BASE = getBackendUrl().endsWith('/api') ? getBackendUrl() : `${getBackendUrl()}/api`;
+import { BASE_URL } from '../constants';
+console.log('📡 BASE_URL:', BASE_URL);
 
 /**
  * Fetch all orders, optionally filtered by status.
- * @param {'NEW'|'PRINTED'|'COMPLETED'} [status] 
- * @returns {Promise<{success: boolean, count: number, orders: Array}>}
  */
 export async function fetchOrders(status) {
-  const url = status 
-    ? `${API_BASE}/orders?status=${encodeURIComponent(status)}` 
-    : `${API_BASE}/orders`;
+  const path = status ? `/orders?status=${encodeURIComponent(status)}` : `/orders`;
+  const url = `${BASE_URL}${path}`;
+  console.log('📡 Calling URL:', url);
     
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`GET /api/orders failed: ${res.status}`);
+  if (!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
   return res.json();
 }
 
@@ -20,13 +18,16 @@ export async function fetchOrders(status) {
  * Update order status using PATCH /orders/:id
  */
 export async function updateOrderStatusPatch(orderId, status) {
-  const url = `${API_BASE}/orders/${orderId}`;
+  const path = `/orders/${orderId}`;
+  const url = `${BASE_URL}${path}`;
+  console.log('📡 Calling URL:', url);
+
   const res = await fetch(url, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status })
   });
-  if (!res.ok) throw new Error(`PATCH /api/orders/${orderId} failed: ${res.status}`);
+  if (!res.ok) throw new Error(`PATCH ${path} failed: ${res.status}`);
   return res.json();
 }
 
@@ -34,13 +35,16 @@ export async function updateOrderStatusPatch(orderId, status) {
  * Update order status (legacy PUT)
  */
 export async function updateOrderStatus(orderId, status) {
-  const url = `${API_BASE}/orders?id=${orderId}`;
+  const path = `/orders?id=${orderId}`;
+  const url = `${BASE_URL}${path}`;
+  console.log('📡 Calling URL:', url);
+
   const res = await fetch(url, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status })
   });
-  if (!res.ok) throw new Error(`PUT /api/orders failed: ${res.status}`);
+  if (!res.ok) throw new Error(`PUT ${path} failed: ${res.status}`);
   return res.json();
 }
 
@@ -49,13 +53,18 @@ export async function updateOrderStatus(orderId, status) {
  */
 export async function syncAppData(tables, menuItems, categories) {
   try {
-    await fetch(`${API_BASE}/tables`, {
+    const tableUrl = `${BASE_URL}/tables`;
+    const menuUrl = `${BASE_URL}/menu`;
+    console.log('📡 Syncing Tables to:', tableUrl);
+    console.log('📡 Syncing Menu to:', menuUrl);
+
+    await fetch(tableUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tables })
     });
     
-    await fetch(`${API_BASE}/menu`, {
+    await fetch(menuUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items: menuItems, cats: categories })
@@ -71,26 +80,31 @@ export async function syncAppData(tables, menuItems, categories) {
 /**
  * Create a new order via API.
  * @param {Object} orderData - { table_number, items, notes }
- * @returns {Promise<{success: boolean, order: Object}>} 
  */
 export async function createOrder(orderData) {
-  const res = await fetch(`${API_BASE}/orders`, {
+  const path = `/orders`;
+  const url = `${BASE_URL}${path}`;
+  console.log('📡 Calling URL:', url);
+
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(orderData)
   });
-  if (!res.ok) throw new Error(`POST /api/orders failed: ${res.status}`);
+  if (!res.ok) throw new Error(`POST ${path} failed: ${res.status}`);
   return res.json();
 }
 
 /**
  * Fetch live table status from cloud.
- * @returns {Promise<{success: boolean, tables: Array}>}
  */
 export async function fetchTables() {
-  const url = `${API_BASE}/tables`;
+  const path = `/tables`;
+  const url = `${BASE_URL}${path}`;
+  console.log('📡 Calling URL:', url);
+
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`GET /api/tables failed: ${res.status}`);
+  if (!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
   return res.json();
 }
 
@@ -98,13 +112,16 @@ export async function fetchTables() {
  * Update table status or full order.
  */
 export async function updateTableApi(tableId, data) {
-  const url = `${API_BASE}/tables/${tableId}`;
+  const path = `/tables/${tableId}`;
+  const url = `${BASE_URL}${path}`;
+  console.log('📡 Calling URL:', url);
+
   const res = await fetch(url, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  if (!res.ok) throw new Error(`PUT /api/tables failed: ${res.status}`);
+  if (!res.ok) throw new Error(`PUT ${path} failed: ${res.status}`);
   return res.json();
 }
 
@@ -112,8 +129,12 @@ export async function updateTableApi(tableId, data) {
  * Fetch all linked devices.
  */
 export async function fetchDevices() {
-  const res = await fetch(`${API_BASE}/devices`);
-  if (!res.ok) throw new Error(`GET /api/devices failed`);
+  const path = `/devices`;
+  const url = `${BASE_URL}${path}`;
+  console.log('📡 Calling URL:', url);
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`GET ${path} failed`);
   return res.json();
 }
 
@@ -121,7 +142,11 @@ export async function fetchDevices() {
  * Update device permission.
  */
 export async function updateDeviceStatus(deviceId, status) {
-  const res = await fetch(`${API_BASE}/devices/${deviceId}`, {
+  const path = `/devices/${deviceId}`;
+  const url = `${BASE_URL}${path}`;
+  console.log('📡 Calling URL:', url);
+
+  const res = await fetch(url, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status })
@@ -133,7 +158,79 @@ export async function updateDeviceStatus(deviceId, status) {
  * Remove device.
  */
 export async function deleteDevice(deviceId) {
-  const res = await fetch(`${API_BASE}/devices/${deviceId}`, { method: 'DELETE' });
+  const path = `/devices/${deviceId}`;
+  const url = `${BASE_URL}${path}`;
+  console.log('📡 Calling URL:', url);
+
+  const res = await fetch(url, { method: 'DELETE' });
+  return res.json();
+}
+
+/**
+ * Fetch all menu items from cloud.
+ */
+export async function fetchMenu() {
+  const path = `/menu?all=true`;
+  const url = `${BASE_URL}${path}`;
+  console.log('📡 Calling URL:', url);
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Create a new menu item via POST.
+ */
+export async function createMenuItem(itemData) {
+  const path = `/menu`;
+  const url = `${BASE_URL}${path}`;
+  console.log('📡 Calling URL:', url);
+  console.log("ITEM BEING SENT:", itemData);
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(itemData)
+  });
+  
+  const data = await res.json();
+  console.log("Backend response:", data);
+
+  if (!data.success) {
+    throw new Error(data.error || "Server error");
+  }
+
+  return data;
+}
+
+/**
+ * Delete a menu item.
+ */
+export async function deleteMenuItem(itemId) {
+  const path = `/menu/${itemId}`;
+  const url = `${BASE_URL}${path}`;
+  console.log('📡 Calling URL:', url);
+
+  const res = await fetch(url, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`DELETE ${path} failed`);
+  return res.json();
+}
+
+/**
+ * Update a menu item via PUT.
+ */
+export async function updateMenuItemApi(id, data) {
+  const path = `/menu/${id}`;
+  const url = `${BASE_URL}${path}`;
+  console.log('📡 Calling URL:', url);
+
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error(`PUT ${path} failed`);
   return res.json();
 }
 
@@ -142,7 +239,9 @@ export async function deleteDevice(deviceId) {
  */
 export async function checkApiHealth() {
   try {
-    const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(2000) });
+    const url = `${BASE_URL}/health`;
+    console.log('📡 Checking health at:', url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
     return res.ok;
   } catch {
     return false;

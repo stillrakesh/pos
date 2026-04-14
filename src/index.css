@@ -1,9 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --primary: #a3112a;
-  /* Rich Crimson */
-  --primary-hover: #850c20;
+  --primary: #94161c;
+  --primary-hover: #7b1217;
   --bg-main: #f4f6f8;
   --bg-white: #ffffff;
   --text-main: #0f172a;
@@ -163,12 +162,12 @@ body {
 .pp-table-card {
   background: white !important;
   border: 1.5px solid #e2e8f0 !important; 
-  border-radius: 12px; 
-  padding: 14px; 
+  border-radius: var(--table-radius) !important; 
+  padding: 16px; 
   display: flex;
   flex-direction: column;
-  width: 150px !important;  
-  height: 190px !important; 
+  width: 150px;  
+  height: 200px; 
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(0,0,0,0.02);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -186,7 +185,7 @@ body {
 .pp-table-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
-  border-color: var(--primary);
+  border-color: var(--primary) !important;
 }
 
 .pp-table-card.status-running {
@@ -518,7 +517,7 @@ body {
 
 .item-card {
   background: white;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 14px;
   min-height: 120px;
   display: flex;

@@ -44,6 +44,11 @@ export async function initDatabase() {
       table_number  TEXT NOT NULL UNIQUE,
       status        TEXT NOT NULL DEFAULT 'AVAILABLE',
       order_items   TEXT DEFAULT '[]',
+      x             INTEGER DEFAULT 50,
+      y             INTEGER DEFAULT 50,
+      shape         TEXT DEFAULT 'rounded',
+      seats         INTEGER DEFAULT 4,
+      zone          TEXT DEFAULT 'Main',
       last_updated  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
       created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     );
@@ -77,20 +82,13 @@ export async function initDatabase() {
   db.run(`CREATE INDEX IF NOT EXISTS idx_menu_cat_avail ON menu(category, available)`);
 
   // --- Migrations: Add missing columns if they don't exist ---
-  try {
-    const tableInfo = rowsToObjects(db.exec("PRAGMA table_info(tables)"));
-    const columnNames = tableInfo.map(c => c.name);
-    
-    if (!columnNames.includes('order_items')) {
-      db.run("ALTER TABLE tables ADD COLUMN order_items TEXT DEFAULT '[]'");
-      console.log('  📊 Migration: Added "order_items" to tables');
-    }
-    if (!columnNames.includes('last_updated')) {
-      // Note: SQLite ALTER TABLE ADD COLUMN does not support strftime as a default.
-      // We add it with a constant string and it will be updated by future PUT requests.
-      db.run("ALTER TABLE tables ADD COLUMN last_updated TEXT NOT NULL DEFAULT '2026-04-12T00:00:00.000Z'");
-      console.log('  📊 Migration: Added "last_updated" to tables');
-    }
+    if (!columnNames.includes('x')) db.run("ALTER TABLE tables ADD COLUMN x INTEGER DEFAULT 50");
+    if (!columnNames.includes('y')) db.run("ALTER TABLE tables ADD COLUMN y INTEGER DEFAULT 50");
+    if (!columnNames.includes('shape')) db.run("ALTER TABLE tables ADD COLUMN shape TEXT DEFAULT 'rounded'");
+    if (!columnNames.includes('seats')) db.run("ALTER TABLE tables ADD COLUMN seats INTEGER DEFAULT 4");
+    if (!columnNames.includes('zone')) db.run("ALTER TABLE tables ADD COLUMN zone TEXT DEFAULT 'Main'");
+
+    console.log('  📊 Migration: Table layout columns verified');
   } catch (err) {
     console.error('  ❌ Migration error:', err.message);
   }
@@ -212,26 +210,31 @@ export const statements = {
     return rows[0] || null;
   },
 
-  insertTable({ table_number, status, order_items }) {
+  insertTable({ table_number, status, order_items, x, y, shape, seats, zone }) {
     db.run(
-      `INSERT INTO tables (table_number, status, order_items, last_updated) VALUES (?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
-      [table_number, status || 'AVAILABLE', order_items || '[]']
+      `INSERT INTO tables (table_number, status, order_items, x, y, shape, seats, zone, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
+      [table_number, status || 'AVAILABLE', order_items || '[]', x || 50, y || 50, shape || 'rounded', seats || 4, zone || 'Main']
     );
     const lastId = db.exec(`SELECT last_insert_rowid() as id`)[0].values[0][0];
     persistToFile();
     return { lastInsertRowid: lastId };
   },
 
-  updateTable({ id, table_number, status, order_items }) {
+  updateTable({ id, table_number, status, order_items, x, y, shape, seats, zone }) {
     const setClauses = [];
     const params = [];
     if (table_number !== undefined) { setClauses.push('table_number = ?'); params.push(table_number); }
     if (status !== undefined) { setClauses.push('status = ?'); params.push(status); }
     if (order_items !== undefined) { setClauses.push('order_items = ?'); params.push(order_items); }
+    if (x !== undefined) { setClauses.push('x = ?'); params.push(x); }
+    if (y !== undefined) { setClauses.push('y = ?'); params.push(y); }
+    if (shape !== undefined) { setClauses.push('shape = ?'); params.push(shape); }
+    if (seats !== undefined) { setClauses.push('seats = ?'); params.push(seats); }
+    if (zone !== undefined) { setClauses.push('zone = ?'); params.push(zone); }
     
     setClauses.push("last_updated = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')");
     
-    if (setClauses.length === 1) return { changes: 0 }; // Only last_updated
+    if (setClauses.length === 1) return { changes: 0 }; 
     params.push(id);
     db.run(`UPDATE tables SET ${setClauses.join(', ')} WHERE id = ?`, params);
     persistToFile();

@@ -4,12 +4,14 @@ import {
   Menu, Search, Store, Monitor, LayoutGrid, Clock, Bell, User, Wifi,
   ChevronDown, ChevronUp, Info, CreditCard, Banknote, Printer, Eye, Plus,
   Minus, X, Utensils, Smartphone, BarChart3, TrendingUp, PieChart, AlertTriangle, Truck, ShoppingBag, ChefHat, MessageSquare, CheckSquare, Sunset, Trash2, Package,
-  Settings2, ReceiptText
+  Settings2, ReceiptText, RefreshCw
 } from 'lucide-react';
 import './index.css';
 import { get, set, del, clear } from 'idb-keyval';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import * as XLSX from 'xlsx';
+
+import { BASE_URL } from './constants';
 
 // Modular Components & Utilities
 import { printPosToSerial } from './utils/printerUtils';
@@ -85,172 +87,15 @@ const GlobalStyles = ({ settings }) => {
   );
 };
 
-const INITIAL_PRODUCT_CATEGORIES = [
-  "🥤 Mixers & Refreshers",
-  "🍺 Premium Beers (500 ml)",
-  "🍸 Vodka",
-  "🌿 Herbal Liqueur",
-  "🥃 Premium Whisky",
-  "🍹 Signature Cocktails"
-];
+const INITIAL_PRODUCT_CATEGORIES = [];
+const INITIAL_PRODUCTS = [];
 
-const INITIAL_PRODUCTS = [
-  // Mixers & Refreshers
-  { id: 9001, name: 'Soda', price: 29, cat: "🥤 Mixers & Refreshers", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9002, name: 'Sprite', price: 39, cat: "🥤 Mixers & Refreshers", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9003, name: 'Thums Up', price: 39, cat: "🥤 Mixers & Refreshers", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9004, name: 'Packaged Drinking Water', price: 49, cat: "🥤 Mixers & Refreshers", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9005, name: 'Red Bull', price: 249, cat: "🥤 Mixers & Refreshers", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9006, name: 'Ginger Ale', price: 79, cat: "🥤 Mixers & Refreshers", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9007, name: 'Tonic Water', price: 79, cat: "🥤 Mixers & Refreshers", type: 'retail', stockQuantity: 100, inStock: true },
+const INITIAL_CATEGORIES = [];
+const INITIAL_MENU_ITEMS = [];
 
-  // Premium Beers
-  { id: 9101, name: 'Budweiser', price: 399, cat: "🍺 Premium Beers (500 ml)", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9102, name: 'Kingfisher Ultra', price: 349, cat: "🍺 Premium Beers (500 ml)", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9103, name: 'Tuborg Mild', price: 349, cat: "🍺 Premium Beers (500 ml)", type: 'retail', stockQuantity: 100, inStock: true },
+const INITIAL_FLOOR_SECTIONS = [];
 
-  // Vodka
-  { id: 9201, name: 'Smirnoff 30ml', price: 169, cat: "🧊 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9202, name: 'Smirnoff 60ml', price: 279, cat: "🧊 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9203, name: 'Smirnoff 180ml', price: 919, cat: "🧊 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9204, name: 'Smirnoff Quart', price: 3199, cat: "🧊 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9205, name: 'Smirnoff Jamun 30ml', price: 179, cat: "🧊 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9206, name: 'Smirnoff Jamun 60ml', price: 289, cat: "🧊 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9207, name: 'Smirnoff Jamun 180ml', price: 929, cat: "🧊 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9208, name: 'Smirnoff Jamun Quart', price: 3229, cat: "🧊 Vodka", type: 'retail', stockQuantity: 100, inStock: true },
-
-  // Herbal Liqueur
-  { id: 9301, name: 'JÃ¤germeister 30ml', price: 499, cat: "🌿 Herbal Liqueur", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9302, name: 'JÃ¤gerbomb', price: 599, cat: "🌿 Herbal Liqueur", type: 'retail', stockQuantity: 100, inStock: true },
-
-  // Whisky
-  { id: 9401, name: 'Oaksmith Gold 30ml', price: 149, cat: "🥃 Premium Whisky", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9402, name: 'Oaksmith Gold 60ml', price: 299, cat: "🥃 Premium Whisky", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9403, name: 'Oaksmith Gold 180ml', price: 849, cat: "🥃 Premium Whisky", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9404, name: 'Oaksmith Gold 750ml', price: 3599, cat: "🥃 Premium Whisky", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9405, name: 'Blenders Pride 30ml', price: 149, cat: "🥃 Premium Whisky", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9406, name: 'Blenders Pride 60ml', price: 299, cat: "🥃 Premium Whisky", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9407, name: 'Blenders Pride 180ml', price: 849, cat: "🥃 Premium Whisky", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9408, name: 'Blenders Pride 750ml', price: 3599, cat: "🥃 Premium Whisky", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9409, name: 'JW Red Label 30ml', price: 349, cat: "🥃 Premium Whisky", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9410, name: 'JW Red Label 60ml', price: 499, cat: "🥃 Premium Whisky", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9411, name: 'JW Red Label 750ml', price: 4999, cat: "🥃 Premium Whisky", type: 'retail', stockQuantity: 100, inStock: true },
-
-  // Signature Cocktails
-  { id: 9501, name: 'Blue Lagoon', price: 349, cat: "🍸 Signature Cocktails", type: 'retail', stockQuantity: 100, inStock: true },
-  { id: 9502, name: 'Old Fashioned', price: 399, cat: "🍸 Signature Cocktails", type: 'retail', stockQuantity: 100, inStock: true }
-];
-
-const INITIAL_CATEGORIES = [
-  "Quick Snacks", "Breads", "Burgers", "Pizzas", "Wraps", "Pastas",
-  "Hot Beverages", "Cold Beverages", "Mocktails", "Salads", "Desserts"
-];
-
-const INITIAL_MENU_ITEMS = [
-  // Quick Snacks
-  { id: 101, name: 'Salted Fries', price: 199, type: 'veg', cat: "Quick Snacks", inStock: true },
-  { id: 102, name: 'Peri Peri Fries', price: 229, type: 'veg', cat: "Quick Snacks", inStock: true },
-  { id: 103, name: 'Cheesy Fries', price: 249, type: 'veg', cat: "Quick Snacks", inStock: true },
-  { id: 104, name: 'Mozzarella Sticks', price: 249, type: 'veg', cat: "Quick Snacks", inStock: true },
-  { id: 105, name: 'Veg Fingers', price: 249, type: 'veg', cat: "Quick Snacks", inStock: true },
-  { id: 106, name: 'Chicken Popcorn', price: 349, type: 'non-veg', cat: "Quick Snacks", inStock: true },
-  { id: 107, name: 'Chicken Strips (8pc)', price: 399, type: 'non-veg', cat: "Quick Snacks", inStock: true },
-  { id: 108, name: 'Chicken Nuggets (8pc)', price: 339, type: 'non-veg', cat: "Quick Snacks", inStock: true },
-  { id: 109, name: 'Chicken Lolipop', price: 409, type: 'non-veg', cat: "Quick Snacks", inStock: true },
-
-  // Breads
-  { id: 201, name: 'Cheese Garlic Bread', price: 249, type: 'veg', cat: "Breads", inStock: true },
-  { id: 202, name: 'Sweet Corn Garlic Bread', price: 269, type: 'veg', cat: "Breads", inStock: true },
-  { id: 203, name: 'Spicy Garlic Bread', price: 279, type: 'veg', cat: "Breads", inStock: true },
-  { id: 204, name: 'Bruschetta Garlic Bread', price: 299, type: 'veg', cat: "Breads", inStock: true },
-
-  // Burgers
-  { id: 301, name: 'Veg Classic', price: 239, type: 'veg', cat: "Burgers", inStock: true },
-  { id: 302, name: 'Veg Panner Crispy', price: 259, type: 'veg', cat: "Burgers", inStock: true },
-  { id: 303, name: 'Chicken Classic', price: 259, type: 'non-veg', cat: "Burgers", inStock: true },
-  { id: 304, name: 'Chicken Crispy', price: 289, type: 'non-veg', cat: "Burgers", inStock: true },
-
-  // Pizzas
-  { id: 401, name: 'Margarita', price: 399, type: 'veg', cat: "Pizzas", inStock: true },
-  { id: 402, name: 'Simply Veggie', price: 419, type: 'veg', cat: "Pizzas", inStock: true },
-  { id: 403, name: 'Farm Veggies', price: 429, type: 'veg', cat: "Pizzas", inStock: true },
-  { id: 404, name: 'Peri Peri Panner', price: 459, type: 'veg', cat: "Pizzas", inStock: true },
-  { id: 405, name: 'Tandoori Paneer', price: 499, type: 'veg', cat: "Pizzas", inStock: true },
-  { id: 406, name: 'Veg Extravaganza', price: 559, type: 'veg', cat: "Pizzas", inStock: true },
-  { id: 407, name: 'Chicken Sausages', price: 399, type: 'non-veg', cat: "Pizzas", inStock: true },
-  { id: 408, name: 'Simply Chicken', price: 429, type: 'non-veg', cat: "Pizzas", inStock: true },
-  { id: 409, name: 'BBQ Chicken', price: 449, type: 'non-veg', cat: "Pizzas", inStock: true },
-  { id: 410, name: 'Peri Peri Chicken', price: 469, type: 'non-veg', cat: "Pizzas", inStock: true },
-  { id: 411, name: 'Tandoori Chicken', price: 489, type: 'non-veg', cat: "Pizzas", inStock: true },
-  { id: 412, name: 'Chicken Loaded', price: 559, type: 'non-veg', cat: "Pizzas", inStock: true },
-
-  // Wraps
-  { id: 501, name: 'Veggie delight', price: 299, type: 'veg', cat: "Wraps", inStock: true },
-  { id: 502, name: 'Panner Warp', price: 319, type: 'veg', cat: "Wraps", inStock: true },
-  { id: 503, name: 'Tandoori Panner Wrap', price: 349, type: 'veg', cat: "Wraps", inStock: true },
-  { id: 504, name: 'Chicken Delight', price: 389, type: 'non-veg', cat: "Wraps", inStock: true },
-  { id: 505, name: 'Chicken Loaded', price: 399, type: 'non-veg', cat: "Wraps", inStock: true },
-
-  // Pastas
-  { id: 601, name: 'Alfredo (White Sauce) Veg', price: 389, type: 'veg', cat: "Pastas", inStock: true },
-  { id: 602, name: 'Alfredo (White Sauce) Nonveg', price: 399, type: 'non-veg', cat: "Pastas", inStock: true },
-  { id: 603, name: 'Arrabiata (Red Sauce) Veg', price: 399, type: 'veg', cat: "Pastas", inStock: true },
-  { id: 604, name: 'Arrabiata (Red Sauce) Nonveg', price: 419, type: 'non-veg', cat: "Pastas", inStock: true },
-  { id: 605, name: 'Pink Sauce Veg', price: 439, type: 'veg', cat: "Pastas", inStock: true },
-  { id: 606, name: 'Pink Sauce Nonveg', price: 459, type: 'non-veg', cat: "Pastas", inStock: true },
-
-  // Hot Beverages
-  { id: 701, name: 'Garam Chai', price: 99, type: 'veg', cat: "Hot Beverages", inStock: true },
-  { id: 702, name: 'Regular Hot Coffee', price: 119, type: 'veg', cat: "Hot Beverages", inStock: true },
-  { id: 703, name: 'Hot Turmeric Tea', price: 119, type: 'veg', cat: "Hot Beverages", inStock: true },
-  { id: 704, name: 'Lemon Tea', price: 99, type: 'veg', cat: "Hot Beverages", inStock: true },
-  { id: 705, name: 'Black Coffee', price: 99, type: 'veg', cat: "Hot Beverages", inStock: true },
-  { id: 706, name: 'Green Tea', price: 99, type: 'veg', cat: "Hot Beverages", inStock: true },
-  { id: 707, name: 'Strawberry Green Tea', price: 109, type: 'veg', cat: "Hot Beverages", inStock: true },
-  { id: 708, name: 'Butterfly Tea', price: 119, type: 'veg', cat: "Hot Beverages", inStock: true },
-
-  // Cold Beverages
-  { id: 801, name: 'Cold Coffee', price: 199, type: 'veg', cat: "Cold Beverages", inStock: true },
-  { id: 802, name: 'Caramel Cold Coffee', price: 219, type: 'veg', cat: "Cold Beverages", inStock: true },
-  { id: 803, name: 'Lemon Ice Tea', price: 229, type: 'veg', cat: "Cold Beverages", inStock: true },
-  { id: 804, name: 'Peach Ice tea', price: 209, type: 'veg', cat: "Cold Beverages", inStock: true },
-  { id: 805, name: 'Vanilla Milkshake', price: 219, type: 'veg', cat: "Cold Beverages", inStock: true },
-  { id: 806, name: 'Strawberry Milkshake', price: 219, type: 'veg', cat: "Cold Beverages", inStock: true },
-  { id: 807, name: 'Cookie Delite Milkshake', price: 229, type: 'veg', cat: "Cold Beverages", inStock: true },
-  { id: 808, name: 'Seasonal Fruit Juice', price: 249, type: 'veg', cat: "Cold Beverages", inStock: true },
-  { id: 809, name: 'Protein Cold Coffee', price: 299, type: 'veg', cat: "Cold Beverages", inStock: true },
-  { id: 810, name: 'Protein Chocolate Shake', price: 299, type: 'veg', cat: "Cold Beverages", inStock: true },
-
-  // Mocktails
-  { id: 901, name: 'Mint Mojito', price: 249, type: 'veg', cat: 'Mocktails', inStock: true },
-  { id: 902, name: 'Chili Guava', price: 259, type: 'veg', cat: 'Mocktails', inStock: true },
-  { id: 903, name: 'Minty Peach', price: 259, type: 'veg', cat: 'Mocktails', inStock: true },
-  { id: 904, name: 'Minty Watermelon', price: 259, type: 'veg', cat: 'Mocktails', inStock: true },
-
-  // Salads
-  { id: 1001, name: 'Paneer Peri Peri Salad', price: 309, type: 'veg', cat: "Salads", inStock: true },
-  { id: 1002, name: 'Tandoori Chicken Salad', price: 369, type: 'non-veg', cat: "Salads", inStock: true },
-  { id: 1003, name: 'Extra Chicken Salad', price: 399, type: 'non-veg', cat: "Salads", inStock: true },
-
-  // Desserts
-  { id: 1100, name: 'Hot Chocolate', price: 289, type: 'veg', cat: 'Desserts', inStock: true },
-  { id: 1101, name: 'Chocolate with Brownie', price: 299, type: 'veg', cat: 'Desserts', inStock: true },
-];
-
-const INITIAL_FLOOR_SECTIONS = ['A/C', 'Non A/C'];
-
-const INITIAL_TABLES = [
-  { id: 1, name: 'Table 1', status: 'blank', type: 'A/C', order: [], pos: { x: 50, y: 50 }, shape: 'rounded', seats: 4, zoneLabel: 'Window' },
-  { id: 2, name: 'Table 2', status: 'blank', type: 'A/C', order: [], pos: { x: 200, y: 50 }, shape: 'rounded', seats: 4, zoneLabel: 'Center' },
-  { id: 3, name: 'Table 3', status: 'blank', type: 'A/C', order: [], pos: { x: 350, y: 50 }, shape: 'square', seats: 2, zoneLabel: 'Quiet' },
-  { id: 4, name: 'Table 4', status: 'blank', type: 'A/C', order: [], pos: { x: 50, y: 180 }, shape: 'rounded', seats: 4, zoneLabel: 'Family' },
-  { id: 5, name: 'Table 5', status: 'blank', type: 'A/C', order: [], pos: { x: 200, y: 180 }, shape: 'square', seats: 6, zoneLabel: 'Group' },
-  { id: 8, name: 'Table 8', status: 'blank', type: 'A/C', order: [], pos: { x: 350, y: 180 }, shape: 'rounded', seats: 4, zoneLabel: 'Center' },
-  { id: 9, name: 'Table 9', status: 'blank', type: 'A/C', order: [], pos: { x: 500, y: 50 }, shape: 'circle', seats: 2, zoneLabel: 'Couple' },
-  { id: 12, name: 'Table 12', status: 'blank', type: 'A/C', order: [], pos: { x: 500, y: 180 }, shape: 'square', seats: 6, zoneLabel: 'Large' },
-  { id: 14, name: 'Table 14', status: 'blank', type: 'A/C', order: [], pos: { x: 50, y: 310 }, shape: 'rounded', seats: 4, zoneLabel: 'Corner' },
-  { id: 102, name: 'Table 102', status: 'blank', type: 'Non A/C', order: [], pos: { x: 200, y: 50 }, shape: 'rounded', seats: 4, zoneLabel: 'Patio' },
-];
+const INITIAL_TABLES = [];
 
 // --- COMPONENTS ---
 
@@ -374,14 +219,41 @@ const TimeElapsed = ({ createdAt }) => {
     const interval = setInterval(() => {
       const diff = Math.floor((Date.now() - createdAt) / 1000);
       const m = Math.floor(diff / 60);
-      const s = diff % 60;
-      setElapsed(m + 'm ' + s + 's');
-    }, 1000);
+      if (m === 0) {
+        setElapsed('< 1 min');
+      } else {
+        setElapsed(m + ' min');
+      }
+    }, 10000); // 10s is enough for minute updates
+    
+    // Initial calculation
+    const diff = Math.floor((Date.now() - createdAt) / 1000);
+    const m = Math.floor(diff / 60);
+    setElapsed(m === 0 ? '< 1 min' : m + ' min');
+    
     return () => clearInterval(interval);
   }, [createdAt]);
   
   if (!elapsed) return null;
-  return <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#f59e0b', background: '#fef3c7', padding: '2px 6px', borderRadius: '4px', display: 'inline-block' }}><Clock size={10} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '3px' }}/> {elapsed}</div>;
+  return (
+    <div style={{ 
+      fontSize: '10px', 
+      fontWeight: '900', 
+      color: '#b45309', 
+      background: '#fef3c7', 
+      padding: '4px 8px', 
+      borderRadius: '20px', 
+      display: 'inline-flex', 
+      alignItems: 'center', 
+      gap: '4px',
+      border: '1px solid #fde68a',
+      whiteSpace: 'nowrap',
+      boxShadow: '0 2px 4px rgba(180, 83, 9, 0.05)'
+    }}>
+      <Clock size={10} style={{ opacity: 0.8 }} /> 
+      {elapsed}
+    </div>
+  );
 };
 
 const AppTopNavbar = ({ globalSearch, onSearchChange, onToggleSidebar, onViewChange, stats }) => (
@@ -470,7 +342,7 @@ const OrderHistoryView = ({ orderHistory, activePickups = [], onSelectActive, gl
   const searchVal = globalSearch || localSearch;
 
   const allOrders = [
-    ...tables.filter(t => t.order && t.order.length > 0).map(t => ({ 
+    ...tables.filter(t => t.orders && t.orders.length > 0).map(t => ({ 
       ...t, 
       isActive: true, 
       tableId: t.name || t.id, 
@@ -487,7 +359,7 @@ const OrderHistoryView = ({ orderHistory, activePickups = [], onSelectActive, gl
   ].filter(o => {
     if (!searchVal) return true;
     const s = searchVal.toLowerCase();
-    const items = (o.order || o.cart || []);
+    const items = (o.orders || o.cart || []);
     return (o.id && String(o.id).toLowerCase().includes(s)) ||
            (o.customerName && String(o.customerName).toLowerCase().includes(s)) ||
            (o.phone && String(o.phone).includes(s)) ||
@@ -497,7 +369,7 @@ const OrderHistoryView = ({ orderHistory, activePickups = [], onSelectActive, gl
 
   const getOrderTotal = (order) => {
     if (order.grandTotal) return order.grandTotal;
-    return (order.cart || order.order || []).reduce((acc, i) => acc + (i.price * i.qty), 0);
+    return (order.cart || order.orders || []).reduce((acc, i) => acc + (i.price * i.qty), 0);
   };
 
   const stats = {
@@ -664,7 +536,7 @@ const OrderHistoryView = ({ orderHistory, activePickups = [], onSelectActive, gl
                     #{String(order.id).slice(-6)} • {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • <span style={{ color: isSettled ? '#10b981' : 'var(--primary)' }}>{isSettled ? 'SETTLED' : 'ONGOING'}</span>
                   </div>
                   <div style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
-                    {order.tableId ? `Table ${order.tableId}` : order.type} • {(order.cart || order.order || []).length} items
+                    {order.tableId ? `Table ${order.tableId}` : order.type} • {(order.cart || order.orders || []).length} items
                   </div>
                   <div style={{ textAlign: 'right', fontWeight: '900', color: '#0f172a', fontSize: '16px' }}>₹{total.toFixed(2)}</div>
                 </div>
@@ -766,7 +638,7 @@ const OrderHistoryView = ({ orderHistory, activePickups = [], onSelectActive, gl
                 {/* Body - Items List */}
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {(order.cart || order.order || []).map((item, i) => (
+                    {(order.cart || order.orders || []).map((item, i) => (
                       <div key={i} style={{
                         padding: '6px 14px', background: '#f8fafc', borderRadius: '10px',
                         fontSize: '12px', color: '#4b5563', fontWeight: '700', border: '1px solid #f1f5f9'
@@ -817,7 +689,7 @@ const OrderHistoryView = ({ orderHistory, activePickups = [], onSelectActive, gl
 
 /* --- MENU SETUP VIEW --- */
 
-const RetailProductSetupView = ({ categories, setCategories, menuItems, setMenuItems }) => {
+const RetailProductSetupView = ({ categories, setCategories, menuItems, setMenuItems, loadMenu }) => {
   const [newCat, setNewCat] = useState('');
   const [newItem, setNewItem] = useState({ name: '', price: '', stockQuantity: '', cat: categories[0] || '' });
 
@@ -836,42 +708,68 @@ const RetailProductSetupView = ({ categories, setCategories, menuItems, setMenuI
     }
   };
 
-  const addItem = () => {
+  const addItem = async () => {
+    console.log("ADD BUTTON CLICKED");
     if (newItem.name && newItem.price && newItem.cat && newItem.stockQuantity !== '') {
-      const itemToAdd = {
-        ...newItem,
-        id: Date.now(),
-        type: 'retail',
-        price: parseFloat(newItem.price),
-        stockQuantity: parseInt(newItem.stockQuantity, 10),
-        inStock: parseInt(newItem.stockQuantity, 10) > 0
-      };
-      setMenuItems([...menuItems, itemToAdd]);
-      setNewItem({ name: '', price: '', stockQuantity: '', cat: categories[0] || '' });
+      try {
+        const { createMenuItem } = await import('./utils/apiClient');
+        const result = await createMenuItem({
+          name: newItem.name,
+          price: parseFloat(newItem.price),
+          category: newItem.cat
+        });
+
+        if (result.success) {
+           await loadMenu();
+           setNewItem({ name: '', price: '', stockQuantity: '', cat: categories[0] || '' });
+        } else {
+           alert(`Failed to add item: ${result.error || 'Unknown server error'}`);
+        }
+      } catch (err) {
+        console.error("❌ Request Error:", err);
+        alert(`Request failed: ${err.message}`);
+      }
     } else {
       alert("Please fill in Name, Price, Category, and Stock Quantity.");
     }
   };
 
-  const deleteItem = (id) => {
+  const deleteItem = async (id) => {
     if (window.confirm("Are you sure you want to remove this product?")) {
       const pwd = window.prompt("Security Check: Enter master password:");
-      if (pwd === "biller") setMenuItems(menuItems.filter(item => item.id !== id));
+      if (pwd === "biller") {
+        try {
+          const { deleteMenuItem } = await import('./utils/apiClient');
+          await deleteMenuItem(id);
+          await loadMenu();
+        } catch (err) {
+          alert("Delete failed on server.");
+        }
+      }
     }
   };
 
-  const toggleStock = (id) => {
-    setMenuItems(menuItems.map(item => item.id === id ? { ...item, inStock: !item.inStock } : item));
+  const toggleStock = async (id) => {
+    try {
+      const item = (menuItems || []).find(i => i.id === id);
+      if (!item) return;
+      const { updateMenuItemApi } = await import('./utils/apiClient');
+      await updateMenuItemApi(id, { inStock: !item.inStock });
+      await loadMenu();
+    } catch (err) {
+      console.error("Failed to toggle stock:", err);
+    }
   };
 
-  const updateQuantity = (id, newQty) => {
-    setMenuItems(menuItems.map(item => {
-      if (item.id === id) {
-        const q = parseInt(newQty, 10) || 0;
-        return { ...item, stockQuantity: q, inStock: q > 0 };
-      }
-      return item;
-    }));
+  const updateQuantity = async (id, newQty) => {
+    try {
+      const { updateMenuItemApi } = await import('./utils/apiClient');
+      const q = parseInt(newQty, 10) || 0;
+      await updateMenuItemApi(id, { stockQuantity: q, inStock: q > 0 });
+      await loadMenu();
+    } catch (err) {
+      console.error("Failed to update quantity:", err);
+    }
   };
 
   return (
@@ -941,15 +839,34 @@ const RetailProductSetupView = ({ categories, setCategories, menuItems, setMenuI
   );
 };
 
-const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems }) => {
+const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loadCategories, loadMenu }) => {
   const [newCat, setNewCat] = useState('');
-  const [newItem, setNewItem] = useState({ name: '', price: '', type: 'veg', cat: categories[0] || '' });
+  const [selectedCategory, setSelectedCategory] = useState(categories[0] || "");
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [type, setType] = useState("Veg");
 
-  const addCategory = () => {
+  const addCategory = async () => {
     if (newCat && !categories.includes(newCat)) {
-      setCategories([...categories, newCat]);
-      if (!newItem.cat) setNewItem({ ...newItem, cat: newCat });
-      setNewCat('');
+        // ✅ 1. UPDATE LOCALLY FIRST (Instant UI)
+        const updatedCats = [...categories, newCat];
+        setCategories(updatedCats);
+        setSelectedCategory(newCat);
+        setNewCat('');
+
+        // ✅ 2. TRY BACKEND SYNC (Optional)
+        try {
+          console.log("☁️ Syncing new category to cloud:", newCat);
+          await fetch(BASE_URL + "/categories", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: newCat })
+          });
+        } catch (err) {
+          console.warn("⚠️ Offline Mode: Category created locally.", err);
+        }
+    } else if (categories.includes(newCat)) {
+      alert("Category already exists");
     }
   };
 
@@ -964,26 +881,50 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems }) =
     }
   };
 
-  const addItem = () => {
-    if (newItem.name && newItem.price && newItem.cat) {
-      const itemToAdd = {
-        ...newItem,
-        id: Date.now(),
-        price: parseFloat(newItem.price),
-        inStock: true
+  const addItem = async () => {
+    if (name && price && selectedCategory) {
+      const itemToLink = {
+        id: Date.now().toString(),
+        name,
+        price: parseFloat(price),
+        category: selectedCategory || "Uncategorized",
+        type
       };
-      setMenuItems([...menuItems, itemToAdd]);
-      setNewItem({ name: '', price: '', type: 'veg', cat: categories[0] || '' });
+
+      // ✅ 1. UPDATE LOCALLY FIRST (Instant UI)
+      setMenuItems(prev => [...prev, itemToLink]);
+      setName("");
+      setPrice("");
+
+      // ✅ 2. TRY BACKEND SYNC (Optional)
+      try {
+        console.log("☁️ Attempting Server Sync for new item:", itemToLink.name);
+        await fetch(BASE_URL + "/menu", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(itemToLink)
+        });
+        // Optional: reload to get server-side IDs if strictly needed
+        // await loadMenu(); 
+      } catch (err) {
+        console.warn("⚠️ POST /menu failed, item exists in LOCAL setup only.", err);
+      }
     } else {
-      alert("Please fill in Name, Price, and Category.");
+      alert("Please fill name and price");
     }
   };
 
-  const deleteItem = (id) => {
+  const deleteItem = async (id) => {
     if (window.confirm("Are you sure you want to remove this item from the menu?")) {
       const pwd = window.prompt("Security Check: Enter master password to delete menu item:");
       if (pwd === "biller") {
-        setMenuItems(menuItems.filter(item => item.id !== id));
+        try {
+          const { deleteMenuItem } = await import('./utils/apiClient');
+          await deleteMenuItem(id);
+          await loadMenu();
+        } catch (err) {
+          alert("Delete failed on server.");
+        }
       } else {
         alert("Incorrect Password. Deletion cancelled.");
       }
@@ -1062,31 +1003,36 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems }) =
             <input
               type="text"
               placeholder="Item Name"
-              value={newItem.name}
-              onChange={e => setNewItem({ ...newItem, name: e.target.value })}
+              value={name}
+              onChange={e => setName(e.target.value)}
               style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
             />
             <input
               type="number"
               placeholder="Price (₹)"
-              value={newItem.price}
-              onChange={e => setNewItem({ ...newItem, price: e.target.value })}
+              value={price}
+              onChange={e => setPrice(e.target.value)}
               style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
             />
             <select
-              value={newItem.cat}
-              onChange={e => setNewItem({ ...newItem, cat: e.target.value })}
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
               style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white' }}
             >
-              {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              <option value="">Select Category</option>
+              {categories.map((cat, i) => (
+                <option key={i} value={cat}>
+                  {cat}
+                </option>
+              ))}
             </select>
             <select
-              value={newItem.type}
-              onChange={e => setNewItem({ ...newItem, type: e.target.value })}
+              value={type}
+              onChange={e => setType(e.target.value)}
               style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white' }}
             >
-              <option value="veg">Veg</option>
-              <option value="non-veg">Non-Veg</option>
+              <option value="Veg">Veg</option>
+              <option value="Non-Veg">Non-Veg</option>
             </select>
             <button onClick={addItem} className="btn-pp btn-pp-primary" style={{ padding: '10px 20px' }}>Add Item</button>
           </div>
@@ -1122,7 +1068,7 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems }) =
 };
 
 /* --- FLOOR PLAN SETUP VIEW --- */
-const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
+const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables }) => {
   const [newTableName, setNewTableName] = useState('');
   const [newTableType, setNewTableType] = useState(sections[0] || '');
   const [newTableSeats, setNewTableSeats] = useState('4');
@@ -1138,40 +1084,63 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
   const [editingTableId, setEditingTableId] = useState(null);
   const [editingTableDraft, setEditingTableDraft] = useState({ name: '', seats: '4', shape: 'rounded', zoneLabel: '', scale: '1.0' });
 
-  const addTable = () => {
-    if (newTableName.trim() === '' || !newTableType) return;
-    const newId = Date.now();
-    const newTable = {
-      id: newId,
+  const addTable = async () => {
+    if (newTableName.trim() === '') return;
+    
+    const stagger = (tables.length % 5) * 40;
+    const newTableData = {
+      id: Date.now(),
       name: newTableName,
-      status: 'blank',
       type: newTableType,
-      order: [],
-      pos: { x: 50, y: 50 },
+      status: "free",
+      pos: { x: 50 + stagger, y: 50 + stagger },
       seats: parseInt(newTableSeats, 10) || 4,
       shape: newTableShape,
       zoneLabel: newZoneLabel.trim(),
-      scale: 1.0
+      items: [],
+      orders: [],
+      total: 0
     };
-    setTables([...tables, newTable]);
+
+    // ✅ 1. UPDATE LOCALLY FIRST
+    setTables(prev => [...prev, newTableData]);
     setNewTableName('');
     setNewTableSeats('4');
     setNewTableShape('rounded');
     setNewZoneLabel('');
+
+    // ✅ 2. TRY BACKEND SYNC (Optional)
+    try {
+      await fetch(BASE_URL + "/tables", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTableData)
+      });
+      // Optional: await loadTables(); 
+    } catch (err) {
+      console.warn("⚠️ Offline Mode: Table created locally.", err);
+    }
   };
 
   const removeTable = (id) => {
     const tableInfo = tables.find(t => t.id === id);
-    if (tableInfo && tableInfo.status !== 'blank') {
+    if (tableInfo && tableInfo.status !== 'free') {
       alert("Cannot remove a table with an active order.");
       return;
     }
     setTableToRemove(id);
   };
 
-  const confirmRemoveTable = () => {
-    setTables(tables.filter(t => t.id !== tableToRemove));
-    setTableToRemove(null);
+  const confirmRemoveTable = async () => {
+    try {
+      await fetch(BASE_URL + "/tables/" + tableToRemove, {
+        method: "DELETE"
+      });
+      await loadTables();
+      setTableToRemove(null);
+    } catch (err) {
+      console.error("Failed to delete table:", err);
+    }
   };
 
   const addSection = () => {
@@ -1214,7 +1183,7 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
 
   const handleTableMouseDown = (e, tableId) => {
     if (!designModeSection) return;
-    const table = tables.find(t => t.id === tableId);
+    const table = (tables || []).find(t => t.id === tableId);
     if (!table) return;
     e.preventDefault();
     setDraggedTableId(tableId);
@@ -1237,7 +1206,24 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
     ));
   };
 
-  const handleCanvasMouseUp = () => setDraggedTableId(null);
+  const handleCanvasMouseUp = async () => {
+    if (draggedTableId) {
+      const table = tables.find(t => t.id === draggedTableId);
+      if (table) {
+        try {
+          await fetch(BASE_URL + "/tables/" + table.id, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pos: table.pos })
+          });
+          // Note: Removed loadTables() here to prevent UI flicker/stutter during drag persistence
+        } catch (err) {
+          console.error("Failed to save table position:", err);
+        }
+      }
+    }
+    setDraggedTableId(null);
+  };
 
   const startEditTable = (table) => {
     setEditingTableId(table.id);
@@ -1502,10 +1488,9 @@ const FloorPlanSetupView = ({ tables, setTables, sections, setSections }) => {
 
 /* --- SYSTEM SETTINGS VIEW --- */
 /* --- ADVANCED GLOBAL SETTINGS VIEW --- */
-const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullReset, devices = [], onUpdateDeviceStatus, onDeleteDevice, backendUrl, onUpdateBackendUrl, isConnected }) => {
+const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullReset, devices = [], onUpdateDeviceStatus, onDeleteDevice, isConnected }) => {
   const [activeTab, setActiveTab] = useState('design');
   const [localSettings, setLocalSettings] = useState(settings);
-  const [localBackendUrl, setLocalBackendUrl] = useState(backendUrl);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -1515,11 +1500,6 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
   const handleSave = () => {
     onSaveSettings(localSettings);
     alert('Settings Saved Successfully!');
-  };
-
-  const handleSaveBackend = () => {
-    onUpdateBackendUrl(localBackendUrl);
-    alert('Backend URL updated! System will reload to reconnect.');
   };
 
   return (
@@ -1619,33 +1599,11 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
                 </div>
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Backend API & Socket URL</label>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <input
-                    type="text"
-                    value={localBackendUrl}
-                    onChange={(e) => setLocalBackendUrl(e.target.value)}
-                    placeholder="e.g. http://192.168.1.5:3000"
-                    style={{ flex: 1, padding: '14px 18px', borderRadius: '12px', border: '1px solid #d1d5db', fontSize: '15px', color: '#111827', outline: 'none' }}
-                  />
-                  <button
-                    onClick={handleSaveBackend}
-                    style={{ background: '#111827', color: 'white', border: 'none', padding: '0 24px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
-                  >
-                    Apply & Sync
-                  </button>
-                </div>
-                <p style={{ fontSize: '11px', color: '#64748b', marginTop: '12px', fontStyle: 'italic' }}>
-                   Note: Enter the IP address and port where your "Restaurant POS Backend" is currently running. For local development, this is typically <b>http://localhost:3001</b>.
-                </p>
-              </div>
-
               <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>Connection Stats</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                    <div style={{ fontSize: '12px', color: '#64748b' }}>WebSocket Status: <b style={{ color: isConnected ? '#10b981' : '#dc2626' }}>{isConnected ? 'Active' : 'Idle'}</b></div>
-                   <div style={{ fontSize: '12px', color: '#64748b' }}>Current Endpoint: <b>{backendUrl}</b></div>
+                   <div style={{ fontSize: '12px', color: '#64748b' }}>Project Base Endpoint: <b>{BASE_URL}</b></div>
                 </div>
               </div>
             </div>
@@ -1861,10 +1819,14 @@ const PrinterSettingsView = ({ settings, onSaveSettings, categories }) => {
   );
 };
 
-const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTable, settings, onQuickSettle, onQuickPrint, globalSearch, onViewChange, onOpenFloorDesigner }) => {
-  const [tableToClear, setTableToClear] = useState(null);
+const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, settings, onQuickSettle, onQuickPrint, globalSearch, onViewChange, onOpenFloorDesigner, tableToClear, setTableToClear }) => {
   const [viewMode, setViewMode] = useState('map');
   const [statusFilter, setStatusFilter] = useState('all');
+  
+  // Only show sections that HAVE tables assigned
+  const activeSections = (floorPlanSections || []).filter(section => 
+    tables.some(t => t.type === section)
+  );
 
   const filterMatch = (t) => {
     if (!globalSearch) return true;
@@ -1876,19 +1838,19 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
   const matchesStatus = (table) => {
     const minutes = getMinutesElapsed(table.createdAt);
     if (statusFilter === 'all') return true;
-    if (statusFilter === 'vacant') return table.status === 'blank';
-    if (statusFilter === 'occupied') return table.status !== 'blank';
+    if (statusFilter === 'vacant') return table.status === 'free';
+    if (statusFilter === 'occupied') return table.status !== 'free';
     if (statusFilter === 'printed') return table.status === 'printed';
-    if (statusFilter === 'delayed') return table.status !== 'blank' && minutes >= 45;
+    if (statusFilter === 'delayed') return table.status !== 'free' && minutes >= 45;
     return true;
   };
 
   const filteredTables = tables.filter(table => filterMatch(table) && matchesStatus(table));
-  const occupiedTables = tables.filter(table => table.status !== 'blank');
+  const occupiedTables = tables.filter(table => table.status !== 'free');
   const printedTables = tables.filter(table => table.status === 'printed');
-  const delayedTables = tables.filter(table => table.status !== 'blank' && getMinutesElapsed(table.createdAt) >= 45);
+  const delayedTables = tables.filter(table => table.status !== 'free' && getMinutesElapsed(table.createdAt) >= 45);
   const occupancyRate = tables.length > 0 ? Math.round((occupiedTables.length / tables.length) * 100) : 0;
-  const openRevenue = occupiedTables.reduce((acc, table) => acc + getOrderTotal(table.order), 0);
+  const openRevenue = occupiedTables.reduce((acc, table) => acc + getOrderTotal(table.orders), 0);
   const avgOpenTicket = occupiedTables.length > 0 ? openRevenue / occupiedTables.length : 0;
   const statusFilters = [
     { id: 'all', label: 'All tables' },
@@ -1969,7 +1931,7 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
         </div>
       </div>
 
-      {(floorPlanSections || []).map(section => (
+      {activeSections.map(section => (
         <div key={section} style={{ marginBottom: '48px' }}>
           <h2 style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
             {section} SECTION
@@ -1988,8 +1950,8 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
               padding: '24px'
             }}>
               {filteredTables.filter(t => t.type === section).map(table => {
-                const tableTotal = getOrderTotal(table.order);
-                const isRunning = table.status !== 'blank';
+                const tableTotal = getOrderTotal(table.orders);
+                const isRunning = table.status !== 'free';
                 const isPrinted = table.status === 'printed';
 
                 return (
@@ -2003,40 +1965,49 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
                       top: `${table.pos?.y || 0}px`,
                       zIndex: isRunning ? 10 : 1,
                       transform: `scale(${table.scale || 1})`,
-                      transformOrigin: 'top left'
+                      transformOrigin: 'top left',
+                      height: '200px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      padding: '16px',
+                      overflow: 'hidden'
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '4px' }}>
-                      <div style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b', letterSpacing: '-0.4px' }}>
-                        Table {table.name.replace('Table ', '')}
+                    {/* Top Row: Table Name & Compact Timer */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', gap: '8px' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '9px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '2px', letterSpacing: '0.4px' }}>Table</div>
+                        <div style={{ fontSize: '20px', fontWeight: '950', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {table.name.replace('Table ', '')}
+                        </div>
                       </div>
                       {isRunning && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#fef3c7', padding: '4px 8px', borderRadius: '8px', border: '1px solid #fde68a' }}>
-                           <Clock size={10} color="#b45309" />
-                           <span style={{ fontSize: '10px', fontWeight: '900', color: '#b45309' }}>
-                             <TimeElapsed createdAt={table.createdAt} />
-                           </span>
+                        <div style={{ flexShrink: 0 }}>
+                           <TimeElapsed createdAt={table.createdAt} />
                         </div>
                       )}
                     </div>
 
-                    <div style={{ textAlign: 'left', flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', justifyContent: 'center' }}>
-                      <div style={{ fontSize: '10px', fontWeight: '900', color: isRunning ? (isPrinted ? '#10b981' : '#64748b') : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        {isPrinted ? 'READY' : (isRunning ? 'RUNNING' : 'VACANT')}
+                    {/* Middle: Status & Price (Centered for consistency) */}
+                    <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '10px 0' }}>
+                      <div style={{ fontSize: '9px', fontWeight: '900', color: isRunning ? (isPrinted ? '#10b981' : '#64748b') : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                        {isPrinted ? '✓ READY' : (isRunning ? '• OCCUPIED' : '○ VACANT')}
                       </div>
-                      <div style={{ fontSize: '32px', fontWeight: '950', color: isRunning ? '#c2410c' : '#cbd5e1', margin: '2px 0', lineHeight: 1 }}>
-                        {tableTotal > 0 ? `₹${tableTotal}` : '--'}
+                      <div style={{ fontSize: '32px', fontWeight: '950', color: isRunning ? 'var(--primary)' : '#e2e8f0', margin: '2px 0', lineHeight: 1 }}>
+                        {tableTotal > 0 ? `₹${Math.floor(tableTotal)}` : '--'}
                       </div>
-                      <div style={{ fontSize: '13px', color: '#475569', fontWeight: '700' }}>
-                        {table.order?.length || 0} items
+                      <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', marginTop: '4px' }}>
+                        {isRunning ? `${(table.items?.length || table.orders?.length || 0)} items` : 'No items'}
                       </div>
                     </div>
 
+                    {/* Bottom: Action Row */}
                     {isRunning && (
-                       <div style={{ display: 'flex', gap: '6px', paddingTop: '10px', borderTop: '1px solid #f1f5f9', width: '100%', justifyContent: 'center' }}>
-                         <button onClick={(e) => { e.stopPropagation(); onQuickPrint(table); }} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '6px', borderRadius: '10px', cursor: 'pointer' }}><Printer size={14} color="#64748b" /></button>
-                         <button onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} style={{ background: '#111827', border: 'none', padding: '6px', borderRadius: '10px', cursor: 'pointer' }}><CheckSquare size={14} color="white" /></button>
-                         <button onClick={(e) => { e.stopPropagation(); setTableToClear(table.id); }} style={{ background: '#fff1f2', border: 'none', padding: '6px', borderRadius: '10px', cursor: 'pointer' }}><Trash2 size={14} color="#ef4444" /></button>
+                       <div style={{ display: 'flex', gap: '6px', paddingTop: '10px', borderTop: '1px solid #f1f5f9', width: '100%', justifyContent: 'center', marginBottom: '8px' }}>
+                         <button onClick={(e) => { e.stopPropagation(); onQuickPrint(table); }} title="Print KOT" style={{ flex: 1, background: '#f8fafc', border: '1px solid #e2e8f0', padding: '10px 4px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'center' }}><Printer size={16} color="#64748b" /></button>
+                         <button onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} title="Settle Bill" style={{ flex: 1, background: '#111827', border: 'none', padding: '10px 4px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'center' }}><CheckSquare size={16} color="white" /></button>
+                         <button onClick={(e) => { e.stopPropagation(); setTableToClear(table.id); }} title="Discard" style={{ flex: 1, background: '#fff1f2', border: 'none', padding: '10px 4px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'center' }}><Trash2 size={16} color="#ef4444" /></button>
                        </div>
                     )}
                   </div>
@@ -2046,8 +2017,8 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
           ) : (
             <div className="pp-table-grid no-scrollbar">
               {filteredTables.filter(t => t.type === section).map(table => {
-                const tableTotal = getOrderTotal(table.order);
-                const isRunning = table.status !== 'blank';
+                const tableTotal = getOrderTotal(table.orders);
+                const isRunning = table.status !== 'free';
                 const isPrinted = table.status === 'printed';
 
                 return (
@@ -2055,38 +2026,51 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
                     key={table.id}
                     onClick={() => onSelectTable(table)}
                     className={`pp-table-card ${isRunning ? (isPrinted ? 'status-printed' : 'status-running') : 'status-blank'}`}
+                    style={{
+                      height: '200px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      padding: '16px',
+                      paddingBottom: '20px',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '4px' }}>
-                      <div style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b', letterSpacing: '-0.4px' }}>
-                        Table {table.name.replace('Table ', '')}
+                    {/* Top Row: Table Name & Compact Timer */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', gap: '8px' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '9px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '2px', letterSpacing: '0.4px' }}>Table</div>
+                        <div style={{ fontSize: '20px', fontWeight: '950', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {table.name.replace('Table ', '')}
+                        </div>
                       </div>
                       {isRunning && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#fef3c7', padding: '4px 8px', borderRadius: '8px', border: '1px solid #fde68a' }}>
-                           <Clock size={10} color="#b45309" />
-                           <span style={{ fontSize: '10px', fontWeight: '900', color: '#b45309' }}>
-                             <TimeElapsed createdAt={table.createdAt} />
-                           </span>
+                        <div style={{ flexShrink: 0 }}>
+                           <TimeElapsed createdAt={table.createdAt} />
                         </div>
                       )}
                     </div>
 
-                    <div style={{ textAlign: 'left', flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', justifyContent: 'center' }}>
-                      <div style={{ fontSize: '10px', fontWeight: '900', color: isRunning ? (isPrinted ? '#10b981' : '#64748b') : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        {isPrinted ? 'READY' : (isRunning ? 'RUNNING' : 'VACANT')}
+                    {/* Middle: Status & Price (Centered for consistency) */}
+                    <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '10px 0' }}>
+                      <div style={{ fontSize: '9px', fontWeight: '900', color: isRunning ? (isPrinted ? '#10b981' : '#64748b') : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                        {isPrinted ? '✓ READY' : (isRunning ? '• OCCUPIED' : '○ VACANT')}
                       </div>
-                      <div style={{ fontSize: '32px', fontWeight: '950', color: isRunning ? '#c2410c' : '#cbd5e1', margin: '2px 0', lineHeight: 1 }}>
-                        {tableTotal > 0 ? `₹${tableTotal}` : '--'}
+                      <div style={{ fontSize: '32px', fontWeight: '950', color: isRunning ? 'var(--primary)' : '#e2e8f0', margin: '2px 0', lineHeight: 1 }}>
+                        {tableTotal > 0 ? `₹${Math.floor(tableTotal)}` : '--'}
                       </div>
-                      <div style={{ fontSize: '13px', color: '#475569', fontWeight: '700' }}>
-                        {table.order?.length || 0} items
+                      <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', marginTop: '4px' }}>
+                        {isRunning ? `${table.orders?.length || 0} items` : 'No items'}
                       </div>
                     </div>
 
+                    {/* Bottom: Action Row */}
                     {isRunning && (
-                       <div style={{ display: 'flex', gap: '6px', paddingTop: '10px', borderTop: '1px solid #f1f5f9', width: '100%', justifyContent: 'center' }}>
-                         <button onClick={(e) => { e.stopPropagation(); onQuickPrint(table); }} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '6px', borderRadius: '10px', cursor: 'pointer' }}><Printer size={14} color="#64748b" /></button>
-                         <button onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} style={{ background: '#111827', border: 'none', padding: '6px', borderRadius: '10px', cursor: 'pointer' }}><CheckSquare size={14} color="white" /></button>
-                         <button onClick={(e) => { e.stopPropagation(); setTableToClear(table.id); }} style={{ background: '#fff1f2', border: 'none', padding: '6px', borderRadius: '10px', cursor: 'pointer' }}><Trash2 size={14} color="#ef4444" /></button>
+                       <div style={{ display: 'flex', gap: '6px', paddingTop: '10px', borderTop: '1px solid #f1f5f9', width: '100%', justifyContent: 'center', marginBottom: '8px' }}>
+                         <button onClick={(e) => { e.stopPropagation(); onQuickPrint(table); }} title="Print KOT" style={{ flex: 1, background: '#f8fafc', border: '1px solid #e2e8f0', padding: '10px 4px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'center' }}><Printer size={16} color="#64748b" /></button>
+                         <button onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} title="Settle Bill" style={{ flex: 1, background: '#111827', border: 'none', padding: '10px 4px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'center' }}><CheckSquare size={16} color="white" /></button>
+                         <button onClick={(e) => { e.stopPropagation(); setTableToClear(table.id); }} title="Discard" style={{ flex: 1, background: '#fff1f2', border: 'none', padding: '10px 4px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'center' }}><Trash2 size={16} color="#ef4444" /></button>
                        </div>
                     )}
                   </div>
@@ -2098,28 +2082,17 @@ const TableManagement = ({ tables, floorPlanSections, onSelectTable, onClearTabl
         </div>
       ))}
 
-      {tableToClear && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-          <div className="animate-fade-in" style={{ background: 'white', padding: '28px', borderRadius: '12px', width: '340px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
-            <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '12px', color: '#1f2937' }}>Clear Table?</h3>
-            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '28px', lineHeight: '1.5' }}>Are you sure you want to completely discard this pending order?</p>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button
-                onClick={() => setTableToClear(null)}
-                style={{ flex: 1, padding: '12px', background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => { onClearTable(tableToClear); setTableToClear(null); }}
-                style={{ flex: 1, padding: '12px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
-              >
-                Yes, Discard
-              </button>
+      {/* Quick System Monitor */}
+      <div style={{ marginTop: '32px', padding: '24px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
+        <h3 style={{ fontSize: '12px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '16px', letterSpacing: '1px' }}>Quick System Monitor</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          {tables.map((table) => (
+            <div key={table.id} className="table" style={{ padding: '6px 12px', background: 'white', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '11px', fontWeight: 'bold', color: '#64748b' }}>
+              {table.name}
             </div>
-          </div>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 };
@@ -2230,7 +2203,7 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
             style={{
               display: 'flex',
               alignItems: 'center',
-              background: '#94161c',
+              background: 'var(--primary)',
               color: 'white',
               padding: '10px 20px',
               borderRadius: '8px',
@@ -2251,7 +2224,7 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
           </div>
         )}
         {[...filteredOrders].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)).map(order => {
-          const tableTotal = getOrderTotal(order.order || []);
+          const tableTotal = getOrderTotal(order.orders || []);
           let bg = order.type === 'Delivery' ? '#fff1f2' : '#f0f9ff';
           let text = order.type === 'Delivery' ? '#be123c' : '#0369a1';
           let border = order.type === 'Delivery' ? '#ffe4e6' : '#e0f2fe';
@@ -2291,8 +2264,8 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
                 </div>
 
                 <div style={{ borderTop: '1px solid #f1f5f9', width: '100%', paddingTop: '12px', marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>{(order.order || []).reduce((acc, i) => acc + (i.qty || 0), 0)} Items</div>
-                  <div style={{ fontWeight: '800', fontSize: '16px', color: '#94161c' }}>₹{tableTotal}</div>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>{(order.orders || []).reduce((acc, i) => acc + (i.qty || 0), 0)} Items</div>
+                  <div style={{ fontWeight: '800', fontSize: '16px', color: 'var(--primary)' }}>₹{tableTotal}</div>
                 </div>
               </div>
 
@@ -2325,7 +2298,7 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
 };
 
 
-const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, onSaveOrder, onSettleTable, onChangeTable, MENU_ITEMS, CATEGORIES, customers, settings }) => {
+const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, onSaveOrder, onAddItem, onSettleTable, onChangeTable, MENU_ITEMS, CATEGORIES, customers, settings, loadTables }) => {
   // Fix redundant 'Table Table' title
   const displayTitle = table?.name?.toLowerCase().includes('table') 
     ? table.name 
@@ -2376,6 +2349,228 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [isPaid, setIsPaid] = useState(false);
 
+  // 🔥 NEW REQUESTED LOGIC
+  const printKOT = async (items = cart) => {
+    // Detect new items
+    const unprinted = items.filter(i => (i.qty - (i.printedQty || 0)) > 0);
+    const list = unprinted.length > 0 ? unprinted : items;
+    
+    await printPosToSerial({
+      orderId: table?.id,
+      tableName: table?.name || `Table ${table?.id}`,
+      customerName, customerPhone,
+      items: list.map(i => ({ ...i, qty: i.qty - (i.printedQty || 0) || i.qty })),
+      subtotal, serviceCharge, roundOff, grandTotal,
+      orderType: table?.type || 'Dine In'
+    }, 'KOT');
+  };
+
+  const printBill = async () => {
+    await printPosToSerial({
+      orderId: table?.id,
+      tableName: table?.name || `Table ${table?.id}`,
+      customerName, customerPhone,
+      items: cart,
+      subtotal, serviceCharge, roundOff, grandTotal,
+      orderType: table?.type || 'Dine In'
+    }, 'BILL');
+  };
+
+  const handleKOT = async () => {
+    // 🔍 STEP 1: VALIDATION
+    if (!cart || cart.length === 0) {
+      alert("No items to send");
+      return;
+    }
+
+    if (!table) {
+      alert("No table selected");
+      return;
+    }
+
+    // 🧹 STEP 2: CLEAN DATA (Ensure name, price, qty)
+    const cartItems = cart
+      .filter(item => item && item.name && item.price !== undefined)
+      .map(item => ({
+        name: item.name,
+        price: item.price,
+        qty: item.qty || 1,
+        note: item.note || ""
+      }));
+
+    if (cartItems.length === 0) {
+      alert("Cart contains invalid items");
+      return;
+    }
+
+    // ✅ STEP 3: UPDATE LOCALLY FIRST (Instant UI)
+    onSaveOrder(table.id, cartItems, "occupied");
+    setCart([]);
+    if (onBack) onBack();
+
+    // ✅ STEP 4: BACKGROUND SYNC (Optional)
+    (async () => {
+      try {
+        console.log("☁️ Shadow Sync KOT...");
+        await fetch(BASE_URL + "/order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tableId: table.id, items: cartItems })
+        });
+      } catch (err) {
+        console.warn("⚠️ KOT Background sync failed, using local only.", err);
+      }
+    })();
+  };
+
+  const handleKOTPrint = async () => {
+    // 🔍 STEP 1: VALIDATION
+    if (!cart || cart.length === 0) {
+      alert("No items to send");
+      return;
+    }
+
+    if (!table) {
+      alert("No table selected");
+      return;
+    }
+
+    // 🧹 STEP 2: CLEAN DATA
+    const cartItems = cart
+      .filter(item => item && item.name && item.price !== undefined)
+      .map(item => ({
+        name: item.name,
+        price: item.price,
+        qty: item.qty || 1,
+        note: item.note || ""
+      }));
+
+    if (cartItems.length === 0) {
+      alert("Cart contains invalid items");
+      return;
+    }
+
+    // ✅ STEP 3: PRINT (Local)
+    printKOT();
+
+    // ✅ STEP 4: UPDATE LOCALLY (Instant UI)
+    onSaveOrder(table.id, cartItems, "occupied");
+    setCart([]);
+    if (onBack) onBack();
+
+    // ✅ STEP 5: BACKGROUND SYNC (Optional)
+    (async () => {
+      try {
+        console.log("☁️ Shadow Sync KOT & Print...");
+        await fetch(BASE_URL + "/order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tableId: table.id, items: cartItems })
+        });
+      } catch (err) {
+        console.warn("⚠️ KOT & Print background sync failed.", err);
+      }
+    })();
+  };
+
+  const handleSave = async () => {
+    // 🔍 VALIDATION
+    if (!cart || cart.length === 0) {
+      alert("No items to save");
+      return;
+    }
+    if (!table) {
+      alert("No table selected");
+      return;
+    }
+
+    // 🧹 CLEAN DATA
+    const cartItems = cart
+      .filter(item => item && item.name && item.price !== undefined)
+      .map(item => ({
+        name: item.name,
+        price: item.price,
+        qty: item.qty || 1,
+        note: item.note || ""
+      }));
+
+    // ✅ UPDATE LOCALLY FIRST (Instant UI)
+    onSaveOrder(table.id, cartItems, "occupied", { customerName, customerPhone, note: orderNote });
+    setCart([]);
+    if (onBack) onBack();
+
+    // ✅ BACKGROUND SYNC (Optional)
+    (async () => {
+      try {
+        console.log("☁️ Shadow Sync Save Order...");
+        await fetch(BASE_URL + "/order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tableId: table.id,
+            items: cartItems,
+            customerName,
+            phone: customerPhone,
+            note: orderNote
+          })
+        });
+      } catch (err) {
+        console.warn("⚠️ Save Sync failed, using local only.", err);
+      }
+    })();
+  };
+
+  const handlePrintBill = async () => {
+     // 🔍 VALIDATION
+    if (!cart || cart.length === 0) {
+      alert("No items to print");
+      return;
+    }
+    if (!table) {
+      alert("No table selected");
+      return;
+    }
+
+    // 🧹 CLEAN DATA
+    const cartItems = cart
+      .filter(item => item && item.name && item.price !== undefined)
+      .map(item => ({
+        name: item.name,
+        price: item.price,
+        qty: item.qty || 1,
+        note: item.note || ""
+      }));
+
+    // ✅ STEP 3: UPDATE LOCALLY FIRST (Instant UI)
+    onSaveOrder(table.id, cartItems, "occupied", { customerName, customerPhone, note: orderNote });
+    setCart([]);
+    if (onBack) onBack();
+
+    // ✅ STEP 4: PRINT (Local Hardware)
+    printBill();
+
+    // ✅ STEP 5: BACKGROUND SYNC (Optional)
+    (async () => {
+      try {
+        console.log("☁️ Shadow Sync Print Bill...");
+        await fetch(BASE_URL + "/order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tableId: table.id,
+            items: cartItems,
+            customerName,
+            phone: customerPhone,
+            note: orderNote,
+            status: 'printed'
+          })
+        });
+      } catch (err) {
+        console.warn("⚠️ Print Bill background sync failed.", err);
+      }
+    })();
+  };
+
   useEffect(() => {
     setCart(initialOrder || []);
     setOrderNote(table?.note || '');
@@ -2401,7 +2596,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
     // Check all tables
     (tables || []).forEach(t => {
       if (t.id !== table?.id) { // Skip current table
-        (t.order || []).forEach(i => {
+        (t.orders || []).forEach(i => {
           if (i.id === itemId) reserved += i.qty;
         });
       }
@@ -2409,7 +2604,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
     // Check all non-table orders (takeaways, deliveries, online)
     (nonTableOrders || []).forEach(o => {
       if (o.id !== table?.id) { // Skip current takeaway/delivery if editing one
-        (o.order || []).forEach(i => {
+        (o.orders || []).forEach(i => {
           if (i.id === itemId) reserved += i.qty;
         });
       }
@@ -2487,13 +2682,14 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   };
 
   const handleAction = async (actionType) => {
+    console.log("🔥 handleAction triggered for:", actionType);
     let updatedCart = [...cart];
     let itemsToPrint = [];
 
     const isKOT = actionType.includes('KOT');
     const isPrint = actionType.includes('Print');
     const isBill = actionType === 'Print Bill' || actionType.includes('Bill');
-    const newStatus = isKOT ? 'kot' : isPrint ? 'printed' : 'running';
+    const newStatus = isKOT ? 'kot' : isPrint ? 'printed' : 'occupied';
 
     if (isKOT) {
       updatedCart = cart.map(item => {
@@ -2516,16 +2712,31 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
         }
       }
     } else if (isBill) {
-      itemsToPrint = cart;
+      // 🚀 NEW: Detect unprinted items for a quick KOT print before the bill
+      const unprinted = cart.filter(i => (i.qty - (i.printedQty || 0)) > 0);
+      if (unprinted.length > 0) {
+        console.log("🛎️ Printing pending items to KOT before Bill");
+        await printPosToSerial({
+          orderId: table?.id,
+          tableName: (table?.name && table?.name.trim() !== '') ? table.name : `Table ${table?.id}`,
+          customerName, customerPhone,
+          items: unprinted.map(i => ({ ...i, qty: i.qty - (i.printedQty || 0) })),
+          subtotal, serviceCharge, roundOff, grandTotal,
+          orderType: table?.type || 'Dine In'
+        }, 'KOT');
+        // Mark as printed before saving
+        updatedCart = cart.map(i => ({ ...i, printedQty: i.qty }));
+      }
+      itemsToPrint = updatedCart;
     }
 
     if (isPaid && actionType.includes('Save')) {
       // Settle and clear table with full analytics data
-      onSettleTable(table.id, { cart: updatedCart, subtotal, discountAmt, redeemedPoints, discountAuth, taxes: 0, grandTotal, paymentMethod, timestamp: new Date().toISOString(), phone: customerPhone, customerName, note: orderNote });
+      await onSettleTable(table.id, { cart: updatedCart, subtotal, discountAmt, redeemedPoints, discountAuth, taxes: 0, grandTotal, paymentMethod, timestamp: new Date().toISOString(), phone: customerPhone, customerName, note: orderNote });
     } else {
       // Just save order state
       setCart(updatedCart); // update local state so diff tracking is consistent
-      onSaveOrder(table.id, updatedCart, newStatus, { customerName, customerPhone, note: orderNote });
+      await onSaveOrder(table.id, updatedCart, newStatus, { customerName, customerPhone, note: orderNote });
     }
 
     if (isPrint) {
@@ -2548,7 +2759,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   const availableCategories = ['All', ...CATEGORIES.filter((cat, index) => CATEGORIES.indexOf(cat) === index)];
   const filteredItems = MENU_ITEMS
     .filter(item =>
-      (activeCat === 'All' || item.cat === activeCat) &&
+      (activeCat === 'All' || item.category === activeCat) &&
       item.name.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => {
@@ -2569,9 +2780,9 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
             style={{ 
               padding: '16px 20px', border: 'none', background: 'transparent', textAlign: 'left', fontSize: '14px', 
               fontWeight: activeCat === cat ? '800' : '500', 
-              color: activeCat === cat ? '#94161c' : '#475569',
-              borderLeft: `4px solid ${activeCat === cat ? '#94161c' : 'transparent'}`,
-              backgroundColor: activeCat === cat ? '#fff1f2' : 'transparent',
+              color: activeCat === cat ? 'var(--primary)' : '#475569',
+              borderLeft: `4px solid ${activeCat === cat ? 'var(--primary)' : 'transparent'}`,
+              backgroundColor: activeCat === cat ? 'var(--primary)10' : 'transparent',
               cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}
           >
@@ -2584,7 +2795,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid #e5e7eb', background: '#f8fafc' }}>
         <div style={{ padding: '16px 24px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} className="no-print">
           <div style={{ fontWeight: '800', fontSize: '18px', color: '#1e293b' }}>{activeCat}</div>
-          <div style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', padding: '10px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px', width: '300px' }}>
+          <div style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', padding: '10px 16px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '10px', width: '300px' }}>
             <Search size={16} color="#64748b" />
             <input
               type="text"
@@ -2612,7 +2823,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
             return (
               <div
                 key={item.id}
-                className="item-card veg" // Simplified for common software feel
+                className={`item-card ${item.type === 'Non-Veg' ? 'non-veg' : 'veg'}`}
                 onClick={() => {
                   if (isAvailable || !isRetail) handleItemClick(item);
                 }}
@@ -2638,11 +2849,11 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
 
       {/* Billing Panel */}
       <div className="billing-panel no-print">
-        <div style={{ background: '#94161c', color: 'white', padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ background: 'var(--primary)', color: 'white', padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontWeight: '900', fontSize: '15px' }}>{displayTitle}</div>
           <div style={{ display: 'flex', gap: '8px' }}>
             {(String(table?.id).startsWith('TAK-') || String(table?.id).startsWith('DEL-')) && (
-                <button onClick={() => { if(confirm(`Confirm deletion of order ${table.id}?`)) onSaveOrder(table.id, [], 'blank'); }} style={{ background: '#ef4444', border: 'none', color: 'white', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}><Trash2 size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }}/>Delete</button>
+                <button onClick={() => { if(confirm(`Confirm deletion of order ${table.id}?`)) onSaveOrder(table.id, [], 'free'); }} style={{ background: '#ef4444', border: 'none', color: 'white', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}><Trash2 size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }}/>Delete</button>
             )}
             <button onClick={onBack} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}>Close</button>
           </div>
@@ -2657,7 +2868,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                   onChangeTable(table.id, Number(e.target.value), cart);
                 }
               }}
-              style={{ border: '1px solid #94161c', color: '#94161c', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', outline: 'none', background: 'white' }}
+              style={{ border: '1px solid var(--primary)', color: 'var(--primary)', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', outline: 'none', background: 'white' }}
             >
               <option value={table?.id} disabled>{displayTitle}</option>
               {tables.map(t => (
@@ -2665,14 +2876,14 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
               ))}
             </select>
           ) : (
-            <div style={{ border: '1px solid #94161c', color: '#94161c', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+            <div style={{ border: '1px solid var(--primary)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
               {displayTitle}
             </div>
           )}
           <button onClick={onBack} style={{ background: 'transparent', border: 'none', fontSize: '11px', color: '#6b7280', cursor: 'pointer', textDecoration: 'underline' }}>
             {table && (String(table.id).startsWith('DEL-') || String(table.id).startsWith('TAK-')) ? 'Back to Online' : 'Back to Tables'}
           </button>
-          <div style={{ marginLeft: 'auto', background: '#94161c', color: 'white', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
+          <div style={{ marginLeft: 'auto', background: 'var(--primary)', color: 'white', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
             {table?.type === 'Delivery' ? 'Delivery' : table?.type === 'Takeaway' ? 'Takeaway' : 'Dine In'}
           </div>
         </div>
@@ -2714,7 +2925,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
           )}
           {isPickup && (!customerName || customerPhone.length < 10) && (
             <div style={{ fontSize: '10px', color: '#dc2626', fontWeight: 'bold', marginTop: '4px' }}>
-              âš  Required for pickup orders
+              ⚠️ Required for pickup orders
             </div>
           )}
         </div>
@@ -2738,7 +2949,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
               <div key={item.cartItemId} style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', borderBottom: '1px solid #f9fafb' }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '12px' }}>{item.name}</div>
-                  {item.note && <div style={{ fontSize: '10px', color: '#94161c', fontStyle: 'italic' }}>* {item.note}</div>}
+                  {item.note && <div style={{ fontSize: '10px', color: 'var(--primary)', fontStyle: 'italic' }}>* {item.note}</div>}
                   <div style={{ fontSize: '10px', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     ₹{item.price} /ea
                     <button style={{ border: 'none', background: 'transparent', cursor: 'pointer', opacity: 0.6, padding: 0 }}
@@ -2746,7 +2957,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                         setCustomNoteText(item.note || '');
                         setShowNoteModal(item);
                       }}>
-                      <MessageSquare size={12} color="#94161c" />
+                      <MessageSquare size={12} color="var(--primary)" />
                     </button>
                   </div>
                 </div>
@@ -2851,8 +3062,8 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
           <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff' }}>
             <div>
               <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Total Amount</div>
-              <div style={{ fontSize: '24px', fontWeight: '900', color: '#94161c' }}>₹{grandTotal.toFixed(2)}</div>
-              {splitWays > 1 && <div style={{ fontSize: '11px', color: '#94161c', fontWeight: 'bold' }}>₹{(grandTotal / splitWays).toFixed(2)} / person</div>}
+              <div style={{ fontSize: '24px', fontWeight: '900', color: 'var(--primary)' }}>₹{grandTotal.toFixed(2)}</div>
+              {splitWays > 1 && <div style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 'bold' }}>₹{(grandTotal / splitWays).toFixed(2)} / person</div>}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -2865,9 +3076,9 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                       padding: '8px 12px',
                       borderRadius: '6px',
                       border: '1px solid',
-                      borderColor: paymentMethod === method ? '#94161c' : '#e2e8f0',
+                      borderColor: paymentMethod === method ? 'var(--primary)' : '#e2e8f0',
                       background: paymentMethod === method ? '#fef2f2' : 'white',
-                      color: paymentMethod === method ? '#94161c' : '#64748b',
+                      color: paymentMethod === method ? 'var(--primary)' : '#64748b',
                       fontSize: '11px',
                       fontWeight: 'bold',
                       cursor: 'pointer',
@@ -2888,10 +3099,10 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
           </div>
 
           <div className="footer-btn-grid">
-            <button className="btn-maroon" onClick={() => handleAction('Save')}>Save</button>
-            <button className="btn-maroon" onClick={() => handleAction('Print Bill')}>Print Bill</button>
-            <button className="btn-grey" onClick={() => handleAction('KOT')}>KOT</button>
-            <button className="btn-grey" style={{ background: '#374151' }} onClick={() => handleAction('KOT & Print')}>KOT & Print</button>
+            <button className="btn-maroon" onClick={handleSave}>Save</button>
+            <button className="btn-maroon" onClick={handlePrintBill}>Print Bill</button>
+            <button className="btn-grey" onClick={handleKOT}>KOT</button>
+            <button className="btn-grey" style={{ background: '#374151' }} onClick={handleKOTPrint}>KOT & Print</button>
           </div>
         </div>
       </div>
@@ -2899,7 +3110,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       {/* Modifier Modal Overlay */}
       {showModifierModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="animate-fade-in" style={{ background: 'white', padding: '24px', borderRadius: '12px', width: '320px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+          <div className="animate-fade-in" style={{ background: 'white', padding: '24px', borderRadius: 'var(--radius-md)', width: '320px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
             <h3 style={{ marginBottom: '16px', fontWeight: 'bold', fontSize: '18px', color: '#1f2937' }}>Attributes for {showModifierModal.name}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }} className="no-scrollbar">
               {showModifierModal.modifiers.map(mod => (
@@ -2935,7 +3146,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       {/* Kitchen Note Modal */}
       {showNoteModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="animate-fade-in" style={{ background: 'white', padding: '24px', borderRadius: '12px', width: '340px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+          <div className="animate-fade-in" style={{ background: 'white', padding: '24px', borderRadius: 'var(--radius-md)', width: '340px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
             <h3 style={{ marginBottom: '16px', fontWeight: 'bold', fontSize: '18px', color: '#1f2937' }}>Kitchen Instructions</h3>
             <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '16px' }}>Add special requests for {showNoteModal.name}</p>
             <input
@@ -2966,7 +3177,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                   setCart(prev => prev.map(i => i.cartItemId === showNoteModal.cartItemId ? { ...i, note: customNoteText } : i));
                   setShowNoteModal(null);
                 }}
-                style={{ flex: 1, padding: '12px', background: '#94161c', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                style={{ flex: 1, padding: '12px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
                 Save
               </button>
             </div>
@@ -2979,7 +3190,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
 
 /* --- ANALYTICS DASHBOARD --- */
 const StatCard = ({ label, value, icon: Icon, color, subtext }) => (
-  <div style={{ background: 'rgba(255,255,255,0.88)', padding: '22px', borderRadius: '24px', border: '1px solid #e2e8f0', position: 'relative', boxShadow: '0 18px 32px rgba(15, 23, 42, 0.06)' }}>
+  <div style={{ background: 'rgba(255,255,255,0.88)', padding: '22px', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0', position: 'relative', boxShadow: '0 18px 32px rgba(15, 23, 42, 0.06)' }}>
     <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '900', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1.2px' }}>{label}</div>
     <div style={{ fontSize: '28px', fontWeight: '950', color: '#1e293b', letterSpacing: '-0.8px' }}>{value}</div>
     <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', fontWeight: '700', lineHeight: 1.5 }}>{subtext}</div>
@@ -2991,7 +3202,7 @@ const StatCard = ({ label, value, icon: Icon, color, subtext }) => (
 
 const InsightItem = ({ title, value, sub }) => (
   <div style={{ display: 'flex', gap: '12px' }}>
-    <div style={{ width: '4px', background: '#a3112a', borderRadius: '2px' }} />
+    <div style={{ width: '4px', background: 'var(--primary)', borderRadius: '2px' }} />
     <div>
       <div style={{ fontSize: '11px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '2px' }}>{title}</div>
       <div style={{ fontSize: '14px', fontWeight: '900', color: '#1e293b', marginBottom: '2px' }}>{value}</div>
@@ -3009,9 +3220,104 @@ function MainApp() {
   const [selectedTable, setSelectedTable] = useState(null);
   const [quickSettleTable, setQuickSettleTable] = useState(null);
   const [quickPrintTable, setQuickPrintTable] = useState(null);
+  const [tableToClear, setTableToClear] = useState(null);
   const [globalSearch, setGlobalSearch] = useState('');
   const [socketConnected, setSocketConnected] = useState(false);
-  const [backendUrl, setBackendUrl] = useState(localStorage.getItem('backend_url') || 'http://localhost:3001');
+  console.log('📡 Base URL:', BASE_URL);
+
+  const loadMenu = async () => {
+    try {
+      console.log("🔥 FETCHING MENU FROM BACKEND");
+      const res = await fetch(BASE_URL + "/menu");
+      if (!res.ok) throw new Error("Backend offline");
+      const data = await res.json();
+      
+      const normalizedData = (data || []).map(item => ({
+        ...item,
+        inStock: item.inStock !== undefined ? item.inStock : true,
+        stockQuantity: item.stockQuantity || 0
+      }));
+
+      setMenuItems(normalizedData);
+      
+      // Derive categories
+      const uniqueCats = [...new Set(normalizedData.map(i => i.category || "Uncategorized"))];
+      setCategories(uniqueCats);
+    } catch (err) {
+      console.error("Failed to load menu:", err);
+    }
+  };
+
+  const loadTables = async () => {
+    try {
+      console.log("🔥 FETCHING TABLES FROM BACKEND");
+      const res = await fetch(BASE_URL + "/tables");
+      if (!res.ok) throw new Error("Backend offline");
+      const data = await res.json();
+      console.log("📦 TABLES RECEIVED:", data);
+      
+      // Normalize statuses and data for UI consistency
+      const normalizedData = data.map(t => {
+        const hasItems = (t.items && t.items.length > 0) || (t.orders && t.orders.length > 0);
+        return {
+          ...t,
+          status: t.status ? t.status.toLowerCase() : (hasItems ? 'occupied' : 'free'),
+          orders: t.items || t.orders || [],
+          items: t.items || t.orders || []
+        };
+      });
+      
+      setTables(normalizedData);
+    } catch (err) {
+      console.warn("⚠️ loadTables failed, using local fallback.", err);
+    }
+  };
+
+  const loadTable = async (tableId) => {
+    try {
+      const res = await fetch(BASE_URL + "/table/" + tableId);
+      const data = await res.json();
+      
+      // IMPORTANT FIX: Clear cart before selecting to prevent duplicates
+      setCart([]); 
+      setSelectedTable(data.table || data);
+    } catch (err) {
+      console.error("Failed to load table:", err);
+    }
+  };
+
+  const addItemToTable = async (item) => {
+    if (!selectedTable) return;
+
+    console.log("🛒 POS adding item to table:", {
+      tableId: selectedTable.id,
+      item
+    });
+
+    try {
+      await fetch(BASE_URL + "/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tableId: selectedTable.id,
+          items: [
+            {
+              name: item.name,
+              price: item.price,
+              qty: 1
+            }
+          ]
+        })
+      });
+
+      // Refresh both the selected table view and the whole floor plan
+      await loadTables();
+      await loadTable(selectedTable.id);
+    } catch (err) {
+      console.error("Failed to add item to table:", err);
+    }
+  };
+
   
   const handleGlobalSearch = (val) => {
     setGlobalSearch(val);
@@ -3047,9 +3353,23 @@ function MainApp() {
     }
   };
 
-  const [tables, setTables] = useState(INITIAL_TABLES);
-  const [orderHistory, setOrderHistory] = useState([]);
-  const [nonTableOrders, setNonTableOrders] = useState([]);
+
+  // --- OFFLINE-FIRST HELPERS ---
+  const saveToLocal = (key, data) => localStorage.setItem(key, JSON.stringify(data));
+  const loadFromLocal = (key, fallback = []) => {
+    try {
+      const saved = localStorage.getItem(key);
+      return saved ? JSON.parse(saved) : fallback;
+    } catch (e) { return fallback; }
+  };
+
+  const [orderHistory, setOrderHistory] = useState(() => loadFromLocal('pos_order_history'));
+  useEffect(() => saveToLocal('pos_order_history', orderHistory), [orderHistory]);
+
+
+
+  const [nonTableOrders, setNonTableOrders] = useState(() => loadFromLocal('pos_nontable_orders'));
+  useEffect(() => saveToLocal('pos_nontable_orders', nonTableOrders), [nonTableOrders]);
   const [devices, setDevices] = useState([]);
   const [settings, setSettings] = useState({
     // BRANDING & BASIC
@@ -3170,7 +3490,6 @@ function MainApp() {
     kotMarginRight: 0,
     kotMarginBottom: 0,
     kotMarginLeft: 10,
-    kotLineHeight: 0,
     kotFontSize: 13,
     kotExtraSpace: 0,
     showAddonGroup: true,
@@ -3210,48 +3529,103 @@ function MainApp() {
     autoServiceCharge: true,
     serviceChargeRate: 5
   });
-  const [menuItems, setMenuItems] = useState(INITIAL_MENU_ITEMS);
-  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
-  const [products, setProducts] = useState([...INITIAL_PRODUCTS]);
-  const [productCategories, setProductCategories] = useState([...INITIAL_PRODUCT_CATEGORIES]);
-  const [customers, setCustomers] = useState({});
+  const [menuItems, setMenuItems] = useState(() => loadFromLocal('pos_menu', INITIAL_MENU_ITEMS));
+  const [categories, setCategories] = useState(() => loadFromLocal('pos_categories'));
+  const [tables, setTables] = useState(() => loadFromLocal('pos_tables'));
+  
+  useEffect(() => saveToLocal('pos_menu', menuItems), [menuItems]);
+  useEffect(() => saveToLocal('pos_categories', categories), [categories]);
+  useEffect(() => saveToLocal('pos_tables', tables), [tables]);
+
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const syncToBackend = async (isSilent = false) => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    try {
+      if (!isSilent) console.log("☁️ STARTING BULK SYNC...");
+      const localTables = loadFromLocal("pos_tables");
+      const localMenu = loadFromLocal("pos_menu");
+      const localCategories = loadFromLocal("pos_categories");
+
+      // Send tables
+      await fetch(BASE_URL + "/sync/tables", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(localTables)
+      });
+
+      // Send menu
+      await fetch(BASE_URL + "/sync/menu", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(localMenu)
+      });
+
+      // Send categories
+      await fetch(BASE_URL + "/sync/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(localCategories)
+      });
+
+      if (!isSilent) alert("🎉 Cloud Sync Successful!");
+    } catch (err) {
+      if (!isSilent) {
+        console.error("Sync Failure:", err);
+        alert("❌ Sync failed: " + err.message);
+      }
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // --- AUTO SYNC (DEBOUNCED) ---
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      syncToBackend(true); 
+    }, 5000); // 5 second debounce
+    return () => clearTimeout(timer);
+  }, [tables, menuItems, nonTableOrders, categories]);
+  
+  const loadCategories = async () => {
+    try {
+      const res = await fetch(BASE_URL + "/categories");
+      if (!res.ok) throw new Error("Backend offline");
+      const data = await res.json();
+      setCategories(data);
+    } catch (err) {
+      console.warn("⚠️ loadCategories failed, ignoring.", err);
+    }
+  };
+
+  useEffect(() => {
+    console.log("🔋 App Started: Offline-First Priority Active");
+    // Initial fetch (background sync)
+    loadCategories();
+    loadMenu();
+    loadTables();
+  }, []);
+  const [products, setProducts] = useState(() => loadFromLocal('pos_products', INITIAL_PRODUCTS));
+  const [productCategories, setProductCategories] = useState(() => loadFromLocal('pos_product_categories', INITIAL_PRODUCT_CATEGORIES));
+  const [customers, setCustomers] = useState(() => loadFromLocal('pos_customers', {}));
+
+  useEffect(() => saveToLocal('pos_products', products), [products]);
+  useEffect(() => saveToLocal('pos_product_categories', productCategories), [productCategories]);
+  useEffect(() => saveToLocal('pos_customers', customers), [customers]);
   const [floorPlanSections, setFloorPlanSections] = useState(INITIAL_FLOOR_SECTIONS);
 
   useEffect(() => {
     const loadFromIDB = async () => {
       try {
-        const savedTables = await get('pos_tables_v2');
-        if (savedTables) setTables(savedTables);
-
-        const savedOrderHistory = await get('pos_order_history');
-        if (savedOrderHistory) setOrderHistory(savedOrderHistory);
-
-        const savedNonTable = await get('pos_nontable_orders_v2');
-        if (savedNonTable) setNonTableOrders(savedNonTable);
-
         const savedSettings = await get('pos_printer_settings');
         if (savedSettings) setSettings(prev => ({ ...prev, ...savedSettings }));
 
         const savedCustomers = await get('pos_customers');
         if (savedCustomers) setCustomers(savedCustomers);
 
-        const version = await get('pos_menu_version');
-        if (version === MENU_VERSION) {
-          const savedMenuItems = await get('pos_menu_items');
-          if (savedMenuItems) setMenuItems(savedMenuItems);
-
-          const savedCategories = await get('pos_categories');
-          const savedProducts = await get('pos_retail_products');
-          const savedProductCats = await get('pos_retail_categories');
-          if (savedProducts) setProducts(savedProducts);
-          if (savedProductCats) setProductCategories(savedProductCats);
-          if (savedCategories) setCategories(savedCategories);
-
-          const savedSections = await get('pos_floor_sections');
-          if (savedSections) setFloorPlanSections(savedSections);
-        } else {
-          await set('pos_menu_version', MENU_VERSION);
-        }
+        const savedSections = await get('pos_floor_sections');
+        if (savedSections) setFloorPlanSections(savedSections);
       } catch (err) {
         console.error("Database load error:", err);
       } finally {
@@ -3264,33 +3638,10 @@ function MainApp() {
   useEffect(() => {
     if (isDbLoaded) {
       set('pos_customers', customers);
-      set('pos_tables_v2', tables);
-      set('pos_order_history', orderHistory);
-      set('pos_nontable_orders_v2', nonTableOrders);
       set('pos_printer_settings', settings);
-      set('pos_menu_items', menuItems);
-      set('pos_categories', categories);
-      set('pos_retail_products', products);
-      set('pos_retail_categories', productCategories);
       set('pos_floor_sections', floorPlanSections);
-
-      // ── Cloud Sync for Captain App ────────────────────────
-      // Map tables to the format the Captain App expects
-      const mappedTables = tables.map(t => ({
-        id: t.id,
-        table_number: String(t.name || '').replace('Table ', ''),
-        capacity: t.seats || 4,
-        status: (t.status === 'running' || t.status === 'printed') ? 'OCCUPIED' : 'AVAILABLE',
-        order_items: JSON.stringify(t.order || []), // SYNC FULL ORDER
-        current_order_total: t.order?.reduce((sum, item) => sum + (item.price * item.qty), 0) || 0,
-        current_order_items: (t.order || []).length
-      }));
-
-      import('./utils/apiClient').then(({ syncAppData }) => {
-        syncAppData(mappedTables, [...menuItems, ...products], Array.from(new Set([...categories, ...productCategories])));
-      });
     }
-  }, [customers, tables, orderHistory, nonTableOrders, settings, menuItems, categories, products, productCategories, floorPlanSections, isDbLoaded]);
+  }, [customers, settings, floorPlanSections, isDbLoaded]);
 
   const [newCaptainOrders, setNewCaptainOrders] = useState([]);
   const processedCaptainIds = useRef(new Set());
@@ -3305,11 +3656,19 @@ function MainApp() {
     // 1. Initial Fetch on Load
     const initialFetch = async () => {
       try {
-        const { fetchOrders } = await import('./utils/apiClient');
-        const data = await fetchOrders();
-        if (data.success) {
-          setNewCaptainOrders(data.orders);
+        const { fetchOrders, fetchMenu, fetchTables } = await import('./utils/apiClient');
+        
+        // A. Load Orders
+        const orderData = await fetchOrders();
+        if (orderData.success) {
+          setNewCaptainOrders(orderData.orders);
         }
+
+        // B. Load Menu
+        
+        // C. Load Tables
+        // await loadTables(); 
+
       } catch (err) {
         console.error("Initial fetch failed:", err);
       }
@@ -3317,7 +3676,7 @@ function MainApp() {
     initialFetch();
 
     // 2. Connect to Socket.IO
-    const API_BASE_SOCKET = backendUrl;
+    const API_BASE_SOCKET = BASE_URL;
     socketRef.current = io(API_BASE_SOCKET, {
       reconnection: true,
       reconnectionAttempts: Infinity,
@@ -3325,7 +3684,7 @@ function MainApp() {
     });
 
     socketRef.current.on('connect', () => {
-      console.log('✅ Connected to Orders Real-time Engine:', backendUrl);
+      console.log('✅ Connected to Orders Real-time Engine:', BASE_URL);
       setSocketConnected(true);
     });
 
@@ -3334,57 +3693,21 @@ function MainApp() {
       setSocketConnected(false);
     });
 
-    // Listen for NEW orders
+    // Listen for NEW orders (Network Handshake)
     socketRef.current.on('order_created', async (newOrder) => {
-      console.log('🔥 New Order Received:', newOrder);
-      
-      // Update local state
-      setNewCaptainOrders(prev => [newOrder, ...prev]);
-      
-      // Auto-inject into tables if it's a dine-in order
-      if (newOrder.table_number) {
-        setTables(prevTables => {
-          let updatedTables = [...prevTables];
-          const tableIndex = updatedTables.findIndex(t => 
-            String(t.name || '').replace('Table ', '') === String(newOrder.table_number) ||
-            String(t.id) === String(newOrder.table_number)
-          );
-
-          if (tableIndex !== -1) {
-            const table = updatedTables[tableIndex];
-            const nextOrder = [...(table.order || [])];
-            newOrder.items.forEach(newItem => {
-              nextOrder.push({
-                id: Date.now() + Math.random(),
-                name: newItem.name,
-                price: newItem.price || 0,
-                qty: newItem.quantity || 1,
-                type: 'veg',
-                cat: 'Captain Order'
-              });
-            });
-
-            updatedTables[tableIndex] = {
-              ...table,
-              status: 'running',
-              order: nextOrder,
-              createdAt: table.createdAt || Date.now()
-            };
-          }
-          return updatedTables;
-        });
-      }
+      console.log('🔥 New Order Received from Network:', newOrder);
+      await loadTables();
 
       // ─── Auto Print KOT ───
       try {
         const { printViaQzTray } = await import('./utils/qzTrayPrinter');
         const kotData = {
           orderId: newOrder.id,
-          tableName: newOrder.table_number ? `Table ${newOrder.table_number}` : 'Delivery/Takeaway',
+          tableName: newOrder.tableId ? `Table ${newOrder.tableId}` : (newOrder.table_number ? `Table ${newOrder.table_number}` : 'Delivery/Takeaway'),
           orderType: newOrder.type || 'Dine In',
-          items: newOrder.items.map(i => ({
+          items: (newOrder.items || []).map(i => ({
             name: i.name,
-            qty: i.quantity,
+            qty: i.quantity || i.qty || 1,
             note: i.notes || ''
           }))
         };
@@ -3393,20 +3716,50 @@ function MainApp() {
         console.error("Auto-print failed:", printErr);
       }
 
-      // Play Sound
+      // Play Sound notification
       notificationSound.current.play().catch(e => console.log("Sound play failed:", e));
     });
 
-    // Listen for Status Updates
-    socketRef.current.on('order_updated', (updatedOrder) => {
+    socketRef.current.on('table_updated', async (data) => {
+      console.log('📱 Table Update from Network:', data);
+      await loadTables();
+    });
+
+    socketRef.current.on('menu_updated', async () => {
+      console.log('🍴 Menu Update from Network');
+      await loadMenu();
+    });
+
+    socketRef.current.on('categories_updated', async () => {
+      console.log('📁 Categories Update from Network');
+      await loadCategories();
+    });
+
+    // Listen for Order Status Updates
+    socketRef.current.on('order_updated', async (updatedOrder) => {
       console.log('🔄 Order Updated:', updatedOrder);
-      setNewCaptainOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+      await loadTables();
+    });
+
+    // Listen for Table Updates (Sync Floor Plan)
+    socketRef.current.on('table_updated', async (data) => {
+      console.log('🏟️ Table Update Broadcast:', data);
+      await loadTables();
+    });
+
+    // Listen for Menu Updates (Sync Menu across POS)
+    socketRef.current.on('menu_updated', (data) => {
+      console.log('📖 Menu Broadcast Received:', data);
+      const flatMenu = [];
+      Object.values(data.menu).forEach(items => flatMenu.push(...items));
+      setMenuItems(flatMenu.map(m => ({ ...m, cat: m.category, inStock: m.available, type: m.type || 'veg' })));
+      setCategories(data.categories);
     });
 
     return () => {
       if (socketRef.current) socketRef.current.disconnect();
     };
-  }, [isDbLoaded, backendUrl]);
+  }, [isDbLoaded]);
 
   const manualSyncCaptainOrders = async () => {
     try {
@@ -3429,8 +3782,7 @@ function MainApp() {
           await set('deviceId', id);
         }
         setDeviceId(id);
-
-        const res = await fetch('/api/devices/register', {
+        const res = await fetch(`${BASE_URL}/devices/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id, name: window.navigator.userAgent.split(' ')[0] + ' (' + (window.innerWidth < 768 ? 'Mobile' : 'Tablet') + ')' })
@@ -3463,27 +3815,29 @@ function MainApp() {
   if (!isDbLoaded) {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
-        <Store size={48} color="#94161c" style={{ marginBottom: '16px', opacity: 0.5 }} className="animate-pulse" />
+        <Store size={48} color="var(--primary)" style={{ marginBottom: '16px', opacity: 0.5 }} className="animate-pulse" />
         <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#374151' }}>Initializing Secure Local Database...</div>
         <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>Optimizing for offline performance</div>
       </div>
     );
   }
 
-  const deleteAnyOrder = (idToDelete) => {
-    const tid = String(idToDelete || '').trim().toUpperCase();
-    if (!tid) return;
+  const deleteAnyOrder = async (idToDelete) => {
+    const tidStr = String(idToDelete || '').trim();
+    if (!tidStr) return;
 
-    if (tid.startsWith('TAK-') || tid.startsWith('DEL-')) {
-      setNonTableOrders(prev => prev.filter(o => String(o.id).trim().toUpperCase() !== tid));
+    if (tidStr.startsWith('TAK-') || tidStr.startsWith('DEL-')) {
+      const tidUpper = tidStr.toUpperCase();
+      setNonTableOrders(prev => prev.filter(o => String(o.id).trim().toUpperCase() !== tidUpper));
       setView('nontables');
     } else {
-      setTables(prev => prev.map(t => {
-        if (String(t.id).trim().toUpperCase() === tid) {
-          return { ...t, order: [], status: 'blank', createdAt: null };
-        }
-        return t;
-      }));
+      // It's a table
+      try {
+        await fetch(`${BASE_URL}/table/${idToDelete}/clear`, { method: "POST" });
+        await loadTables();
+      } catch (err) {
+        console.error("Failed to clear table orders:", err);
+      }
       setView('tables');
     }
     
@@ -3502,7 +3856,7 @@ function MainApp() {
     const newOrder = {
       id: newId,
       name: `${newId}`,
-      status: 'blank', // Will turn 'running' when items added
+      status: 'free', // Will turn 'occupied' when items added
       type: type,
       order: [],
       phone: '',
@@ -3515,7 +3869,7 @@ function MainApp() {
 
   // Removed handleSimulateAggregator
 
-  const saveOrderToTable = (tableId, orderItems, newStatus, extraData = {}) => {
+  const saveOrderToTable = async (tableId, orderItems, newStatus, extraData = {}) => {
     const tid = String(tableId || '').trim().toUpperCase();
     if (!tid) return;
 
@@ -3524,14 +3878,15 @@ function MainApp() {
       return;
     }
 
+    // 1. Update POS UI (Immediate Sync)
     if (tid.startsWith('DEL-') || tid.startsWith('TAK-')) {
       setNonTableOrders(prev => {
         const existing = prev.find(o => String(o.id).trim().toUpperCase() === tid);
         if (existing) {
            return prev.map(o => {
              if (String(o.id).trim().toUpperCase() === tid) {
-               const shouldResetTimer = o.status === 'blank' || !o.createdAt;
-               return { ...o, order: orderItems, status: newStatus, customerName: extraData.customerName, phone: extraData.customerPhone, note: extraData.note, createdAt: shouldResetTimer ? Date.now() : o.createdAt };
+               const shouldResetTimer = o.status === 'free' || !o.createdAt;
+               return { ...o, orders: orderItems, items: orderItems, status: newStatus, customerName: extraData.customerName, phone: extraData.customerPhone, note: extraData.note, createdAt: shouldResetTimer ? Date.now() : o.createdAt };
              }
              return o;
            });
@@ -3541,18 +3896,50 @@ function MainApp() {
       setView('nontables');
     } else {
       setTables(prev => prev.map(t => {
-        if (String(t.id).trim().toUpperCase() === tid) {
-          const shouldResetTimer = t.status === 'blank' || !t.createdAt;
-          return { ...t, order: orderItems, status: newStatus, customerName: extraData.customerName, phone: extraData.customerPhone, note: extraData.note, createdAt: shouldResetTimer ? Date.now() : t.createdAt };
+        if (String(t.id).trim().toUpperCase() === String(tableId).trim().toUpperCase()) {
+          const shouldResetTimer = t.status === 'free' || !t.createdAt;
+          return { ...t, orders: orderItems, items: orderItems, status: newStatus, customerName: extraData.customerName, phone: extraData.customerPhone, note: extraData.note, createdAt: shouldResetTimer ? Date.now() : t.createdAt };
         }
         return t;
       }));
       setView('tables');
     }
+
+    // 2. Clear Selection
     setSelectedTable(null);
+
+    // 3. Sync to Backend (Optional Background Task)
+    (async () => {
+      try {
+        const { createOrder, updateTableApi } = await import('./utils/apiClient');
+        // If status is 'kot', it's a new or additional fire, create Order record
+        if (newStatus === 'kot') {
+          await createOrder({
+            table_number: tid,
+            items: orderItems.map(i => ({ name: i.name, quantity: i.qty, price: i.price, notes: i.note || '' })),
+            notes: extraData.note || ''
+          });
+        }
+
+        // Sync state to specific table endpoint if it's a floor table
+        const isFloorTable = !tid.startsWith('DEL-') && !tid.startsWith('TAK-');
+        if (isFloorTable) {
+           await updateTableApi(tableId, {
+             status: 'occupied',
+             items: orderItems,
+             customerName: extraData.customerName,
+             phone: extraData.customerPhone,
+             note: extraData.note
+           });
+           await loadTables();
+        }
+      } catch (syncErr) {
+        console.warn("⚠️ saveOrderToTable Backend Sync Failed:", syncErr);
+      }
+    })();
   };
 
-  const settleTable = (tableId, orderDetails) => {
+  const settleTable = async (tableId, orderDetails) => {
     if (orderDetails && orderDetails.cart) {
       setProducts(prev => {
         let updated = [...prev];
@@ -3566,6 +3953,23 @@ function MainApp() {
         return updated;
       });
     }
+    // ── Update Local Arrays ──
+    const isFloorTable = !String(tableId).startsWith('DEL-') && !String(tableId).startsWith('TAK-');
+    
+    if (orderDetails && orderDetails.cart) {
+      setProducts(prev => {
+        let updated = [...prev];
+        orderDetails.cart.forEach(cartItem => {
+          const pIndex = updated.findIndex(p => p.id === cartItem.id && p.type === 'retail');
+          if (pIndex !== -1) {
+            const newQty = Math.max(0, updated[pIndex].stockQuantity - cartItem.qty);
+            updated[pIndex] = { ...updated[pIndex], stockQuantity: newQty, inStock: newQty > 0 };
+          }
+        });
+        return updated;
+      });
+    }
+
     if (orderDetails && orderDetails.phone) {
       setCustomers(prev => {
         const ph = orderDetails.phone;
@@ -3577,35 +3981,56 @@ function MainApp() {
     }
 
     if (orderDetails && orderDetails.cart && orderDetails.cart.length > 0) {
-      // Calculate duration if table/order exists
       let duration = 0;
       const t = tables.find(x => x.id === tableId) || nonTableOrders.find(x => x.id === tableId);
       if (t && t.createdAt) {
         duration = Math.floor((Date.now() - t.createdAt) / 60000);
       }
-
       setOrderHistory(prev => [...prev, {
         id: Date.now().toString(),
-        tableId,
-        duration,
-        ...orderDetails
+        timestamp: orderDetails.timestamp || new Date().toISOString(),
+        tableId, duration, ...orderDetails
       }]);
     }
 
-    if (String(tableId).startsWith('DEL-') || String(tableId).startsWith('TAK-')) {
-      // Remove settled external order entirely from "running" state
+    if (!isFloorTable) {
       setNonTableOrders(prev => prev.filter(o => o.id !== tableId));
       setView('nontables');
     } else {
       setTables(prev => prev.map(t => {
-        if (t.id === tableId) {
-          return { ...t, order: [], status: 'blank', createdAt: null }; // Mark as blank/paid and reset timer
+        if (String(t.id) === String(tableId)) {
+          return { ...t, orders: [], items: [], status: 'free', createdAt: null, total: 0 };
         }
         return t;
       }));
       setView('tables');
     }
+
+    // ── Instant UI Cleanup ──
     setSelectedTable(null);
+    if (view === 'ordering') setCart([]);
+
+    // ── Optional Backend Sync (Background) ──
+    (async () => {
+      try {
+        if (isFloorTable) {
+          const paymentMode = orderDetails?.paymentMethod || 'Cash';
+          console.log("💰 Bill Settling Background Sync...");
+          const res = await fetch(`${BASE_URL}/settle-bill`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tableId: tableId,
+              paymentMode: paymentMode,
+              orderDetails: orderDetails
+            })
+          });
+          if (res.ok) await loadTables();
+        }
+      } catch (err) {
+        console.warn("⚠️ Settle Bill background sync failed.", err);
+      }
+    })();
   };
 
   const handleClearHistory = () => {
@@ -3634,7 +4059,7 @@ function MainApp() {
   };
 
   const markOrderReady = (order) => {
-    saveOrderToTable(order.id, order.order, 'printed')
+    saveOrderToTable(order.id, order.orders, 'printed')
     alert(`Order for ${order.name} marked as ready! Front-stage notified.`);
     setView('kds')
   };
@@ -3651,9 +4076,9 @@ function MainApp() {
   // Stats calculation for badges
   const stats = {
     liveOrders: nonTableOrders.length,
-    activeTables: tables.filter(t => t.status !== 'blank').length,
+    activeTables: tables.filter(t => t.status !== 'free').length,
     activeOnline: nonTableOrders.length,
-    pendingKot: tables.filter(t => t.status === 'running').length + nonTableOrders.filter(o => o.status === 'running').length
+    pendingKot: tables.filter(t => t.status === 'occupied').length + nonTableOrders.filter(o => o.status === 'occupied').length
   };
 
   // ── Approval Wall ──────────────────────────────────────────
@@ -3690,7 +4115,19 @@ function MainApp() {
           table={quickSettleTable} 
           settings={settings} 
           onClose={() => setQuickSettleTable(null)} 
-          onSettle={handleQuickSettleResult} 
+          onSettle={(method, amt, change) => {
+            const cartItems = quickSettleTable.orders || quickSettleTable.items || [];
+            const subtotal = cartItems.reduce((acc, i) => acc + (i.price * i.qty), 0);
+            const service = settings?.autoServiceCharge ? Math.floor(subtotal * (settings.serviceChargeRate || 5) / 100) : 0;
+            const gt = subtotal + service;
+            handleQuickSettleResult(quickSettleTable.id, { 
+              paymentMethod: method, 
+              amountReceived: amt, 
+              changeDue: change,
+              grandTotal: gt,
+              cart: cartItems
+            });
+          }} 
         />
       )}
       {quickPrintTable && (
@@ -3701,18 +4138,45 @@ function MainApp() {
           onPrint={(discountAmt, service, grandTotal) => {
             printPosToSerial({ 
               ...quickPrintTable, 
-              items: quickPrintTable.order, 
+              items: quickPrintTable.orders, 
               tableName: quickPrintTable.name,
-              subtotal: getOrderTotal(quickPrintTable.order),
+              subtotal: getOrderTotal(quickPrintTable.orders),
               discountAmt,
               serviceCharge: service,
               grandTotal,
-              roundOff: (grandTotal - (getOrderTotal(quickPrintTable.order) - discountAmt + service)).toFixed(2),
+              roundOff: (grandTotal - (getOrderTotal(quickPrintTable.orders) - discountAmt + service)).toFixed(2),
               cashier: settings.cashierName || 'Biller'
             }, 'BILL');
             setQuickPrintTable(null);
           }} 
         />
+      )}
+
+      {/* Confirmation Modal - Correctly Positioned at Root Level for Perfect Centering */}
+      {tableToClear && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000 }}>
+          <div className="animate-fade-in" style={{ background: 'white', padding: '32px', borderRadius: '24px', width: '380px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+             <div style={{ background: '#fee2e2', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                <Trash2 size={32} color="#dc2626" />
+             </div>
+            <h3 style={{ fontSize: '24px', fontWeight: '950', marginBottom: '12px', color: '#111827', letterSpacing: '-0.5px' }}>Clear Table?</h3>
+            <p style={{ fontSize: '15px', color: '#64748b', marginBottom: '32px', lineHeight: '1.6', fontWeight: '500' }}>This will immediately remove all items from this table and restore it to vacant status. This action cannot be undone.</p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={() => setTableToClear(null)}
+                style={{ flex: 1, padding: '14px', background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: '16px', fontWeight: '900', cursor: 'pointer', fontSize: '14px' }}
+              >
+                Go Back
+              </button>
+              <button
+                onClick={() => { clearTableFast(tableToClear); setTableToClear(null); }}
+                style={{ flex: 1, padding: '14px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '16px', fontWeight: '900', cursor: 'pointer', fontSize: '14px' }}
+              >
+                Yes, Discard
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showSidebar && (
@@ -3725,9 +4189,14 @@ function MainApp() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Main Header */}
-        <header style={{ height: '72px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', zIndex: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button onClick={() => setShowSidebar(!showSidebar)} style={{ p: '8px', borderRadius: '12px', background: '#f1f5f9', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+        <div style={{ background: 'var(--primary)', height: '4px' }}></div>
+        <header style={{ background: 'white', padding: '0 24px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--primary)' }}>
+              <Store size={24} />
+              <h1 style={{ fontSize: '20px', fontWeight: '900', letterSpacing: '-0.5px' }}>{settings.resName}</h1>
+            </div>
+            <button onClick={() => setShowSidebar(!showSidebar)} style={{ padding: '8px', borderRadius: 'var(--radius-md)', background: '#f1f5f9', border: 'none', cursor: 'pointer', color: '#64748b' }}>
               <Menu size={20} />
             </button>
             <h1 style={{ fontSize: '20px', fontWeight: '950', color: '#1e293b', letterSpacing: '-0.5px' }}>
@@ -3742,13 +4211,32 @@ function MainApp() {
             </h1>
           </div>
 
-          {/* RIGHT SIDE GROUP: Search & Navigation Pills */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {/* SYNC BUTTON */}
+            <button 
+              onClick={syncToBackend} 
+              disabled={isSyncing}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '10px 18px', borderRadius: '14px', border: 'none',
+                background: isSyncing ? '#f1f5f9' : '#a3112a',
+                color: isSyncing ? '#94a3b8' : 'white',
+                fontSize: '13px', fontWeight: '950', cursor: isSyncing ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s', boxShadow: isSyncing ? 'none' : '0 4px 12px rgba(163, 17, 42, 0.2)'
+              }}
+            >
+              {isSyncing ? (
+                <>Syncing...</>
+              ) : (
+                <><RefreshCw size={16} /> Sync to Cloud</>
+              )}
+            </button>
+
             {/* Connection Indicator */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: socketConnected ? '#ecfdf5' : '#fef2f2', padding: '8px 14px', borderRadius: '12px', border: '1px solid', borderColor: socketConnected ? '#10b981' : '#ef4444', transition: 'all 0.3s' }}>
               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: socketConnected ? '#10b981' : '#ef4444', boxShadow: `0 0 10px ${socketConnected ? '#10b981' : '#ef4444'}` }}></div>
               <span style={{ fontSize: '11px', fontWeight: '900', color: socketConnected ? '#065f46' : '#991b1b', textTransform: 'uppercase' }}>
-                {socketConnected ? 'Connected' : 'Offline'}
+                {socketConnected ? 'Connected' : 'Disconnected'}
               </span>
             </div>
 
@@ -3765,10 +4253,10 @@ function MainApp() {
 
             {/* GLOBAL NAVIGATION PILLS */}
             <div style={{ display: 'flex', gap: '8px', background: '#f1f5f9', padding: '6px', borderRadius: '16px', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)', border: '1px solid #e2e8f0' }}>
-              <button onClick={() => setView('tables')} style={{ padding: '10px 24px', borderRadius: '12px', background: view === 'tables' ? '#94161c' : 'transparent', color: view === 'tables' ? 'white' : '#64748b', fontWeight: '900', border: 'none', cursor: 'pointer', fontSize: '14px', transition: 'all 0.2s', boxShadow: view === 'tables' ? '0 4px 12px rgba(148,22,28,0.2)' : 'none' }}>
+              <button onClick={() => setView('tables')} style={{ padding: '10px 24px', borderRadius: '12px', background: view === 'tables' ? 'var(--primary)' : 'transparent', color: view === 'tables' ? 'white' : '#64748b', fontWeight: '900', border: 'none', cursor: 'pointer', fontSize: '14px', transition: 'all 0.2s', boxShadow: view === 'tables' ? '0 4px 12px rgba(148,22,28,0.2)' : 'none' }}>
                 Table View
               </button>
-              <button onClick={() => setView('nontables')} style={{ padding: '10px 24px', borderRadius: '12px', background: view === 'nontables' ? '#94161c' : 'transparent', color: view === 'nontables' ? 'white' : '#64748b', fontWeight: '900', border: 'none', cursor: 'pointer', fontSize: '14px', transition: 'all 0.2s', boxShadow: view === 'nontables' ? '0 4px 12px rgba(148,22,28,0.2)' : 'none' }}>
+              <button onClick={() => setView('nontables')} style={{ padding: '10px 24px', borderRadius: '12px', background: view === 'nontables' ? 'var(--primary)' : 'transparent', color: view === 'nontables' ? 'white' : '#64748b', fontWeight: '900', border: 'none', cursor: 'pointer', fontSize: '14px', transition: 'all 0.2s', boxShadow: view === 'nontables' ? '0 4px 12px rgba(148,22,28,0.2)' : 'none' }}>
                 Pick up / Online Orders
               </button>
             </div>
@@ -3777,7 +4265,20 @@ function MainApp() {
 
         <main style={{ flex: 1, overflowY: 'auto' }}>
           {view === 'tables' && (
-            <TableManagement tables={tables} floorPlanSections={floorPlanSections} onSelectTable={handleSelectTable} onClearTable={clearTableFast} settings={settings} onQuickSettle={setQuickSettleTable} onQuickPrint={handleQuickPrint} globalSearch={globalSearch} onViewChange={setView} onOpenFloorDesigner={() => setView('floorplan')} />
+            <ServiceFloor
+              tables={tables}
+              floorPlanSections={floorPlanSections}
+              onSelectTable={handleSelectTable}
+              onClearTable={clearTableFast}
+              settings={settings}
+              onQuickSettle={setQuickSettleTable}
+              onQuickPrint={handleQuickPrint}
+              globalSearch={globalSearch}
+              onViewChange={setView}
+              onOpenFloorDesigner={() => setView('floorplan')}
+              tableToClear={tableToClear}
+              setTableToClear={setTableToClear}
+            />
           )}
           {view === 'nontables' && (
             <NonTableManagement orders={nonTableOrders} onSelectOrder={handleSelectTable} onCreateOrder={handleCreateNonTableOrder} onViewChange={setView} onQuickSettle={setQuickSettleTable} onQuickPrint={handleQuickPrint} onClearOrder={clearTableFast} globalSearch={globalSearch} />
@@ -3796,7 +4297,21 @@ function MainApp() {
           )}
           {view === 'kds' && (
             <KitchenDisplay 
-              orders={newCaptainOrders} 
+              orders={[
+                ...newCaptainOrders,
+                ...tables
+                  .filter(t => t.status !== 'free' && t.orders?.length > 0)
+                  .map(t => ({
+                    id: `table-${t.id}`,
+                    table_number: t.name.replace('Table ', ''),
+                    status: t.status === 'printed' ? 'READY' : 'PREPARING',
+                    items: t.orders.map(o => ({
+                      name: o.name,
+                      quantity: o.qty,
+                      notes: o.note || ''
+                    }))
+                  }))
+              ]} 
               onUpdateStatus={async (id, status) => {
                 const { updateOrderStatusPatch } = await import('./utils/apiClient');
                 await updateOrderStatusPatch(id, status);
@@ -3826,8 +4341,8 @@ function MainApp() {
                     if (t.id === matchingTable.id) {
                       return {
                         ...t,
-                        order: [...(t.order || []), ...mappedItems],
-                        status: 'running',
+                        order: [...(t.orders || []), ...mappedItems],
+                        status: 'occupied',
                         createdAt: t.createdAt || Date.now()
                       };
                     }
@@ -3849,12 +4364,6 @@ function MainApp() {
               devices={devices}
               onUpdateDeviceStatus={handleUpdateDeviceStatus}
               onDeleteDevice={handleDeleteDevice}
-              backendUrl={backendUrl}
-              onUpdateBackendUrl={(url) => {
-                localStorage.setItem('backend_url', url);
-                setBackendUrl(url);
-                setTimeout(() => window.location.reload(), 1000);
-              }}
               isConnected={socketConnected}
             />
           )}
@@ -3865,6 +4374,8 @@ function MainApp() {
             <MenuSetupView
               categories={categories} setCategories={setCategories}
               menuItems={menuItems} setMenuItems={setMenuItems}
+              loadCategories={loadCategories}
+              loadMenu={loadMenu}
             />
           )}
           {view === 'productsetup' && (
@@ -3874,14 +4385,20 @@ function MainApp() {
             />
           )}
           {view === 'floorplan' && (
-            <FloorPlanSetupView tables={tables} setTables={setTables} sections={floorPlanSections} setSections={setFloorPlanSections} />
+            <FloorDesigner
+              tables={tables}
+              setTables={setTables}
+              sections={floorPlanSections}
+              setSections={setFloorPlanSections}
+              loadTables={loadTables}
+            />
           )}
           {view === 'ordering' && (
             <OrderingSystem
               table={selectedTable}
               tables={tables}
               nonTableOrders={nonTableOrders}
-              initialOrder={selectedTable?.order || []}
+              initialOrder={selectedTable?.orders || []}
               MENU_ITEMS={[...menuItems, ...products]}
               CATEGORIES={Array.from(new Set([...categories, ...productCategories]))}
               settings={settings}
@@ -3891,11 +4408,11 @@ function MainApp() {
                   const targetTable = tables.find(t => t.id === newId);
                   if (targetTable) {
                     setTables(prev => prev.map(t => {
-                      if (t.id === newId) return { ...t, order: currentCart, status: 'running', createdAt: t.createdAt || Date.now() };
-                      if (t.id === oldId) return { ...t, order: [], status: 'blank', createdAt: null };
+                      if (t.id === newId) return { ...t, orders: currentCart, status: 'occupied', createdAt: t.createdAt || Date.now() };
+                      if (t.id === oldId) return { ...t, orders: [], status: 'free', createdAt: null };
                       return t;
                     }));
-                    setSelectedTable({ ...targetTable, order: currentCart, status: 'running' });
+                    setSelectedTable({ ...targetTable, orders: currentCart, items: currentCart, status: 'occupied' });
                   }
                 }
               }}
@@ -3905,9 +4422,12 @@ function MainApp() {
                 } else {
                   setView('tables');
                 }
+                setSelectedTable(null);
               }}
               onSaveOrder={saveOrderToTable}
+              onAddItem={addItemToTable}
               onSettleTable={settleTable}
+              loadTables={loadTables}
             />
           )}
         </main>

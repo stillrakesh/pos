@@ -53,11 +53,17 @@ app.use((req, res, next) => {
 });
 
 // ─── Routes ─────────────────────────────────────────────────
+// Standard API routes
 app.use('/api/orders', ordersRouter);
 app.use('/api/tables', tablesRouter);
 app.use('/api/menu', menuRouter);
 app.use('/api/devices', devicesRouter);
 app.use('/api/signing', signingRouter);
+
+// Compatibility Aliases for Captain App (No /api prefix)
+app.use('/orders', ordersRouter);
+app.use('/tables', tablesRouter);
+app.use('/menu', menuRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

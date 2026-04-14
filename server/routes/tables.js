@@ -82,16 +82,28 @@ router.post('/', (req, res) => {
           statements.updateTable({
             id: existing.id,
             status: stat.toUpperCase(),
-            order_items: items
+            order_items: items,
+            x: t.x || t.pos?.x,
+            y: t.y || t.pos?.y,
+            shape: t.shape,
+            seats: t.seats,
+            zone: t.zone || t.zoneLabel
           });
         } else {
           statements.insertTable({
             table_number: table_num,
             status: stat.toUpperCase(),
-            order_items: items
+            order_items: items,
+            x: t.x || t.pos?.x,
+            y: t.y || t.pos?.y,
+            shape: t.shape,
+            seats: t.seats,
+            zone: t.zone || t.zoneLabel
           });
         }
       });
+      const io = req.app.get('io');
+      if (io) io.emit('table_updated', { bulk: true }); 
       return res.json({ success: true, message: 'Bulk sync complete' });
     }
 
@@ -112,10 +124,18 @@ router.post('/', (req, res) => {
 
     const result = statements.insertTable({
       table_number: String(table_number),
-      status: status ? status.toUpperCase() : 'AVAILABLE'
+      status: status ? status.toUpperCase() : 'AVAILABLE',
+      x: req.body.x,
+      y: req.body.y,
+      shape: req.body.shape,
+      seats: req.body.seats,
+      zone: req.body.zone
     });
 
     const table = statements.getTableById({ id: result.lastInsertRowid });
+    
+    const io = req.app.get('io');
+    if (io) io.emit('table_updated', table);
 
     res.status(201).json({
       success: true,
@@ -171,13 +191,22 @@ router.put('/:id', (req, res) => {
       id,
       table_number: table_number !== undefined ? String(table_number) : undefined,
       status: status ? status.toUpperCase() : undefined,
-      order_items: order_items !== undefined ? (typeof order_items === 'string' ? order_items : JSON.stringify(order_items)) : undefined
+      order_items: order_items !== undefined ? (typeof order_items === 'string' ? order_items : JSON.stringify(order_items)) : undefined,
+      x: req.body.x,
+      y: req.body.y,
+      shape: req.body.shape,
+      seats: req.body.seats,
+      zone: req.body.zone
     });
 
     const updated = statements.getTableById({ id });
     if (updated && updated.order_items) {
       try { updated.order_items = JSON.parse(updated.order_items); } catch(e) { updated.order_items = []; }
     }
+
+    // 📢 Emit Real-time Update
+    const io = req.app.get('io');
+    if (io) io.emit('table_updated', updated);
 
     res.json({
       success: true,
@@ -220,6 +249,9 @@ router.delete('/:id', (req, res) => {
     }
 
     statements.deleteTable({ id });
+
+    const io = req.app.get('io');
+    if (io) io.emit('table_updated', { id, deleted: true });
 
     res.json({
       success: true,
