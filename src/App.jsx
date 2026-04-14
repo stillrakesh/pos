@@ -176,14 +176,15 @@ const AppSidebar = ({ activeView, onViewChange, stats }) => {
         { id: 'tables', label: 'Running Orders', icon: Clock, badge: stats.activeTables > 0 ? stats.activeTables : null },
         { id: 'orderhistory', label: 'All Orders', icon: ShoppingBag },
         { id: 'nontables', label: 'Online Orders', icon: Smartphone, badge: stats.activeOnline > 0 ? stats.activeOnline : null },
-        { id: 'kds', label: 'KOT', icon: Utensils, badge: stats.pendingKot > 0 ? stats.pendingKot : null },
-        { id: 'captain', label: 'Captain Orders', icon: Wifi },
-        { id: 'dayclose', label: 'Due Payment Settlement', icon: Banknote },
-        { id: 'profit-loss', label: 'Profit & Loss', icon: TrendingUp },
-      ]
+        { id: 'kds', label: 'KOT', icon: Utensils, badge: stats.pendingKot > 0 ? stats.pendingKot : null, hidden: !IS_LOCAL },
+        { id: 'captain', label: 'Captain Orders', icon: Wifi, hidden: !IS_LOCAL },
+        { id: 'dayclose', label: 'Settlement', icon: Banknote, hidden: !IS_LOCAL },
+        { id: 'profit-loss', label: 'Profit & Loss', icon: TrendingUp, hidden: !IS_LOCAL },
+      ].filter(item => !item.hidden)
     },
     {
       title: 'Management',
+      hidden: !IS_LOCAL,
       items: [
         { id: 'menusetup', label: 'Menu', icon: Menu },
         { id: 'productsetup', label: 'Inventory', icon: Package },
@@ -193,7 +194,7 @@ const AppSidebar = ({ activeView, onViewChange, stats }) => {
         { id: 'globalsettings', label: 'Settings', icon: LayoutGrid },
       ]
     }
-  ];
+  ].filter(group => !group.hidden);
 
   return (
     <div className="no-print" style={{ width: 'var(--sidebar-width)', background: 'linear-gradient(180deg, #131a28 0%, #0f172a 100%)', borderRight: '1px solid rgba(148, 163, 184, 0.08)', display: 'flex', flexDirection: 'column', height: '100vh', flexShrink: 0, color: 'white', transition: 'width 0.3s ease' }}>
@@ -3312,7 +3313,31 @@ function MainApp() {
   const [deviceStatus, setDeviceStatus] = useState('APPROVED'); // Default for offline first
   const [deviceId, setDeviceId] = useState('LOCAL-DEVICE');
   const [cart, setCart] = useState([]);
+  const [loading, setLoading] = useState(!IS_LOCAL);
   console.log('📡 Base URL:', BASE_URL);
+
+  async function fetchCloudData() {
+    try {
+      const res = await fetch(CLOUD_URL + "/sync", { signal: AbortSignal.timeout(5000) });
+      const data = await res.json();
+
+      setMenuItems(data.menu || []);
+      setTables(data.tables || []);
+      setOrderHistory(data.orders || []);
+      setNonTableOrders(data.sales || []); // Mapping sales to non-table active view for viewer
+      setLoading(false);
+    } catch (err) {
+      console.log("Cloud fetch failed", err);
+    }
+  }
+
+  useEffect(() => {
+    if (!IS_LOCAL) {
+      fetchCloudData();
+      const interval = setInterval(fetchCloudData, 3000);
+      return () => clearInterval(interval);
+    }
+  }, []);
 
   const handleSelectTable = (table) => {
     setSelectedTable({
@@ -3543,16 +3568,16 @@ function MainApp() {
   const [floorPlanSections, setFloorPlanSections] = useState(() => loadFromLocal('pos_floor_sections', ['DINE IN', 'AC', 'TERRACE']));
   const [customers, setCustomers] = useState(() => loadFromLocal('pos_customers', {}));
 
-  useEffect(() => saveToLocal('pos_settings', settings), [settings]);
-  useEffect(() => saveToLocal('pos_menu', menuItems), [menuItems]);
-  useEffect(() => saveToLocal('pos_categories', categories), [categories]);
-  useEffect(() => saveToLocal('pos_tables', tables), [tables]);
-  useEffect(() => saveToLocal('pos_products', products), [products]);
-  useEffect(() => saveToLocal('pos_product_categories', productCategories), [productCategories]);
-  useEffect(() => saveToLocal('pos_floor_sections', floorPlanSections), [floorPlanSections]);
-  useEffect(() => saveToLocal('pos_customers', customers), [customers]);
-  useEffect(() => saveToLocal('pos_order_history', orderHistory), [orderHistory]);
-  useEffect(() => saveToLocal('pos_nontable_orders', nonTableOrders), [nonTableOrders]);
+  useEffect(() => { if (IS_LOCAL) saveToLocal('pos_settings', settings); }, [settings]);
+  useEffect(() => { if (IS_LOCAL) saveToLocal('pos_menu', menuItems); }, [menuItems]);
+  useEffect(() => { if (IS_LOCAL) saveToLocal('pos_categories', categories); }, [categories]);
+  useEffect(() => { if (IS_LOCAL) saveToLocal('pos_tables', tables); }, [tables]);
+  useEffect(() => { if (IS_LOCAL) saveToLocal('pos_products', products); }, [products]);
+  useEffect(() => { if (IS_LOCAL) saveToLocal('pos_product_categories', productCategories); }, [productCategories]);
+  useEffect(() => { if (IS_LOCAL) saveToLocal('pos_floor_sections', floorPlanSections); }, [floorPlanSections]);
+  useEffect(() => { if (IS_LOCAL) saveToLocal('pos_customers', customers); }, [customers]);
+  useEffect(() => { if (IS_LOCAL) saveToLocal('pos_order_history', orderHistory); }, [orderHistory]);
+  useEffect(() => { if (IS_LOCAL) saveToLocal('pos_nontable_orders', nonTableOrders); }, [nonTableOrders]);
 
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -3852,6 +3877,16 @@ function MainApp() {
     );
   }
 
+  if (loading) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
+        <RefreshCw size={48} className="animate-spin" style={{ marginBottom: '20px', color: 'var(--primary)' }} />
+        <h2 style={{ fontSize: '24px', fontWeight: '900' }}>Initializing Live Dashboard...</h2>
+        <p style={{ color: '#94a3b8', marginTop: '10px' }}>Connecting to cloud backend...</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#f8fafc', overflow: 'hidden' }}>
       <GlobalStyles settings={settings} />
@@ -3960,24 +3995,26 @@ function MainApp() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             {/* SYNC BUTTON */}
-            <button 
-              onClick={syncToBackend} 
-              disabled={isSyncing}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '10px 18px', borderRadius: '14px', border: 'none',
-                background: isSyncing ? '#f1f5f9' : '#a3112a',
-                color: isSyncing ? '#94a3b8' : 'white',
-                fontSize: '13px', fontWeight: '950', cursor: isSyncing ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s', boxShadow: isSyncing ? 'none' : '0 4px 12px rgba(163, 17, 42, 0.2)'
-              }}
-            >
-              {isSyncing ? (
-                <>Syncing...</>
-              ) : (
-                <><RefreshCw size={16} /> Sync to Cloud</>
-              )}
-            </button>
+            {IS_LOCAL && (
+              <button 
+                onClick={syncToBackend} 
+                disabled={isSyncing}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '10px 18px', borderRadius: '14px', border: 'none',
+                  background: isSyncing ? '#f1f5f9' : '#a3112a',
+                  color: isSyncing ? '#94a3b8' : 'white',
+                  fontSize: '13px', fontWeight: '950', cursor: isSyncing ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s', boxShadow: isSyncing ? 'none' : '0 4px 12px rgba(163, 17, 42, 0.2)'
+                }}
+              >
+                {isSyncing ? (
+                  <>Syncing...</>
+                ) : (
+                  <><RefreshCw size={16} /> Sync to Cloud</>
+                )}
+              </button>
+            )}
 
             {/* Connection Indicator */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: socketConnected ? '#ecfdf5' : '#fef2f2', padding: '8px 14px', borderRadius: '12px', border: '1px solid', borderColor: socketConnected ? '#10b981' : '#ef4444', transition: 'all 0.3s' }}>
