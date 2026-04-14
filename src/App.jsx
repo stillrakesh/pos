@@ -7,11 +7,66 @@ import {
   Settings2, ReceiptText, RefreshCw
 } from 'lucide-react';
 import './index.css';
-import { get, set, del, clear } from 'idb-keyval';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import * as XLSX from 'xlsx';
 
 import { BASE_URL } from './constants';
+
+// --- OFFLINE FIRST HELPERS ---
+function saveToLocal(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (err) {
+    console.error(`Local Save Error (${key}):`, err);
+  }
+}
+
+function loadFromLocal(key) {
+  try {
+    const val = localStorage.getItem(key);
+    return val ? JSON.parse(val) : [];
+  } catch (err) {
+    console.warn(`Local Load Error (${key}):`, err);
+    return [];
+  }
+}
+
+const IS_LOCAL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+const CLOUD_URL = "https://restaurant-cloud-backend.onrender.com";
+const VERSION = "1.0.0";
+
+async function checkForUpdate() {
+  try {
+    const res = await fetch(CLOUD_URL + "/version", { signal: AbortSignal.timeout(5000) });
+    const data = await res.json();
+
+    if (data.version && data.version !== VERSION) {
+      alert("New update available. Please update system.");
+    }
+  } catch {}
+}
+
+async function syncToCloud() {
+  if (!IS_LOCAL) return;
+  const menu = loadFromLocal("pos_menu");
+  const tables = loadFromLocal("pos_tables");
+  const orders = loadFromLocal("pos_order_history");
+
+  try {
+    await fetch(CLOUD_URL + "/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        menu,
+        tables,
+        orders,
+        sales: []
+      })
+    });
+  } catch (err) {
+    console.log("Sync failed (offline mode)");
+  }
+}
 
 // Modular Components & Utilities
 import { printPosToSerial } from './utils/printerUtils';
@@ -709,25 +764,25 @@ const RetailProductSetupView = ({ categories, setCategories, menuItems, setMenuI
   };
 
   const addItem = async () => {
-    console.log("ADD BUTTON CLICKED");
     if (newItem.name && newItem.price && newItem.cat && newItem.stockQuantity !== '') {
+      const localItem = {
+        id: Date.now().toString(),
+        name: newItem.name,
+        price: parseFloat(newItem.price),
+        category: newItem.cat,
+        stockQuantity: parseInt(newItem.stockQuantity, 10) || 0,
+        inStock: parseInt(newItem.stockQuantity, 10) > 0,
+        type: 'retail'
+      };
+      // ✅ 1. Save locally first (instant UI)
+      setMenuItems(prev => [...prev, localItem]);
+      setNewItem({ name: '', price: '', stockQuantity: '', cat: categories[0] || '' });
+      // ✅ 2. Try backend sync (optional background)
       try {
         const { createMenuItem } = await import('./utils/apiClient');
-        const result = await createMenuItem({
-          name: newItem.name,
-          price: parseFloat(newItem.price),
-          category: newItem.cat
-        });
-
-        if (result.success) {
-           await loadMenu();
-           setNewItem({ name: '', price: '', stockQuantity: '', cat: categories[0] || '' });
-        } else {
-           alert(`Failed to add item: ${result.error || 'Unknown server error'}`);
-        }
+        await createMenuItem({ name: localItem.name, price: localItem.price, category: localItem.category });
       } catch (err) {
-        console.error("❌ Request Error:", err);
-        alert(`Request failed: ${err.message}`);
+        console.warn("⚠️ Offline: Retail item saved locally only.");
       }
     } else {
       alert("Please fill in Name, Price, Category, and Stock Quantity.");
@@ -738,37 +793,43 @@ const RetailProductSetupView = ({ categories, setCategories, menuItems, setMenuI
     if (window.confirm("Are you sure you want to remove this product?")) {
       const pwd = window.prompt("Security Check: Enter master password:");
       if (pwd === "biller") {
+        // ✅ 1. Delete locally first (instant UI)
+        setMenuItems(prev => prev.filter(item => item.id !== id));
+        // ✅ 2. Try backend sync (optional)
         try {
           const { deleteMenuItem } = await import('./utils/apiClient');
           await deleteMenuItem(id);
-          await loadMenu();
         } catch (err) {
-          alert("Delete failed on server.");
+          console.warn("⚠️ Offline: Product removed locally only.");
         }
       }
     }
   };
 
   const toggleStock = async (id) => {
+    const item = (menuItems || []).find(i => i.id === id);
+    if (!item) return;
+    // ✅ 1. Toggle locally first (instant UI)
+    setMenuItems(prev => prev.map(i => i.id === id ? { ...i, inStock: !i.inStock } : i));
+    // ✅ 2. Try backend sync (optional)
     try {
-      const item = (menuItems || []).find(i => i.id === id);
-      if (!item) return;
       const { updateMenuItemApi } = await import('./utils/apiClient');
       await updateMenuItemApi(id, { inStock: !item.inStock });
-      await loadMenu();
     } catch (err) {
-      console.error("Failed to toggle stock:", err);
+      console.warn("⚠️ Offline: Stock status toggled locally only.");
     }
   };
 
   const updateQuantity = async (id, newQty) => {
+    const q = parseInt(newQty, 10) || 0;
+    // ✅ 1. Update locally first (instant UI)
+    setMenuItems(prev => prev.map(i => i.id === id ? { ...i, stockQuantity: q, inStock: q > 0 } : i));
+    // ✅ 2. Try backend sync (optional)
     try {
       const { updateMenuItemApi } = await import('./utils/apiClient');
-      const q = parseInt(newQty, 10) || 0;
       await updateMenuItemApi(id, { stockQuantity: q, inStock: q > 0 });
-      await loadMenu();
     } catch (err) {
-      console.error("Failed to update quantity:", err);
+      console.warn("⚠️ Offline: Quantity updated locally only.");
     }
   };
 
@@ -918,12 +979,14 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
     if (window.confirm("Are you sure you want to remove this item from the menu?")) {
       const pwd = window.prompt("Security Check: Enter master password to delete menu item:");
       if (pwd === "biller") {
+        // ✅ 1. Delete locally first (instant UI)
+        setMenuItems(prev => prev.filter(item => item.id !== id));
+        // ✅ 2. Try backend sync (optional)
         try {
           const { deleteMenuItem } = await import('./utils/apiClient');
           await deleteMenuItem(id);
-          await loadMenu();
         } catch (err) {
-          alert("Delete failed on server.");
+          console.warn("⚠️ Offline: Menu item removed locally only.");
         }
       } else {
         alert("Incorrect Password. Deletion cancelled.");
@@ -1132,14 +1195,17 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
   };
 
   const confirmRemoveTable = async () => {
+    // ✅ 1. Delete locally first (instant UI)
+    setTables(prev => prev.filter(t => t.id !== tableToRemove));
+    setTableToRemove(null);
+    // ✅ 2. Try backend sync (optional)
     try {
       await fetch(BASE_URL + "/tables/" + tableToRemove, {
-        method: "DELETE"
+        method: "DELETE",
+        signal: AbortSignal.timeout(4000)
       });
-      await loadTables();
-      setTableToRemove(null);
     } catch (err) {
-      console.error("Failed to delete table:", err);
+      console.warn("⚠️ Offline: Table removed locally only.");
     }
   };
 
@@ -1488,7 +1554,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
 
 /* --- SYSTEM SETTINGS VIEW --- */
 /* --- ADVANCED GLOBAL SETTINGS VIEW --- */
-const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullReset, devices = [], onUpdateDeviceStatus, onDeleteDevice, isConnected }) => {
+const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullReset, devices = [], onUpdateDeviceStatus, onDeleteDevice, isConnected, onRestoreData }) => {
   const [activeTab, setActiveTab] = useState('design');
   const [localSettings, setLocalSettings] = useState(settings);
 
@@ -1605,6 +1671,18 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
                    <div style={{ fontSize: '12px', color: '#64748b' }}>WebSocket Status: <b style={{ color: isConnected ? '#10b981' : '#dc2626' }}>{isConnected ? 'Active' : 'Idle'}</b></div>
                    <div style={{ fontSize: '12px', color: '#64748b' }}>Project Base Endpoint: <b>{BASE_URL}</b></div>
                 </div>
+              </div>
+
+              <div style={{ background: '#fff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>Cloud Data Restoration</h4>
+                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>Fetch missing menus and tables straight from the cloud system.</p>
+                <button 
+                  onClick={onRestoreData} 
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: 'var(--primary)', color: 'white', fontWeight: 'bold', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                >
+                  <RefreshCw size={16} />
+                  Restore Data
+                </button>
               </div>
             </div>
           </div>
@@ -2005,9 +2083,9 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
                     {/* Bottom: Action Row */}
                     {isRunning && (
                        <div style={{ display: 'flex', gap: '6px', paddingTop: '10px', borderTop: '1px solid #f1f5f9', width: '100%', justifyContent: 'center', marginBottom: '8px' }}>
-                         <button onClick={(e) => { e.stopPropagation(); onQuickPrint(table); }} title="Print KOT" style={{ flex: 1, background: '#f8fafc', border: '1px solid #e2e8f0', padding: '10px 4px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'center' }}><Printer size={16} color="#64748b" /></button>
-                         <button onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} title="Settle Bill" style={{ flex: 1, background: '#111827', border: 'none', padding: '10px 4px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'center' }}><CheckSquare size={16} color="white" /></button>
-                         <button onClick={(e) => { e.stopPropagation(); setTableToClear(table.id); }} title="Discard" style={{ flex: 1, background: '#fff1f2', border: 'none', padding: '10px 4px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'center' }}><Trash2 size={16} color="#ef4444" /></button>
+                         <button disabled={!IS_LOCAL} onClick={(e) => { e.stopPropagation(); onQuickPrint(table); }} title="Print KOT" style={{ flex: 1, background: '#f8fafc', border: '1px solid #e2e8f0', padding: '10px 4px', borderRadius: '12px', cursor: IS_LOCAL ? 'pointer' : 'not-allowed', display: 'flex', justifyContent: 'center', opacity: IS_LOCAL ? 1 : 0.5 }}><Printer size={16} color="#64748b" /></button>
+                         <button disabled={!IS_LOCAL} onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} title="Settle Bill" style={{ flex: 1, background: '#111827', border: 'none', padding: '10px 4px', borderRadius: '12px', cursor: IS_LOCAL ? 'pointer' : 'not-allowed', display: 'flex', justifyContent: 'center', opacity: IS_LOCAL ? 1 : 0.5 }}><CheckSquare size={16} color="white" /></button>
+                         <button disabled={!IS_LOCAL} onClick={(e) => { e.stopPropagation(); setTableToClear(table.id); }} title="Discard" style={{ flex: 1, background: '#fff1f2', border: 'none', padding: '10px 4px', borderRadius: '12px', cursor: IS_LOCAL ? 'pointer' : 'not-allowed', display: 'flex', justifyContent: 'center', opacity: IS_LOCAL ? 1 : 0.5 }}><Trash2 size={16} color="#ef4444" /></button>
                        </div>
                     )}
                   </div>
@@ -2068,9 +2146,9 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
                     {/* Bottom: Action Row */}
                     {isRunning && (
                        <div style={{ display: 'flex', gap: '6px', paddingTop: '10px', borderTop: '1px solid #f1f5f9', width: '100%', justifyContent: 'center', marginBottom: '8px' }}>
-                         <button onClick={(e) => { e.stopPropagation(); onQuickPrint(table); }} title="Print KOT" style={{ flex: 1, background: '#f8fafc', border: '1px solid #e2e8f0', padding: '10px 4px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'center' }}><Printer size={16} color="#64748b" /></button>
-                         <button onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} title="Settle Bill" style={{ flex: 1, background: '#111827', border: 'none', padding: '10px 4px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'center' }}><CheckSquare size={16} color="white" /></button>
-                         <button onClick={(e) => { e.stopPropagation(); setTableToClear(table.id); }} title="Discard" style={{ flex: 1, background: '#fff1f2', border: 'none', padding: '10px 4px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'center' }}><Trash2 size={16} color="#ef4444" /></button>
+                         <button disabled={!IS_LOCAL} onClick={(e) => { e.stopPropagation(); onQuickPrint(table); }} title="Print KOT" style={{ flex: 1, background: '#f8fafc', border: '1px solid #e2e8f0', padding: '10px 4px', borderRadius: '12px', cursor: IS_LOCAL ? 'pointer' : 'not-allowed', display: 'flex', justifyContent: 'center', opacity: IS_LOCAL ? 1 : 0.5 }}><Printer size={16} color="#64748b" /></button>
+                         <button disabled={!IS_LOCAL} onClick={(e) => { e.stopPropagation(); onQuickSettle(table); }} title="Settle Bill" style={{ flex: 1, background: '#111827', border: 'none', padding: '10px 4px', borderRadius: '12px', cursor: IS_LOCAL ? 'pointer' : 'not-allowed', display: 'flex', justifyContent: 'center', opacity: IS_LOCAL ? 1 : 0.5 }}><CheckSquare size={16} color="white" /></button>
+                         <button disabled={!IS_LOCAL} onClick={(e) => { e.stopPropagation(); setTableToClear(table.id); }} title="Discard" style={{ flex: 1, background: '#fff1f2', border: 'none', padding: '10px 4px', borderRadius: '12px', cursor: IS_LOCAL ? 'pointer' : 'not-allowed', display: 'flex', justifyContent: 'center', opacity: IS_LOCAL ? 1 : 0.5 }}><Trash2 size={16} color="#ef4444" /></button>
                        </div>
                     )}
                   </div>
@@ -2149,10 +2227,11 @@ const KitchenDisplay = ({ orders, onUpdateStatus }) => {
 
               {next && (
                 <button
+                  disabled={!IS_LOCAL}
                   onClick={() => onUpdateStatus(order.id, next)}
-                  style={{ background: '#334155', color: 'white', border: 'none', padding: '20px', fontWeight: '900', fontSize: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', transition: 'all 0.2s', borderTop: '1px solid rgba(255,255,255,0.05)' }}
-                  onMouseOver={(e) => e.currentTarget.style.background = '#475569'}
-                  onMouseOut={(e) => e.currentTarget.style.background = '#334155'}
+                  style={{ background: '#334155', color: 'white', border: 'none', padding: '20px', fontWeight: '900', fontSize: '14px', cursor: IS_LOCAL ? 'pointer' : 'not-allowed', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', transition: 'all 0.2s', borderTop: '1px solid rgba(255,255,255,0.05)', opacity: IS_LOCAL ? 1 : 0.5 }}
+                  onMouseOver={(e) => { if (IS_LOCAL) e.currentTarget.style.background = '#475569'; }}
+                  onMouseOut={(e) => { if (IS_LOCAL) e.currentTarget.style.background = '#334155'; }}
                 >
                    {order.status === 'NEW' ? 'START PREPARING' : `MARK AS ${next}`} <ChevronDown size={18} />
                 </button>
@@ -2198,6 +2277,7 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
             />
           </div>
           <button
+            disabled={!IS_LOCAL}
             className="btn-pp"
             onClick={() => onCreateOrder('Takeaway')}
             style={{
@@ -2208,7 +2288,9 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
               padding: '10px 20px',
               borderRadius: '8px',
               fontWeight: 'bold',
-              boxShadow: '0 4px 6px -1px rgba(148, 22, 28, 0.2)'
+              boxShadow: '0 4px 6px -1px rgba(148, 22, 28, 0.2)',
+              opacity: IS_LOCAL ? 1 : 0.5,
+              cursor: IS_LOCAL ? 'pointer' : 'not-allowed'
             }}
           >
             <Plus size={18} style={{ marginRight: '8px' }} /> + New Pickup Order
@@ -2245,8 +2327,11 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
             >
               {/* Main Clickable Area */}
               <div 
-                onClick={() => onSelectOrder(order)}
-                style={{ flex: 1, padding: '20px', cursor: 'pointer' }}
+                onClick={() => {
+                  if (!IS_LOCAL) return alert("Read-Only Mode: Order viewing only. Menu updates disabled.");
+                  onSelectOrder(order);
+                }}
+                style={{ flex: 1, padding: '20px', cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }}
               >
                 <div style={{ paddingRight: '120px' }}>
                   <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#1e293b', marginBottom: '4px' }}>{order.customerName || order.name}</div>
@@ -2274,16 +2359,18 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
                 <div style={{ fontSize: '10px', background: bg, color: text, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold', border: `1px solid ${border}`, textTransform: 'uppercase' }}>{order.type}</div>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <button 
+                    disabled={!IS_LOCAL}
                     title="Delete" 
                     onClick={(e) => { e.stopPropagation(); if(confirm(`Wipe order ${order.id}?`)) onClearOrder(order.id); }} 
-                    style={{ padding: '8px', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '8px', cursor: 'pointer', display: 'flex' }}
+                    style={{ padding: '8px', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '8px', cursor: IS_LOCAL ? 'pointer' : 'not-allowed', display: 'flex', opacity: IS_LOCAL ? 1 : 0.5 }}
                   >
                     <Trash2 size={16} color="#ef4444" />
                   </button>
                   <button 
+                    disabled={!IS_LOCAL}
                     title="Settle" 
                     onClick={(e) => { e.stopPropagation(); onQuickSettle(order); }} 
-                    style={{ padding: '8px', background: 'var(--primary)', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'white', display: 'flex' }}
+                    style={{ padding: '8px', background: 'var(--primary)', border: 'none', borderRadius: '8px', cursor: IS_LOCAL ? 'pointer' : 'not-allowed', color: 'white', display: 'flex', opacity: IS_LOCAL ? 1 : 0.5 }}
                   >
                     <CheckSquare size={16} />
                   </button>
@@ -2825,11 +2912,12 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                 key={item.id}
                 className={`item-card ${item.type === 'Non-Veg' ? 'non-veg' : 'veg'}`}
                 onClick={() => {
+                  if (!IS_LOCAL) return alert("Read-Only Mode: Menu updates disabled.");
                   if (isAvailable || !isRetail) handleItemClick(item);
                 }}
                 style={{
-                  opacity: isAvailable ? 1 : 0.5,
-                  cursor: isAvailable ? 'pointer' : 'not-allowed',
+                  opacity: (isAvailable && IS_LOCAL) ? 1 : 0.5,
+                  cursor: (isAvailable && IS_LOCAL) ? 'pointer' : 'not-allowed',
                   background: 'white'
                 }}
               >
@@ -3099,10 +3187,10 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
           </div>
 
           <div className="footer-btn-grid">
-            <button className="btn-maroon" onClick={handleSave}>Save</button>
-            <button className="btn-maroon" onClick={handlePrintBill}>Print Bill</button>
-            <button className="btn-grey" onClick={handleKOT}>KOT</button>
-            <button className="btn-grey" style={{ background: '#374151' }} onClick={handleKOTPrint}>KOT & Print</button>
+            <button disabled={!IS_LOCAL} className="btn-maroon" onClick={handleSave} style={{ opacity: IS_LOCAL ? 1 : 0.5, cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }}>Save</button>
+            <button disabled={!IS_LOCAL} className="btn-maroon" onClick={handlePrintBill} style={{ opacity: IS_LOCAL ? 1 : 0.5, cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }}>Print Bill</button>
+            <button disabled={!IS_LOCAL} className="btn-grey" onClick={handleKOT} style={{ opacity: IS_LOCAL ? 1 : 0.5, cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }}>KOT</button>
+            <button disabled={!IS_LOCAL} className="btn-grey" style={{ background: '#374151', opacity: IS_LOCAL ? 1 : 0.5, cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }} onClick={handleKOTPrint}>KOT & Print</button>
           </div>
         </div>
       </div>
@@ -3211,11 +3299,8 @@ const InsightItem = ({ title, value, sub }) => (
   </div>
 );
 
-
-
-
 function MainApp() {
-
+  // --- STATE INITIALIZATION (OFFLINE FIRST) ---
   const [view, setView] = useState('tables');
   const [selectedTable, setSelectedTable] = useState(null);
   const [quickSettleTable, setQuickSettleTable] = useState(null);
@@ -3223,62 +3308,138 @@ function MainApp() {
   const [tableToClear, setTableToClear] = useState(null);
   const [globalSearch, setGlobalSearch] = useState('');
   const [socketConnected, setSocketConnected] = useState(false);
+  const [isDbLoaded, setIsDbLoaded] = useState(true); 
+  const [deviceStatus, setDeviceStatus] = useState('APPROVED'); // Default for offline first
+  const [deviceId, setDeviceId] = useState('LOCAL-DEVICE');
+  const [cart, setCart] = useState([]);
   console.log('📡 Base URL:', BASE_URL);
 
-  const loadMenu = async () => {
-    try {
-      console.log("🔥 FETCHING MENU FROM BACKEND");
-      const res = await fetch(BASE_URL + "/menu");
-      if (!res.ok) throw new Error("Backend offline");
-      const data = await res.json();
-      
-      const normalizedData = (data || []).map(item => ({
-        ...item,
-        inStock: item.inStock !== undefined ? item.inStock : true,
-        stockQuantity: item.stockQuantity || 0
-      }));
+  const handleSelectTable = (table) => {
+    setSelectedTable({
+      ...table,
+      id: table.id !== undefined ? table.id : table.tableId,
+      orders: table.orders || table.items || [],
+      type: table.type || 'Dine In'
+    });
+    setCart([]);
+    setView('ordering');
+  };
 
-      setMenuItems(normalizedData);
-      
-      // Derive categories
-      const uniqueCats = [...new Set(normalizedData.map(i => i.category || "Uncategorized"))];
-      setCategories(uniqueCats);
-    } catch (err) {
-      console.error("Failed to load menu:", err);
+  const restoreFromCloud = async () => {
+    if (!IS_LOCAL) return alert("Read-Only Mode: Cloud data restoration disabled.");
+    try {
+      const res = await fetch(CLOUD_URL + "/sync", { signal: AbortSignal.timeout(6000) });
+      const data = await res.json();
+
+      const newMenu = data.menu || [];
+      const newTables = data.tables || [];
+
+      saveToLocal("pos_menu", newMenu);
+      saveToLocal("pos_tables", newTables);
+
+      setMenuItems(newMenu);
+      setTables(newTables);
+
+      alert("Restored from cloud successfully!");
+    } catch {
+      alert("Failed to restore from cloud.");
     }
   };
 
-  const loadTables = async () => {
-    try {
-      console.log("🔥 FETCHING TABLES FROM BACKEND");
-      const res = await fetch(BASE_URL + "/tables");
-      if (!res.ok) throw new Error("Backend offline");
-      const data = await res.json();
-      console.log("📦 TABLES RECEIVED:", data);
-      
-      // Normalize statuses and data for UI consistency
-      const normalizedData = data.map(t => {
-        const hasItems = (t.items && t.items.length > 0) || (t.orders && t.orders.length > 0);
-        return {
-          ...t,
-          status: t.status ? t.status.toLowerCase() : (hasItems ? 'occupied' : 'free'),
-          orders: t.items || t.orders || [],
-          items: t.items || t.orders || []
-        };
-      });
-      
-      setTables(normalizedData);
-    } catch (err) {
-      console.warn("⚠️ loadTables failed, using local fallback.", err);
+  const deleteAnyOrder = (id) => {
+    if (!IS_LOCAL) return alert("Read-Only Mode: Deleting orders disabled.");
+    const isFloorTable = !String(id).startsWith('DEL-') && !String(id).startsWith('TAK-');
+    if (isFloorTable) {
+      setTables(prev => prev.map(t => String(t.id) === String(id) ? { ...t, orders: [], items: [], status: 'free', createdAt: null } : t));
+    } else {
+      setNonTableOrders(prev => prev.filter(o => String(o.id) !== String(id)));
     }
+  };
+
+  const clearTableFast = (id) => {
+    if (window.confirm("Are you sure you want to completely clear this order without settling?")) {
+      deleteAnyOrder(id);
+    }
+  };
+
+  const handleCreateNonTableOrder = (type) => {
+    if (!IS_LOCAL) return alert("Read-Only Mode: Order creation disabled.");
+    const id = (type === 'Delivery' ? 'DEL-' : 'TAK-') + Math.floor(1000 + Math.random() * 9000);
+    const newOrder = {
+      id,
+      name: `${type} ${id.split('-')[1]}`,
+      type,
+      status: 'occupied',
+      orders: [],
+      items: [],
+      createdAt: Date.now()
+    };
+    setNonTableOrders(prev => [...prev, newOrder]);
+    setSelectedTable(newOrder);
+    setCart([]);
+    setView('ordering');
+  };
+
+  const manualSyncCaptainOrders = async () => {
+    try {
+      const res = await fetch(BASE_URL + "/tables", { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        const data = await res.json();
+        setTables(data.map(t => ({...t, status: t.status?.toLowerCase() || 'free', orders: t.items || t.orders || []})));
+      }
+    } catch(e) {}
+  };
+
+  // --- OFFLINE-FIRST BACKGROUND SYNC (cloud is always optional) ---
+  const loadMenu = async () => {
+    // 1. Always serve from localStorage first
+    const local = loadFromLocal('pos_menu');
+    if (local && local.length > 0) {
+      setMenuItems(local);
+      return; // Already have data — cloud sync is background only
+    }
+    // 2. If empty, try fetching from cloud
+    try {
+      const res = await fetch(BASE_URL + "/menu", { signal: AbortSignal.timeout(4000) });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setMenuItems(data);
+          saveToLocal('pos_menu', data);
+        }
+      }
+    } catch (err) { console.warn("⚠️ Cloud menu fetch skipped (offline)."); }
+  };
+
+  const loadTables = async () => {
+    // 1. Always serve from localStorage first
+    const local = loadFromLocal('pos_tables');
+    if (local && local.length > 0) {
+      setTables(local);
+      return; // Already have data — cloud sync is background only
+    }
+    // 2. If empty, try fetching from cloud
+    try {
+      const res = await fetch(BASE_URL + "/tables", { signal: AbortSignal.timeout(4000) });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const normalized = data.map(t => ({
+            ...t,
+            status: t.status?.toLowerCase() || 'free',
+            orders: t.items || t.orders || []
+          }));
+          setTables(normalized);
+          saveToLocal('pos_tables', normalized);
+        }
+      }
+    } catch (err) { console.warn("⚠️ Cloud tables fetch skipped (offline)."); }
   };
 
   const loadTable = async (tableId) => {
     try {
       const res = await fetch(BASE_URL + "/table/" + tableId);
       const data = await res.json();
-      
-      // IMPORTANT FIX: Clear cart before selecting to prevent duplicates
       setCart([]); 
       setSelectedTable(data.table || data);
     } catch (err) {
@@ -3287,38 +3448,37 @@ function MainApp() {
   };
 
   const addItemToTable = async (item) => {
+    if (!IS_LOCAL) return alert("Read-Only Mode: Adding items disabled.");
     if (!selectedTable) return;
 
-    console.log("🛒 POS adding item to table:", {
-      tableId: selectedTable.id,
-      item
+    const newItem = { id: Date.now(), name: item.name, price: item.price, qty: 1 };
+    
+    setTables(prev => {
+      const updated = prev.map(t => {
+        if (String(t.id) === String(selectedTable.id)) {
+          const currentOrders = t.orders || [];
+          return {
+            ...t,
+            status: 'occupied',
+            orders: [...currentOrders, newItem],
+            createdAt: t.createdAt || Date.now()
+          };
+        }
+        return t;
+      });
+      saveToLocal('pos_tables', updated);
+      return updated;
     });
 
     try {
       await fetch(BASE_URL + "/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tableId: selectedTable.id,
-          items: [
-            {
-              name: item.name,
-              price: item.price,
-              qty: 1
-            }
-          ]
-        })
+        body: JSON.stringify({ tableId: selectedTable.id, items: [newItem] })
       });
-
-      // Refresh both the selected table view and the whole floor plan
-      await loadTables();
-      await loadTable(selectedTable.id);
-    } catch (err) {
-      console.error("Failed to add item to table:", err);
-    }
+    } catch (err) { console.log("?? Offline: Order cached locally"); }
   };
 
-  
   const handleGlobalSearch = (val) => {
     setGlobalSearch(val);
     if (val.length > 0 && view !== 'orderhistory') {
@@ -3327,7 +3487,6 @@ function MainApp() {
   };
 
   const [showSidebar, setShowSidebar] = useState(true);
-  const [isDbLoaded, setIsDbLoaded] = useState(false);
   const handleUpdateDeviceStatus = async (id, status) => {
     try {
       const { updateDeviceStatus } = await import('./utils/apiClient');
@@ -3353,8 +3512,6 @@ function MainApp() {
     }
   };
 
-
-  // --- OFFLINE-FIRST HELPERS ---
   const saveToLocal = (key, data) => localStorage.setItem(key, JSON.stringify(data));
   const loadFromLocal = (key, fallback = []) => {
     try {
@@ -3364,178 +3521,38 @@ function MainApp() {
   };
 
   const [orderHistory, setOrderHistory] = useState(() => loadFromLocal('pos_order_history'));
-  useEffect(() => saveToLocal('pos_order_history', orderHistory), [orderHistory]);
-
-
-
   const [nonTableOrders, setNonTableOrders] = useState(() => loadFromLocal('pos_nontable_orders'));
-  useEffect(() => saveToLocal('pos_nontable_orders', nonTableOrders), [nonTableOrders]);
   const [devices, setDevices] = useState([]);
-  const [settings, setSettings] = useState({
-    // BRANDING & BASIC
-    billHeader: 'TYDE CAFE',
-    billFooter: 'Thank You for Visiting!',
+  const [settings, setSettings] = useState(() => loadFromLocal('pos_settings', {
     resName: 'Tyde Cafe',
-    headerText: 'Nerul Ferry Terminal',
-    footerText: 'Sea you soon - under the moon',
-    showResName: true,
-    showRetailOnTop: false,
-    showResNameBold: true,
-    showHeadlineBold: false,
-    showFooterBold: false,
-    printLogo: true,
-    logoWidth: 200,
-    logoHeight: 70,
-    
-    // BILL DESIGNER SPECIFICS
-    billMarginTop: 0,
-    billMarginRight: 5,
-    billMarginBottom: 0,
-    billMarginLeft: 5,
-    billItemHeight: 0,
-    resFont: 14,
-    headFootFont: 13,
-    dateBillFont: 13,
-    itemListFont: 13,
-    grandTotalFont: 14,
-    billFontFamily: 'Verdana',
-    paperSize: '80mm',
-    billMainWidth: 240,
-    billColSr: 10,
-    billColQty: 20,
-    billColPrice: 40,
-    billColAmt: 55,
-    billLineHeight: 5,
-    billExtraGap: 5,
-    billItemsPage: 0,
-    billCalcDecimal: 'Master',
-    showTotalLine: true,
-    complimentaryLbl: 'Complimentary Bill',
-    salesReturnLbl: 'Sales Return Bill',
-    subTotalLbl: 'Sub Total',
-    showSubTotal: 'without',
-    showFssaiLoc: 'footer',
-    showSrNo: false,
-    showCustInfo: true,
-    hideEmptyCustLabels: true,
-    showMaskedPhone: false,
-    showBillerName: true,
-    showQtyBefore: false,
-    showDateTime: 'both', // 'date' or 'both'
-    dateSource: 'created', // 'created' or 'printed'
-    showPersons: false,
-    showAssignLabel: false,
-    showNetTotalMsg: false,
-    showCustNotes: false,
-    showSpecialNotes: true,
-    showTaxCalculation: false,
-    showDiscountReason: false,
-    showAddonPrice: true,
-    showAddonSeparateRow: true,
-    showAddonMultiplication: true,
-    showZeroTaxes: false,
-    showDueAmount: false,
-    
-    // CHARGE DISPLAY TOGGLES (Per Order Type)
-    showDeliveryChargeDineIn: false,
-    showDeliveryChargeTakeaway: true,
-    showDeliveryChargeDelivery: true,
-    showContainerChargeDineIn: false,
-    showContainerChargeTakeaway: true,
-    showContainerChargeDelivery: true,
-    showServiceChargeDineIn: true,
-    showServiceChargeTakeaway: false,
-    showServiceChargeDelivery: false,
-    
-    // FISCAL & DOCUMENTATION
-    printItemWiseDiscount: false,
-    printInvoiceBarcode: false,
-    showSplitBillCount: false,
-    printTipAmount: false,
-    printHSNCode: false,
-    hideZeroPriceItems: true,
-    showOnlinePaymentStatus: true,
-    showSwiggyPasscode: true,
-    showPaymentStatusOnline: true,
-    showSwiggyDeliveryPass: true,
-    hideSwiggyRewards: false,
-    showTaxAfterItem: false,
-    showCustSignature: false,
-    dateTimeFormat: 'DD/MM/YYYY',
-    use24HourFormat: true,
-    showTipSuggestion: 'none', // 'none' or 'every'
-    tipSuggestDineIn: true,
-    tipSuggestTakeaway: false,
-    tipSuggestDelivery: false,
-
-    // TOKEN SLIP CONFIG
-    printTokenSeparatelyDineIn: false,
-    printTokenSeparatelyTakeaway: true,
-    printTokenSeparatelyDelivery: true,
-    tokenMarginTop: 0,
-    tokenMarginRight: 0,
-    tokenMarginBottom: 0,
-    tokenMarginLeft: 0,
-    tokenFontSize: 14,
-
-    // KOT DESIGNER SPECIFICS
-    kotHeader: 'Running Table',
-    kotFooter: '',
-    kotWidth: 250,
-    kotColSr: 10,
-    kotColQty: 30,
-    kotColAmt: 50,
-    kotDecimal: 0,
-    kotMarginTop: 0,
-    kotMarginRight: 0,
-    kotMarginBottom: 0,
-    kotMarginLeft: 10,
-    kotFontSize: 13,
-    kotExtraSpace: 0,
-    showAddonGroup: true,
-    showAddonQtyMult: true,
-    showItemTotal: false,
-    showKotOrderType: 'type', // 'type', 'sub', 'both'
-    showKotItemName: 'name', // 'name', 'code', 'both'
-    kotItemPriority: false,
-    kotReadyTiming: true,
-    kotBoldAddons: false,
-    showCustNote: true,
-    showOnlinePay: true,
-    showSwiggyPass: true,
-    hideRewardSwiggy: false,
-    kotAddonFont: 11,
-    highlightOrderId: 'last4',
-
-    // PRINTER HARDWARE
-    printerStationName: 'real pos',
-    printerDeviceName: 'Printer_POS_80C',
-    printerType: 'general', // 'general' or 'dotmatrix'
-    useOnlyForCaptain: false,
-    useForReports: false,
-
-    // SYSTEM THEME
-    categorizedKOT: false,
-    billLayout: 'standard',
     accentColor: '#94161c',
-    secondaryColor: '#7c3aed',
-    bgColor: '#f8fafc',
-    textColor: '#1e293b',
-    borderRadius: '16',
-    tableShape: 'rounded',
-    globalFont: 'Outfit',
-    fontBaseSize: '14',
-    fontBaseWeight: 'normal',
+    paperSize: '80mm',
+    serviceChargeRate: 5,
     autoServiceCharge: true,
-    serviceChargeRate: 5
-  });
+    billHeader: 'TYDE CAFE',
+    billFooter: 'Thank You!',
+    resFont: 14,
+    kotFontSize: 13
+  }));
+
   const [menuItems, setMenuItems] = useState(() => loadFromLocal('pos_menu', INITIAL_MENU_ITEMS));
-  const [categories, setCategories] = useState(() => loadFromLocal('pos_categories'));
-  const [tables, setTables] = useState(() => loadFromLocal('pos_tables'));
-  
+  const [categories, setCategories] = useState(() => loadFromLocal('pos_categories', INITIAL_CATEGORIES));
+  const [tables, setTables] = useState(() => loadFromLocal('pos_tables', INITIAL_TABLES));
+  const [products, setProducts] = useState(() => loadFromLocal('pos_products', INITIAL_PRODUCTS));
+  const [productCategories, setProductCategories] = useState(() => loadFromLocal('pos_product_categories', INITIAL_PRODUCT_CATEGORIES));
+  const [floorPlanSections, setFloorPlanSections] = useState(() => loadFromLocal('pos_floor_sections', ['DINE IN', 'AC', 'TERRACE']));
+  const [customers, setCustomers] = useState(() => loadFromLocal('pos_customers', {}));
+
+  useEffect(() => saveToLocal('pos_settings', settings), [settings]);
   useEffect(() => saveToLocal('pos_menu', menuItems), [menuItems]);
   useEffect(() => saveToLocal('pos_categories', categories), [categories]);
   useEffect(() => saveToLocal('pos_tables', tables), [tables]);
+  useEffect(() => saveToLocal('pos_products', products), [products]);
+  useEffect(() => saveToLocal('pos_product_categories', productCategories), [productCategories]);
+  useEffect(() => saveToLocal('pos_floor_sections', floorPlanSections), [floorPlanSections]);
+  useEffect(() => saveToLocal('pos_customers', customers), [customers]);
+  useEffect(() => saveToLocal('pos_order_history', orderHistory), [orderHistory]);
+  useEffect(() => saveToLocal('pos_nontable_orders', nonTableOrders), [nonTableOrders]);
 
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -3543,333 +3560,162 @@ function MainApp() {
     if (isSyncing) return;
     setIsSyncing(true);
     try {
-      if (!isSilent) console.log("☁️ STARTING BULK SYNC...");
       const localTables = loadFromLocal("pos_tables");
       const localMenu = loadFromLocal("pos_menu");
       const localCategories = loadFromLocal("pos_categories");
 
-      // Send tables
       await fetch(BASE_URL + "/sync/tables", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(localTables)
       });
 
-      // Send menu
       await fetch(BASE_URL + "/sync/menu", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(localMenu)
       });
 
-      // Send categories
       await fetch(BASE_URL + "/sync/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(localCategories)
       });
-
-      if (!isSilent) alert("🎉 Cloud Sync Successful!");
     } catch (err) {
-      if (!isSilent) {
-        console.error("Sync Failure:", err);
-        alert("❌ Sync failed: " + err.message);
-      }
+      if (!isSilent) console.error("Sync Failure:", err);
     } finally {
       setIsSyncing(false);
     }
   };
 
-  // --- AUTO SYNC (DEBOUNCED) ---
   useEffect(() => {
     const timer = setTimeout(() => {
       syncToBackend(true); 
-    }, 5000); // 5 second debounce
+      syncToCloud(); // Fire to new cloud URL after data changes (menu, tables, orders)
+    }, 5000);
     return () => clearTimeout(timer);
   }, [tables, menuItems, nonTableOrders, categories]);
+
+  // Periodic Cloud Sync every 30 seconds
+  useEffect(() => {
+    const cloudInterval = setInterval(() => {
+      console.log("☁️ 30s Interval: Syncing to cloud...");
+      syncToCloud();
+    }, 30000);
+    return () => clearInterval(cloudInterval);
+  }, []);
   
   const loadCategories = async () => {
+    // 1. Always serve from localStorage first
+    const local = loadFromLocal('pos_categories');
+    if (local && local.length > 0) {
+      setCategories(local);
+      return;
+    }
+    // 2. If empty, try fetching from cloud
     try {
-      const res = await fetch(BASE_URL + "/categories");
-      if (!res.ok) throw new Error("Backend offline");
-      const data = await res.json();
-      setCategories(data);
+      const res = await fetch(BASE_URL + "/categories", { signal: AbortSignal.timeout(4000) });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setCategories(data);
+          saveToLocal('pos_categories', data);
+        }
+      }
     } catch (err) {
-      console.warn("⚠️ loadCategories failed, ignoring.", err);
+      console.warn("⚠️ Cloud categories fetch skipped (offline).");
     }
   };
 
   useEffect(() => {
-    console.log("🔋 App Started: Offline-First Priority Active");
-    // Initial fetch (background sync)
+    // On start: load from localStorage (already done at useState init).
+    // These calls check local first; fetch cloud only if local is empty.
+    checkForUpdate();
     loadCategories();
     loadMenu();
     loadTables();
   }, []);
-  const [products, setProducts] = useState(() => loadFromLocal('pos_products', INITIAL_PRODUCTS));
-  const [productCategories, setProductCategories] = useState(() => loadFromLocal('pos_product_categories', INITIAL_PRODUCT_CATEGORIES));
-  const [customers, setCustomers] = useState(() => loadFromLocal('pos_customers', {}));
-
-  useEffect(() => saveToLocal('pos_products', products), [products]);
-  useEffect(() => saveToLocal('pos_product_categories', productCategories), [productCategories]);
-  useEffect(() => saveToLocal('pos_customers', customers), [customers]);
-  const [floorPlanSections, setFloorPlanSections] = useState(INITIAL_FLOOR_SECTIONS);
-
-  useEffect(() => {
-    const loadFromIDB = async () => {
-      try {
-        const savedSettings = await get('pos_printer_settings');
-        if (savedSettings) setSettings(prev => ({ ...prev, ...savedSettings }));
-
-        const savedCustomers = await get('pos_customers');
-        if (savedCustomers) setCustomers(savedCustomers);
-
-        const savedSections = await get('pos_floor_sections');
-        if (savedSections) setFloorPlanSections(savedSections);
-      } catch (err) {
-        console.error("Database load error:", err);
-      } finally {
-        setIsDbLoaded(true);
-      }
-    };
-    loadFromIDB();
-  }, []);
-
-  useEffect(() => {
-    if (isDbLoaded) {
-      set('pos_customers', customers);
-      set('pos_printer_settings', settings);
-      set('pos_floor_sections', floorPlanSections);
-    }
-  }, [customers, settings, floorPlanSections, isDbLoaded]);
 
   const [newCaptainOrders, setNewCaptainOrders] = useState([]);
   const processedCaptainIds = useRef(new Set());
-
-  // ── Real-time Socket.IO & Orders Integration ──────────────
   const socketRef = useRef(null);
   const notificationSound = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'));
 
   useEffect(() => {
-    if (!isDbLoaded) return;
-
-    // 1. Initial Fetch on Load
-    const initialFetch = async () => {
-      try {
-        const { fetchOrders, fetchMenu, fetchTables } = await import('./utils/apiClient');
-        
-        // A. Load Orders
-        const orderData = await fetchOrders();
-        if (orderData.success) {
-          setNewCaptainOrders(orderData.orders);
-        }
-
-        // B. Load Menu
-        
-        // C. Load Tables
-        // await loadTables(); 
-
-      } catch (err) {
-        console.error("Initial fetch failed:", err);
-      }
-    };
-    initialFetch();
-
-    // 2. Connect to Socket.IO
-    const API_BASE_SOCKET = BASE_URL;
-    socketRef.current = io(API_BASE_SOCKET, {
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000
-    });
-
-    socketRef.current.on('connect', () => {
-      console.log('✅ Connected to Orders Real-time Engine:', BASE_URL);
-      setSocketConnected(true);
-    });
-
-    socketRef.current.on('disconnect', () => {
-      console.log('❌ Disconnected from Server');
-      setSocketConnected(false);
-    });
-
-    // Listen for NEW orders (Network Handshake)
-    socketRef.current.on('order_created', async (newOrder) => {
-      console.log('🔥 New Order Received from Network:', newOrder);
-      await loadTables();
-
-      // ─── Auto Print KOT ───
-      try {
-        const { printViaQzTray } = await import('./utils/qzTrayPrinter');
-        const kotData = {
-          orderId: newOrder.id,
-          tableName: newOrder.tableId ? `Table ${newOrder.tableId}` : (newOrder.table_number ? `Table ${newOrder.table_number}` : 'Delivery/Takeaway'),
-          orderType: newOrder.type || 'Dine In',
-          items: (newOrder.items || []).map(i => ({
-            name: i.name,
-            qty: i.quantity || i.qty || 1,
-            note: i.notes || ''
-          }))
-        };
-        await printViaQzTray(kotData, 'KOT', settings);
-      } catch (printErr) {
-        console.error("Auto-print failed:", printErr);
-      }
-
-      // Play Sound notification
-      notificationSound.current.play().catch(e => console.log("Sound play failed:", e));
-    });
-
-    socketRef.current.on('table_updated', async (data) => {
-      console.log('📱 Table Update from Network:', data);
-      await loadTables();
-    });
-
-    socketRef.current.on('menu_updated', async () => {
-      console.log('🍴 Menu Update from Network');
-      await loadMenu();
-    });
-
-    socketRef.current.on('categories_updated', async () => {
-      console.log('📁 Categories Update from Network');
-      await loadCategories();
-    });
-
-    // Listen for Order Status Updates
-    socketRef.current.on('order_updated', async (updatedOrder) => {
-      console.log('🔄 Order Updated:', updatedOrder);
-      await loadTables();
-    });
-
-    // Listen for Table Updates (Sync Floor Plan)
-    socketRef.current.on('table_updated', async (data) => {
-      console.log('🏟️ Table Update Broadcast:', data);
-      await loadTables();
-    });
-
-    // Listen for Menu Updates (Sync Menu across POS)
-    socketRef.current.on('menu_updated', (data) => {
-      console.log('📖 Menu Broadcast Received:', data);
-      const flatMenu = [];
-      Object.values(data.menu).forEach(items => flatMenu.push(...items));
-      setMenuItems(flatMenu.map(m => ({ ...m, cat: m.category, inStock: m.available, type: m.type || 'veg' })));
-      setCategories(data.categories);
-    });
-
-    return () => {
-      if (socketRef.current) socketRef.current.disconnect();
-    };
-  }, [isDbLoaded]);
-
-  const manualSyncCaptainOrders = async () => {
+    // Socket.io is fully optional — POS works 100% without it
     try {
-      const { fetchOrders } = await import('./utils/apiClient');
-      const data = await fetchOrders();
-      if (data.success) setNewCaptainOrders(data.orders);
-    } catch (err) { }
-  };
+      const API_BASE_SOCKET = BASE_URL;
+      socketRef.current = io(API_BASE_SOCKET, {
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 3000,
+        timeout: 5000
+      });
 
-  const [deviceStatus, setDeviceStatus] = useState('CHECKING'); // 'CHECKING', 'PENDING', 'APPROVED', 'BLOCKED'
-  const [deviceId, setDeviceId] = useState(null);
+      socketRef.current.on('connect', () => {
+        setSocketConnected(true);
+      });
 
-  useEffect(() => {
-    const registerDevice = async () => {
-      try {
-        const { get, set } = await import('idb-keyval');
-        let id = await get('deviceId');
-        if (!id) {
-          id = 'DEV-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-          await set('deviceId', id);
-        }
-        setDeviceId(id);
-        const res = await fetch(`${BASE_URL}/devices/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, name: window.navigator.userAgent.split(' ')[0] + ' (' + (window.innerWidth < 768 ? 'Mobile' : 'Tablet') + ')' })
-        });
-        const data = await res.json();
-        setDeviceStatus(data.status || 'PENDING');
-      } catch (err) {
-        console.error('Device registration failed:', err);
-      }
-    };
-    registerDevice();
+      socketRef.current.on('connect_error', () => {
+        // Silently fail — backend is optional
+        setSocketConnected(false);
+      });
+
+      socketRef.current.on('order_created', async (newOrder) => {
+        // Only refresh from cloud if there's new captain order
+        try {
+          const res = await fetch(BASE_URL + "/tables", { signal: AbortSignal.timeout(3000) });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+              const normalized = data.map(t => ({
+                ...t,
+                status: t.status?.toLowerCase() || 'free',
+                orders: t.items || t.orders || []
+              }));
+              setTables(normalized);
+              saveToLocal('pos_tables', normalized);
+            }
+          }
+        } catch { /* offline */ }
+        notificationSound.current.play().catch(e => console.log("Sound play failed:", e));
+      });
+
+      return () => {
+        if (socketRef.current) socketRef.current.disconnect();
+      };
+    } catch (err) {
+      console.warn("⚠️ Socket.io unavailable (offline mode):", err);
+    }
   }, []);
 
-  useEffect(() => {
-    if (view !== 'globalsettings') return;
-    
-    const pollDevices = async () => {
-      try {
-        const { fetchDevices } = await import('./utils/apiClient');
-        const data = await fetchDevices();
-        if (data.success) setDevices(data.devices);
-      } catch (err) {}
-    };
-
-    pollDevices();
-    const interval = setInterval(pollDevices, 5000);
-    return () => clearInterval(interval);
-  }, [view]);
-
-  if (!isDbLoaded) {
-    return (
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
-        <Store size={48} color="var(--primary)" style={{ marginBottom: '16px', opacity: 0.5 }} className="animate-pulse" />
-        <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#374151' }}>Initializing Secure Local Database...</div>
-        <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>Optimizing for offline performance</div>
-      </div>
-    );
-  }
-
-  const deleteAnyOrder = async (idToDelete) => {
-    const tidStr = String(idToDelete || '').trim();
-    if (!tidStr) return;
-
-    if (tidStr.startsWith('TAK-') || tidStr.startsWith('DEL-')) {
-      const tidUpper = tidStr.toUpperCase();
-      setNonTableOrders(prev => prev.filter(o => String(o.id).trim().toUpperCase() !== tidUpper));
-      setView('nontables');
-    } else {
-      // It's a table
-      try {
-        await fetch(`${BASE_URL}/table/${idToDelete}/clear`, { method: "POST" });
-        await loadTables();
-      } catch (err) {
-        console.error("Failed to clear table orders:", err);
+  const settleTable = async (tableId, orderDetails) => {
+    if (!IS_LOCAL) return alert("Read-Only Mode: Settling tables disabled.");
+    const updatedTables = tables.map(t => {
+      if (String(t.id) === String(tableId)) {
+        return { ...t, status: 'free', orders: [], createdAt: null };
       }
-      setView('tables');
-    }
-    
-    setSelectedTable(null);
+      return t;
+    });
+    setTables(updatedTables);
+    saveToLocal('pos_tables', updatedTables);
+
+    const history = loadFromLocal('pos_order_history');
+    const newHistory = [{ ...orderDetails, timestamp: Date.now() }, ...history].slice(0, 1000);
+    setOrderHistory(newHistory);
+    saveToLocal('pos_order_history', newHistory);
+
+    try {
+      await fetch(BASE_URL + "/settle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tableId, orderDetails })
+      });
+    } catch (err) { console.log("?? Offline: Settlement cached locally"); }
   };
-
-  const clearTableFast = (idToDelete) => deleteAnyOrder(idToDelete);
-
-  const handleSelectTable = (table) => {
-    setSelectedTable(table);
-    setView('ordering');
-  };
-
-  const handleCreateNonTableOrder = (type) => {
-    const newId = `${type === 'Delivery' ? 'DEL' : 'TAK'}-${Math.floor(Math.random() * 9000) + 1000}`;
-    const newOrder = {
-      id: newId,
-      name: `${newId}`,
-      status: 'free', // Will turn 'occupied' when items added
-      type: type,
-      order: [],
-      phone: '',
-      createdAt: Date.now()
-    };
-    setNonTableOrders(prev => [...prev, newOrder]);
-    setSelectedTable(newOrder); // Using selectedTable state for both tables & nontables uniformly
-    setView('ordering');
-  };
-
-  // Removed handleSimulateAggregator
 
   const saveOrderToTable = async (tableId, orderItems, newStatus, extraData = {}) => {
+    if (!IS_LOCAL) return alert("Read-Only Mode: Saving orders disabled.");
     const tid = String(tableId || '').trim().toUpperCase();
     if (!tid) return;
 
@@ -3878,41 +3724,37 @@ function MainApp() {
       return;
     }
 
-    // 1. Update POS UI (Immediate Sync)
     if (tid.startsWith('DEL-') || tid.startsWith('TAK-')) {
       setNonTableOrders(prev => {
-        const existing = prev.find(o => String(o.id).trim().toUpperCase() === tid);
-        if (existing) {
-           return prev.map(o => {
+        const updated = prev.map(o => {
              if (String(o.id).trim().toUpperCase() === tid) {
-               const shouldResetTimer = o.status === 'free' || !o.createdAt;
-               return { ...o, orders: orderItems, items: orderItems, status: newStatus, customerName: extraData.customerName, phone: extraData.customerPhone, note: extraData.note, createdAt: shouldResetTimer ? Date.now() : o.createdAt };
+               return { ...o, orders: orderItems, items: orderItems, status: newStatus, customerName: extraData.customerName, phone: extraData.customerPhone, note: extraData.note };
              }
              return o;
-           });
-        }
-        return prev;
+        });
+        saveToLocal('pos_nontable_orders', updated);
+        return updated;
       });
       setView('nontables');
     } else {
-      setTables(prev => prev.map(t => {
-        if (String(t.id).trim().toUpperCase() === String(tableId).trim().toUpperCase()) {
-          const shouldResetTimer = t.status === 'free' || !t.createdAt;
-          return { ...t, orders: orderItems, items: orderItems, status: newStatus, customerName: extraData.customerName, phone: extraData.customerPhone, note: extraData.note, createdAt: shouldResetTimer ? Date.now() : t.createdAt };
-        }
-        return t;
-      }));
+      setTables(prev => {
+        const updated = prev.map(t => {
+          if (String(t.id).trim().toUpperCase() === String(tableId).trim().toUpperCase()) {
+            return { ...t, orders: orderItems, items: orderItems, status: newStatus, customerName: extraData.customerName, phone: extraData.customerPhone, note: extraData.note };
+          }
+          return t;
+        });
+        saveToLocal('pos_tables', updated);
+        return updated;
+      });
       setView('tables');
     }
 
-    // 2. Clear Selection
     setSelectedTable(null);
 
-    // 3. Sync to Backend (Optional Background Task)
     (async () => {
       try {
         const { createOrder, updateTableApi } = await import('./utils/apiClient');
-        // If status is 'kot', it's a new or additional fire, create Order record
         if (newStatus === 'kot') {
           await createOrder({
             table_number: tid,
@@ -3920,8 +3762,6 @@ function MainApp() {
             notes: extraData.note || ''
           });
         }
-
-        // Sync state to specific table endpoint if it's a floor table
         const isFloorTable = !tid.startsWith('DEL-') && !tid.startsWith('TAK-');
         if (isFloorTable) {
            await updateTableApi(tableId, {
@@ -3939,99 +3779,6 @@ function MainApp() {
     })();
   };
 
-  const settleTable = async (tableId, orderDetails) => {
-    if (orderDetails && orderDetails.cart) {
-      setProducts(prev => {
-        let updated = [...prev];
-        orderDetails.cart.forEach(cartItem => {
-          const pIndex = updated.findIndex(p => p.id === cartItem.id && p.type === 'retail');
-          if (pIndex !== -1) {
-            const newQty = Math.max(0, updated[pIndex].stockQuantity - cartItem.qty);
-            updated[pIndex] = { ...updated[pIndex], stockQuantity: newQty, inStock: newQty > 0 };
-          }
-        });
-        return updated;
-      });
-    }
-    // ── Update Local Arrays ──
-    const isFloorTable = !String(tableId).startsWith('DEL-') && !String(tableId).startsWith('TAK-');
-    
-    if (orderDetails && orderDetails.cart) {
-      setProducts(prev => {
-        let updated = [...prev];
-        orderDetails.cart.forEach(cartItem => {
-          const pIndex = updated.findIndex(p => p.id === cartItem.id && p.type === 'retail');
-          if (pIndex !== -1) {
-            const newQty = Math.max(0, updated[pIndex].stockQuantity - cartItem.qty);
-            updated[pIndex] = { ...updated[pIndex], stockQuantity: newQty, inStock: newQty > 0 };
-          }
-        });
-        return updated;
-      });
-    }
-
-    if (orderDetails && orderDetails.phone) {
-      setCustomers(prev => {
-        const ph = orderDetails.phone;
-        const existing = prev[ph] || { points: 0, visits: 0, name: orderDetails.customerName || 'Guest' };
-        const earned = Math.floor(orderDetails.grandTotal / 100);
-        const netPoints = existing.points + earned - (orderDetails.redeemedPoints || 0);
-        return { ...prev, [ph]: { ...existing, points: netPoints, visits: existing.visits + 1, name: orderDetails.customerName || existing.name } };
-      });
-    }
-
-    if (orderDetails && orderDetails.cart && orderDetails.cart.length > 0) {
-      let duration = 0;
-      const t = tables.find(x => x.id === tableId) || nonTableOrders.find(x => x.id === tableId);
-      if (t && t.createdAt) {
-        duration = Math.floor((Date.now() - t.createdAt) / 60000);
-      }
-      setOrderHistory(prev => [...prev, {
-        id: Date.now().toString(),
-        timestamp: orderDetails.timestamp || new Date().toISOString(),
-        tableId, duration, ...orderDetails
-      }]);
-    }
-
-    if (!isFloorTable) {
-      setNonTableOrders(prev => prev.filter(o => o.id !== tableId));
-      setView('nontables');
-    } else {
-      setTables(prev => prev.map(t => {
-        if (String(t.id) === String(tableId)) {
-          return { ...t, orders: [], items: [], status: 'free', createdAt: null, total: 0 };
-        }
-        return t;
-      }));
-      setView('tables');
-    }
-
-    // ── Instant UI Cleanup ──
-    setSelectedTable(null);
-    if (view === 'ordering') setCart([]);
-
-    // ── Optional Backend Sync (Background) ──
-    (async () => {
-      try {
-        if (isFloorTable) {
-          const paymentMode = orderDetails?.paymentMethod || 'Cash';
-          console.log("💰 Bill Settling Background Sync...");
-          const res = await fetch(`${BASE_URL}/settle-bill`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              tableId: tableId,
-              paymentMode: paymentMode,
-              orderDetails: orderDetails
-            })
-          });
-          if (res.ok) await loadTables();
-        }
-      } catch (err) {
-        console.warn("⚠️ Settle Bill background sync failed.", err);
-      }
-    })();
-  };
 
   const handleClearHistory = () => {
     if (window.confirm("CRITICAL: Wipe ALL historical sales data? This will reset all analytics and history. Type 'clear' to confirm.")) {
@@ -4365,6 +4112,7 @@ function MainApp() {
               onUpdateDeviceStatus={handleUpdateDeviceStatus}
               onDeleteDevice={handleDeleteDevice}
               isConnected={socketConnected}
+              onRestoreData={restoreFromCloud}
             />
           )}
           {view === 'printersettings' && (
