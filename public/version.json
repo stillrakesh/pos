@@ -1,0 +1,5 @@
+{
+  "version": "v1.2-KOT-Stations",
+  "lastUpdated": "2026-04-20",
+  "notes": "Implemented Station-Based KOT Routing with cross-app category enrichment. Fixed stale closure in socket listeners. Optimized Captain App print flow."
+}

@@ -175,35 +175,32 @@ body {
   overflow: hidden;
 }
 
-.pp-table-card.status-running {
-  background: #fffdfa !important; 
-  border-color: #f97316 !important; 
+.pp-table-card.status-draft {
+  background: #dbeafe !important; /* Vibrant Blue */
+  border-color: #2563eb !important;
   border-width: 2px !important;
-  box-shadow: 0 8px 16px rgba(249, 115, 22, 0.08) !important;
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.1) !important;
 }
 
-.pp-table-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--primary) !important;
-}
-
-.pp-table-card.status-running {
-  background: var(--status-running);
-  border-color: #bae6fd;
-}
-
-.pp-table-card.status-printed {
-  background: #f0fdf4 !important; 
-  border-color: #10b981 !important;
+.pp-table-card.status-kot_pending {
+  background: #fef9c3 !important; /* Vibrant Yellow */
+  border-color: #ca8a04 !important;
   border-width: 2px !important;
-  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.08) !important;
+  box-shadow: 0 8px 16px rgba(202, 138, 4, 0.1) !important;
 }
 
-.pp-table-card.status-kot {
-  background: #fffbeb !important;
-  border-color: #f59e0b !important;
+.pp-table-card.status-kot_printed {
+  background: #ffedd5 !important; /* Vibrant Orange */
+  border-color: #ea580c !important;
   border-width: 2px !important;
+  box-shadow: 0 8px 16px rgba(234, 88, 12, 0.1) !important;
+}
+
+.pp-table-card.status-billing {
+  background: #dcfce7 !important; /* Vibrant Green */
+  border-color: #16a34a !important;
+  border-width: 2px !important;
+  box-shadow: 0 8px 16px rgba(22, 163, 74, 0.1) !important;
 }
 
 /* Item Grid */

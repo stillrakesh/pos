@@ -4,7 +4,7 @@ import {
   Menu, Search, Store, Monitor, LayoutGrid, Clock, Bell, User, Wifi,
   ChevronDown, ChevronUp, Info, CreditCard, Banknote, Printer, Eye, Plus,
   Minus, X, Utensils, Smartphone, BarChart3, TrendingUp, PieChart, AlertTriangle, Truck, ShoppingBag, ChefHat, MessageSquare, CheckSquare, Sunset, Trash2, Package,
-  Settings2, ReceiptText, RefreshCw
+  Settings2, ReceiptText, RefreshCw, RotateCcw
 } from 'lucide-react';
 import './index.css';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, LineChart, Line } from 'recharts';
@@ -31,19 +31,24 @@ function loadFromLocal(key) {
   }
 }
 
-const IS_LOCAL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+// --- ENVIRONMENT DETECT ---
+const getIsLocal = () => {
+  const host = window.location.hostname;
+  return host === "localhost" || 
+         host === "127.0.0.1" || 
+         host.startsWith("192.168.") || 
+         host.startsWith("10.") ||
+         host.startsWith("172.") ||
+         host.endsWith(".local");
+};
+
+let IS_LOCAL = getIsLocal();
 const CLOUD_URL = "https://restaurant-cloud-backend.onrender.com";
-const VERSION = "1.0.0";
 
+
+// Update check disabled for stability
 async function checkForUpdate() {
-  try {
-    const res = await fetch(CLOUD_URL + "/version", { signal: AbortSignal.timeout(5000) });
-    const data = await res.json();
-
-    if (data.version && data.version !== VERSION) {
-      alert("New update available. Please update system.");
-    }
-  } catch {}
+  console.log("Update check skipped.");
 }
 
 async function syncToCloud() {
@@ -158,7 +163,8 @@ const INITIAL_TABLES = [];
 
 const getMinutesElapsed = (createdAt) => {
   if (!createdAt) return 0;
-  return Math.max(0, Math.floor((Date.now() - createdAt) / 60000));
+  const start = typeof createdAt === 'string' ? new Date(createdAt).getTime() : createdAt;
+  return Math.max(0, Math.floor((Date.now() - start) / 60000));
 };
 
 const getChannelLabel = (order = {}) => {
@@ -167,7 +173,7 @@ const getChannelLabel = (order = {}) => {
   return 'Dine In';
 };
 
-const AppSidebar = ({ activeView, onViewChange, stats }) => {
+const AppSidebar = ({ activeView, onViewChange, stats, isConnected, isSyncing, onManualSync, lanUrl }) => {
   const menuGroups = [
     {
       title: 'Daily Operations',
@@ -253,14 +259,35 @@ const AppSidebar = ({ activeView, onViewChange, stats }) => {
         ))}
       </div>
 
-      <div style={{ padding: '0 18px 22px' }}>
-        <div style={{ padding: '14px 16px', borderRadius: '18px', background: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(148, 163, 184, 0.16)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <span style={{ fontSize: '12px', color: '#cbd5e1', fontWeight: '800' }}>Inventory Watch</span>
-            <span style={{ fontSize: '12px', color: stats.lowStock > 0 ? '#fbbf24' : '#86efac', fontWeight: '900' }}>{stats.lowStock}</span>
+      {IS_LOCAL && lanUrl && (
+        <div style={{ padding: '0 18px 16px' }}>
+          <div style={{ padding: '12px 14px', borderRadius: '18px', background: 'rgba(30, 41, 59, 0.5)', border: '1px solid rgba(148, 163, 184, 0.12)' }}>
+             <div style={{ fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Wifi size={10} color="#10b981" /> Captain LAN Mode
+             </div>
+             <div style={{ fontSize: '11px', color: '#f8fafc', fontWeight: '800', wordBreak: 'break-all', fontFamily: 'monospace' }}>{lanUrl}</div>
+             <div style={{ fontSize: '9px', color: '#64748b', marginTop: '6px' }}>Open this URL on any mobile device on the same WiFi.</div>
           </div>
-          <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.5 }}>Low-stock items, kitchen queue, and floor traffic stay visible from one place.</div>
         </div>
+      )}
+
+      <div style={{ padding: '0 18px 20px' }}>
+        <button 
+          onClick={onManualSync}
+          disabled={isSyncing}
+          style={{ 
+            width: '100%', padding: '12px', borderRadius: '16px', 
+            background: isConnected ? 'rgba(255,255,255,0.05)' : 'rgba(239, 68, 68, 0.1)',
+            border: `1px solid ${isConnected ? 'rgba(255,255,255,0.1)' : 'rgba(239, 68, 68, 0.3)'}`,
+            color: isConnected ? '#cbd5e1' : '#ef4444',
+            fontSize: '13px', fontWeight: '900', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
+          {isSyncing ? 'Syncing...' : isConnected ? 'Sync to Cloud' : 'Offline (Retry)'}
+        </button>
       </div>
     </div>
   );
@@ -849,11 +876,14 @@ const RetailProductSetupView = ({ categories, setCategories, menuItems, setMenuI
             <button onClick={addCategory} className="btn-pp btn-pp-primary">Add</button>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {categories.map(cat => (
-              <div key={cat} style={{ background: '#f3f4f6', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {cat} <button onClick={() => deleteCategory(cat)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><X size={14} /></button>
-              </div>
-            ))}
+            {categories.map(cat => {
+              const name = typeof cat === 'object' ? cat.name : cat;
+              return (
+                <div key={name} style={{ background: '#f3f4f6', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {name} <button onClick={() => deleteCategory(name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><X size={14} /></button>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -865,7 +895,10 @@ const RetailProductSetupView = ({ categories, setCategories, menuItems, setMenuI
             <input type="number" placeholder="Price (₹)" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: e.target.value })} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }} />
             <input type="number" placeholder="Stock Qty" value={newItem.stockQuantity} onChange={e => setNewItem({ ...newItem, stockQuantity: e.target.value })} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }} />
             <select value={newItem.cat} onChange={e => setNewItem({ ...newItem, cat: e.target.value })} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white' }}>
-              {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              {categories.map(cat => {
+                const name = typeof cat === 'object' ? cat.name : cat;
+                return <option key={name} value={name}>{name}</option>
+              })}
             </select>
             <button onClick={addItem} className="btn-pp btn-pp-primary" style={{ padding: '10px 20px', background: '#3b82f6' }}>Add</button>
           </div>
@@ -877,7 +910,7 @@ const RetailProductSetupView = ({ categories, setCategories, menuItems, setMenuI
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ width: '12px', height: '12px', borderRadius: '2px', background: '#3b82f6' }}></div>
                   <div style={{ fontWeight: 'bold', color: '#1f2937' }}>{item.name}</div>
-                  <div style={{ color: '#6b7280', fontSize: '13px' }}>{item.cat}</div>
+                  <div style={{ color: '#6b7280', fontSize: '13px' }}>{typeof item.cat === 'object' ? item.cat.name : item.cat}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <div style={{ fontWeight: 'bold', color: '#94161c' }}>₹{item.price}</div>
@@ -907,6 +940,13 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [type, setType] = useState("Veg");
+  const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    if (!selectedCategory && categories.length > 0) {
+      setSelectedCategory(categories[0]);
+    }
+  }, [categories, selectedCategory]);
 
   const addCategory = async () => {
     if (newCat && !categories.includes(newCat)) {
@@ -1031,14 +1071,17 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
             <button onClick={addCategory} className="btn-pp btn-pp-primary" style={{ background: '#10b981', padding: '10px 20px' }}>Add Category</button>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {categories.map(cat => (
-              <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f3f4f6', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', color: '#4b5563' }}>
-                {cat}
-                <button onClick={() => deleteCategory(cat)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: '#ef4444' }}>
-                  <X size={14} />
-                </button>
-              </div>
-            ))}
+            {categories.map(cat => {
+              const name = typeof cat === 'object' ? cat.name : cat;
+              return (
+                <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f3f4f6', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', color: '#4b5563' }}>
+                  {name}
+                  <button onClick={() => deleteCategory(name)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: '#ef4444' }}>
+                    <X size={14} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -1084,11 +1127,14 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
               style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white' }}
             >
               <option value="">Select Category</option>
-              {categories.map((cat, i) => (
-                <option key={i} value={cat}>
-                  {cat}
-                </option>
-              ))}
+              {categories.map((cat, i) => {
+                const name = typeof cat === 'object' ? cat.name : cat;
+                return (
+                  <option key={i} value={name}>
+                    {name}
+                  </option>
+                );
+              })}
             </select>
             <select
               value={type}
@@ -1108,7 +1154,7 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ width: '12px', height: '12px', borderRadius: '2px', background: item.type === 'veg' ? '#10b981' : '#ef4444' }}></div>
                   <div style={{ fontWeight: 'bold', color: '#1f2937' }}>{item.name}</div>
-                  <div style={{ color: '#6b7280', fontSize: '13px' }}>{item.cat}</div>
+                  <div style={{ color: '#6b7280', fontSize: '13px' }}>{typeof item.cat === 'object' ? item.cat.name : item.cat}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <div style={{ fontWeight: 'bold', color: '#94161c' }}>₹{item.price}</div>
@@ -1153,36 +1199,31 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     
     const stagger = (tables.length % 5) * 40;
     const newTableData = {
-      id: Date.now(),
       name: newTableName,
       type: newTableType,
-      status: "free",
+      status: "vacant",
       pos: { x: 50 + stagger, y: 50 + stagger },
       seats: parseInt(newTableSeats, 10) || 4,
       shape: newTableShape,
-      zoneLabel: newZoneLabel.trim(),
-      items: [],
-      orders: [],
-      total: 0
+      zoneLabel: newZoneLabel.trim()
     };
 
-    // ✅ 1. UPDATE LOCALLY FIRST
-    setTables(prev => [...prev, newTableData]);
-    setNewTableName('');
-    setNewTableSeats('4');
-    setNewTableShape('rounded');
-    setNewZoneLabel('');
-
-    // ✅ 2. TRY BACKEND SYNC (Optional)
     try {
-      await fetch(BASE_URL + "/tables", {
+      const res = await fetch(BASE_URL + "/tables", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newTableData)
       });
-      // Optional: await loadTables(); 
+      if (res.ok) {
+        setNewTableName('');
+        setNewTableSeats('4');
+        setNewTableShape('rounded');
+        setNewZoneLabel('');
+        // Tables state will be updated via socket
+      }
     } catch (err) {
-      console.warn("⚠️ Offline Mode: Table created locally.", err);
+      console.error("Failed to add table:", err);
+      alert("Offline: Table could not be added to server.");
     }
   };
 
@@ -1196,17 +1237,18 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
   };
 
   const confirmRemoveTable = async () => {
-    // ✅ 1. Delete locally first (instant UI)
-    setTables(prev => prev.filter(t => t.id !== tableToRemove));
+    const id = tableToRemove;
     setTableToRemove(null);
-    // ✅ 2. Try backend sync (optional)
     try {
-      await fetch(BASE_URL + "/tables/" + tableToRemove, {
+      const res = await fetch(BASE_URL + "/tables/" + id, {
         method: "DELETE",
         signal: AbortSignal.timeout(4000)
       });
+      if (!res.ok) throw new Error("Delete failed");
+      // Tables state will be updated via socket
     } catch (err) {
-      console.warn("⚠️ Offline: Table removed locally only.");
+      console.error("Failed to remove table:", err);
+      alert("Error: Table could not be removed from server.");
     }
   };
 
@@ -1303,17 +1345,29 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     });
   };
 
-  const saveEditTable = () => {
+  const saveEditTable = async () => {
     if (!editingTableId) return;
-    setTables(prev => prev.map(table => table.id === editingTableId ? {
-      ...table,
-      name: editingTableDraft.name.trim() || table.name,
+    const update = {
+      name: editingTableDraft.name.trim(),
       seats: parseInt(editingTableDraft.seats, 10) || 4,
       shape: editingTableDraft.shape || 'rounded',
       zoneLabel: editingTableDraft.zoneLabel.trim(),
       scale: parseFloat(editingTableDraft.scale) || 1.0
-    } : table));
-    setEditingTableId(null);
+    };
+    
+    try {
+      const res = await fetch(BASE_URL + "/tables/" + editingTableId, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(update)
+      });
+      if (res.ok) {
+        setEditingTableId(null);
+      }
+    } catch (err) {
+      console.error("Failed to save table edit:", err);
+      alert("Error saving table.");
+    }
   };
 
   return (
@@ -1555,7 +1609,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
 
 /* --- SYSTEM SETTINGS VIEW --- */
 /* --- ADVANCED GLOBAL SETTINGS VIEW --- */
-const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullReset, devices = [], onUpdateDeviceStatus, onDeleteDevice, isConnected, onRestoreData }) => {
+const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullReset, devices = [], onUpdateDeviceStatus, onDeleteDevice, isConnected, onRestoreData, appVersion, categories }) => {
   const [activeTab, setActiveTab] = useState('design');
   const [localSettings, setLocalSettings] = useState(settings);
 
@@ -1690,7 +1744,12 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
         )}
 
         {activeTab === 'printer' && (
-          <PrinterSetup settings={localSettings} />
+          <PrinterSetup 
+            settings={localSettings} 
+            setSettings={setLocalSettings} 
+            onSave={handleSave}
+            categories={categories} 
+          />
         )}
 
         {activeTab === 'devices' && (
@@ -1755,6 +1814,25 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
               <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <AlertTriangle size={20} /> Danger Zone: Data Management
               </h3>
+              
+              <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Software Version</div>
+                    <div style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b' }}>{appVersion?.version || 'v1.0-stable'}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Last Official Update</div>
+                    <div style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b' }}>{appVersion?.lastUpdated || '2026-04-19'}</div>
+                  </div>
+                </div>
+                {appVersion?.notes && (
+                  <div style={{ marginTop: '12px', fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>
+                    Note: {appVersion.notes}
+                  </div>
+                )}
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div style={{ padding: '16px', background: '#fff1f2', borderRadius: '12px', border: '1px solid #fecaca' }}>
                   <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#991b1b', marginBottom: '4px' }}>Clear Analytics & History</div>
@@ -1819,6 +1897,20 @@ const PrinterSettingsView = ({ settings, onSaveSettings, categories }) => {
             <input type="text" name="billFooter" value={localSettings.billFooter} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', color: '#111827' }} />
           </div>
 
+          <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>Separate KOT by Station</div>
+              <div style={{ fontSize: '11px', color: '#64748b' }}>Print separate slips for different kitchen areas (Drinks, Pizza, etc.)</div>
+            </div>
+            <input 
+              type="checkbox" 
+              name="separateKotStations" 
+              checked={localSettings.separateKotStations} 
+              onChange={handleChange} 
+              style={{ width: '20px', height: '20px', cursor: 'pointer' }} 
+            />
+          </div>
+
           <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#374151' }}>Custom KOT Stations</label>
@@ -1848,9 +1940,10 @@ const PrinterSettingsView = ({ settings, onSaveSettings, categories }) => {
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {categories.map(cat => {
-                      const isSelected = station.categories.includes(cat);
+                      const name = typeof cat === 'object' ? cat.name : cat;
+                      const isSelected = station.categories.includes(name);
                       return (
-                        <label key={cat} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', border: `1px solid ${isSelected ? 'var(--primary)' : '#d1d5db'}`, padding: '4px 10px', borderRadius: '20px', background: isSelected ? 'var(--primary)' : 'white', color: isSelected ? 'white' : '#4b5563', cursor: 'pointer', transition: 'all 0.2s' }}>
+                        <label key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', border: `1px solid ${isSelected ? 'var(--primary)' : '#d1d5db'}`, padding: '4px 10px', borderRadius: '20px', background: isSelected ? 'var(--primary)' : 'white', color: isSelected ? 'white' : '#4b5563', cursor: 'pointer', transition: 'all 0.2s' }}>
                           <input
                             type="checkbox"
                             checked={isSelected}
@@ -1859,16 +1952,16 @@ const PrinterSettingsView = ({ settings, onSaveSettings, categories }) => {
                                 ...prev,
                                 printerStations: prev.printerStations.map(s => {
                                   if (s.id === station.id) {
-                                    return { ...s, categories: isSelected ? s.categories.filter(c => c !== cat) : [...s.categories, cat] };
+                                    return { ...s, categories: isSelected ? s.categories.filter(c => c !== name) : [...s.categories, name] };
                                   }
                                   // Auto-remove from other stations if selected here
-                                  return { ...s, categories: s.categories.filter(c => c !== cat) };
+                                  return { ...s, categories: s.categories.filter(c => c !== name) };
                                 })
                               }));
                             }}
                             style={{ display: 'none' }}
                           />
-                          {cat}
+                          {name}
                         </label>
                       );
                     })}
@@ -1899,13 +1992,19 @@ const PrinterSettingsView = ({ settings, onSaveSettings, categories }) => {
 };
 
 const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, settings, onQuickSettle, onQuickPrint, globalSearch, onViewChange, onOpenFloorDesigner, tableToClear, setTableToClear }) => {
+  console.log("ServiceFloor Tables:", tables.map(t => ({ id: t.id, status: t.status, total: t.total, items: t.orders?.length })));
   const [viewMode, setViewMode] = useState('map');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [zoom, setZoom] = useState(() => Number(localStorage.getItem("floorZoom")) || 100);
+
+  useEffect(() => {
+    localStorage.setItem("floorZoom", zoom);
+  }, [zoom]);
+
   
-  // Only show sections that HAVE tables assigned
-  const activeSections = (floorPlanSections || []).filter(section => 
-    tables.some(t => t.type === section)
-  );
+  // Derive sections dynamically from loaded tables (backend is source of truth)
+  // This ensures all zones from the backend appear, regardless of floorPlanSections localStorage
+  const activeSections = [...new Set(tables.map(t => t.type || 'Main Floor'))].filter(Boolean);
 
   const filterMatch = (t) => {
     if (!globalSearch) return true;
@@ -1916,20 +2015,22 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
 
   const matchesStatus = (table) => {
     const minutes = getMinutesElapsed(table.createdAt);
+    const isRunning = table.status !== 'vacant';
+    
     if (statusFilter === 'all') return true;
-    if (statusFilter === 'vacant') return table.status === 'free';
-    if (statusFilter === 'occupied') return table.status !== 'free';
-    if (statusFilter === 'printed') return table.status === 'printed';
-    if (statusFilter === 'delayed') return table.status !== 'free' && minutes >= 45;
+    if (statusFilter === 'vacant') return table.status === 'vacant';
+    if (statusFilter === 'occupied') return isRunning; // Now represents any active state
+    if (statusFilter === 'printed') return table.status === 'billing'; // Ready to bill
+    if (statusFilter === 'delayed') return isRunning && minutes >= 45;
     return true;
   };
 
   const filteredTables = tables.filter(table => filterMatch(table) && matchesStatus(table));
-  const occupiedTables = tables.filter(table => table.status !== 'free');
-  const printedTables = tables.filter(table => table.status === 'printed');
-  const delayedTables = tables.filter(table => table.status !== 'free' && getMinutesElapsed(table.createdAt) >= 45);
+  const occupiedTables = tables.filter(table => table.status !== 'vacant');
+  const printedTables = tables.filter(table => table.status === 'billing');
+  const delayedTables = tables.filter(table => table.status !== 'vacant' && getMinutesElapsed(table.createdAt) >= 45);
   const occupancyRate = tables.length > 0 ? Math.round((occupiedTables.length / tables.length) * 100) : 0;
-  const openRevenue = occupiedTables.reduce((acc, table) => acc + getOrderTotal(table.orders), 0);
+  const openRevenue = occupiedTables.reduce((acc, table) => acc + (table.total || 0), 0);
   const avgOpenTicket = occupiedTables.length > 0 ? openRevenue / occupiedTables.length : 0;
   const statusFilters = [
     { id: 'all', label: 'All tables' },
@@ -1996,12 +2097,26 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'white', padding: '6px 16px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+            <span style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Zoom: {zoom}%</span>
+            <input 
+              type="range"
+              min="10"
+              max="150"
+              step="5"
+              value={zoom} 
+              onChange={(e) => setZoom(Number(e.target.value))}
+              style={{ cursor: 'pointer', width: '100px', accentColor: '#94161c' }}
+            />
+          </div>
           <button
             onClick={onOpenFloorDesigner}
             style={{ padding: '10px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', background: 'white', color: '#111827', fontSize: '12px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
           >
             <LayoutGrid size={16} /> Edit Floor Plan
           </button>
+
+
           <div style={{ display: 'flex', gap: '16px', fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '3px' }}></div> Vacant</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', background: '#fed7aa', borderRadius: '3px' }}></div> Running</div>
@@ -2028,16 +2143,25 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
               backgroundSize: '24px 24px', 
               padding: '24px'
             }}>
+              <div style={{ 
+                transform: `scale(${zoom / 100})`, 
+                transformOrigin: "top left",
+                width: `${100 / (zoom / 100)}%`,
+                height: `${100 / (zoom / 100)}%`,
+                position: 'relative'
+              }}>
+
               {filteredTables.filter(t => t.type === section).map(table => {
                 const tableTotal = getOrderTotal(table.orders);
-                const isRunning = table.status !== 'free';
-                const isPrinted = table.status === 'printed';
+                const isRunning = table.status !== 'vacant';
+                const isPrinted = table.status === 'billing';
+                const isSaved = table.status === 'draft';
 
                 return (
                   <div
                     key={table.id}
                     onClick={() => onSelectTable(table)}
-                    className={`pp-table-card ${isRunning ? (isPrinted ? 'status-printed' : 'status-running') : 'status-blank'}`}
+                    className={`pp-table-card status-${table.status || 'blank'}`}
                     style={{
                       position: 'absolute',
                       left: `${table.pos?.x || 0}px`,
@@ -2070,8 +2194,11 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
 
                     {/* Middle: Status & Price (Centered for consistency) */}
                     <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '10px 0' }}>
-                      <div style={{ fontSize: '9px', fontWeight: '900', color: isRunning ? (isPrinted ? '#10b981' : '#64748b') : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
-                        {isPrinted ? '✓ READY' : (isRunning ? '• OCCUPIED' : '○ VACANT')}
+                      <div style={{ fontSize: '9px', fontWeight: '900', color: isRunning ? '#64748b' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                        {table.status === 'draft' ? '🔵 DRAFT' : 
+                         table.status === 'kot_pending' ? '🟡 KOT PENDING' : 
+                         table.status === 'kot_printed' ? '🟠 KOT PRINTED' : 
+                         table.status === 'billing' ? '🟢 BILLING' : '○ VACANT'}
                       </div>
                       <div style={{ fontSize: '32px', fontWeight: '950', color: isRunning ? 'var(--primary)' : '#e2e8f0', margin: '2px 0', lineHeight: 1 }}>
                         {tableTotal > 0 ? `₹${Math.floor(tableTotal)}` : '--'}
@@ -2092,19 +2219,22 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
                   </div>
                 );
               })}
+              </div>
             </div>
+
           ) : (
             <div className="pp-table-grid no-scrollbar">
               {filteredTables.filter(t => t.type === section).map(table => {
                 const tableTotal = getOrderTotal(table.orders);
-                const isRunning = table.status !== 'free';
-                const isPrinted = table.status === 'printed';
+                const isRunning = table.status !== 'vacant';
+                const isPrinted = table.status === 'billing';
+                const isSaved = table.status === 'draft';
 
                 return (
                   <div
                     key={table.id}
                     onClick={() => onSelectTable(table)}
-                    className={`pp-table-card ${isRunning ? (isPrinted ? 'status-printed' : 'status-running') : 'status-blank'}`}
+                    className={`pp-table-card status-${table.status || 'blank'}`}
                     style={{
                       height: '200px',
                       display: 'flex',
@@ -2133,8 +2263,11 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
 
                     {/* Middle: Status & Price (Centered for consistency) */}
                     <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '10px 0' }}>
-                      <div style={{ fontSize: '9px', fontWeight: '900', color: isRunning ? (isPrinted ? '#10b981' : '#64748b') : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
-                        {isPrinted ? '✓ READY' : (isRunning ? '• OCCUPIED' : '○ VACANT')}
+                      <div style={{ fontSize: '9px', fontWeight: '900', color: isRunning ? '#64748b' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                        {table.status === 'draft' ? '🔵 DRAFT' : 
+                         table.status === 'kot_pending' ? '🟡 KOT PENDING' : 
+                         table.status === 'kot_printed' ? '🟠 KOT PRINTED' : 
+                         table.status === 'billing' ? '🟢 BILLING' : '○ VACANT'}
                       </div>
                       <div style={{ fontSize: '32px', fontWeight: '950', color: isRunning ? 'var(--primary)' : '#e2e8f0', margin: '2px 0', lineHeight: 1 }}>
                         {tableTotal > 0 ? `₹${Math.floor(tableTotal)}` : '--'}
@@ -2160,18 +2293,6 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
 
         </div>
       ))}
-
-      {/* Quick System Monitor */}
-      <div style={{ marginTop: '32px', padding: '24px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
-        <h3 style={{ fontSize: '12px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '16px', letterSpacing: '1px' }}>Quick System Monitor</h3>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {tables.map((table) => (
-            <div key={table.id} className="table" style={{ padding: '6px 12px', background: 'white', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '11px', fontWeight: 'bold', color: '#64748b' }}>
-              {table.name}
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };
@@ -2398,6 +2519,11 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   const isPickup = table?.type === 'Takeaway' || table?.type === 'Delivery';
   const [orderNote, setOrderNote] = useState(table?.note || '');
 
+  // SYNC CART WITH BACKEND REAL-TIME
+  useEffect(() => {
+    setCart(initialOrder || []);
+  }, [initialOrder]);
+
   // Customer CRM State
   const [customerPhone, setCustomerPhone] = useState(table?.phone || '');
   const [customerName, setCustomerName] = useState(table?.customerName || '');
@@ -2436,6 +2562,9 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   const [discountAuth, setDiscountAuth] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [isPaid, setIsPaid] = useState(false);
+  const [showSettleModal, setShowSettleModal] = useState(false);
+  const [cashReceived, setCashReceived] = useState('');
+  const [upiReceived, setUpiReceived] = useState('');
 
   // 🔥 NEW REQUESTED LOGIC
   const printKOT = async (items = cart) => {
@@ -2450,7 +2579,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       items: list.map(i => ({ ...i, qty: i.qty - (i.printedQty || 0) || i.qty })),
       subtotal, serviceCharge, roundOff, grandTotal,
       orderType: table?.type || 'Dine In'
-    }, 'KOT');
+    }, 'KOT', settings);
   };
 
   const printBill = async () => {
@@ -2461,200 +2590,150 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       items: cart,
       subtotal, serviceCharge, roundOff, grandTotal,
       orderType: table?.type || 'Dine In'
-    }, 'BILL');
+    }, 'BILL', settings);
   };
 
   const handleKOT = async () => {
-    // 🔍 STEP 1: VALIDATION
-    if (!cart || cart.length === 0) {
-      alert("No items to send");
-      return;
-    }
+    if (!cart || cart.length === 0) { alert("No items to send"); return; }
+    if (!table) { alert("No table selected"); return; }
 
-    if (!table) {
-      alert("No table selected");
-      return;
-    }
+    const deltaItems = cart.map(item => {
+      const existing = (initialOrder || []).find(i => i.name === item.name);
+      const existingQty = existing ? (existing.qty || existing.quantity || 0) : 0;
+      const newQty = item.qty - existingQty;
+      if (newQty > 0) return { ...item, qty: newQty, quantity: newQty };
+      return null;
+    }).filter(Boolean);
 
-    // 🧹 STEP 2: CLEAN DATA (Ensure name, price, qty)
-    const cartItems = cart
-      .filter(item => item && item.name && item.price !== undefined)
-      .map(item => ({
-        name: item.name,
-        price: item.price,
-        qty: item.qty || 1,
-        note: item.note || ""
-      }));
+    if (deltaItems.length === 0) { alert("No new items to send to KOT"); return; }
 
-    if (cartItems.length === 0) {
-      alert("Cart contains invalid items");
-      return;
-    }
-
-    // ✅ STEP 3: UPDATE LOCALLY FIRST (Instant UI)
-    onSaveOrder(table.id, cartItems, "occupied");
+    // 🔥 INSTANT UI ACTION
     setCart([]);
     if (onBack) onBack();
 
-    // ✅ STEP 4: BACKGROUND SYNC (Optional)
+    // Perform background tasks
     (async () => {
       try {
-        console.log("☁️ Shadow Sync KOT...");
-        await fetch(BASE_URL + "/order", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tableId: table.id, items: cartItems })
-        });
+        const { updateOrderApi } = await import('./utils/apiClient');
+        await updateOrderApi(table.id, { items: deltaItems, status: 'KOT_PENDING' });
+        console.log("✅ KOT Sync Successful in background");
       } catch (err) {
-        console.warn("⚠️ KOT Background sync failed, using local only.", err);
+        console.error("❌ Background KOT failed:", err);
       }
     })();
   };
 
   const handleKOTPrint = async () => {
-    // 🔍 STEP 1: VALIDATION
-    if (!cart || cart.length === 0) {
-      alert("No items to send");
-      return;
-    }
+    if (!cart || cart.length === 0) { alert("No items to send"); return; }
+    if (!table) { alert("No table selected"); return; }
 
-    if (!table) {
-      alert("No table selected");
-      return;
-    }
+    const deltaItems = cart.map(item => {
+      const existing = (initialOrder || []).find(i => i.name === item.name);
+      const existingQty = existing ? (existing.qty || existing.quantity || 0) : 0;
+      const newQty = item.qty - existingQty;
+      if (newQty > 0) return { ...item, qty: newQty, quantity: newQty };
+      return null;
+    }).filter(Boolean);
 
-    // 🧹 STEP 2: CLEAN DATA
-    const cartItems = cart
-      .filter(item => item && item.name && item.price !== undefined)
-      .map(item => ({
-        name: item.name,
-        price: item.price,
-        qty: item.qty || 1,
-        note: item.note || ""
-      }));
+    if (deltaItems.length === 0) { alert("No new items to print KOT"); return; }
 
-    if (cartItems.length === 0) {
-      alert("Cart contains invalid items");
-      return;
-    }
-
-    // ✅ STEP 3: PRINT (Local)
-    printKOT();
-
-    // ✅ STEP 4: UPDATE LOCALLY (Instant UI)
-    onSaveOrder(table.id, cartItems, "occupied");
+    // 🔥 INSTANT UI ACTION
     setCart([]);
     if (onBack) onBack();
 
-    // ✅ STEP 5: BACKGROUND SYNC (Optional)
+    // Perform background tasks
     (async () => {
       try {
-        console.log("☁️ Shadow Sync KOT & Print...");
-        await fetch(BASE_URL + "/order", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tableId: table.id, items: cartItems })
-        });
+        // 1. Sync to backend FIRST (to update status instantly)
+        const { updateOrderApi } = await import('./utils/apiClient');
+        await updateOrderApi(table.id, { items: deltaItems, status: 'KOT_PRINTED' });
+        
+        // 2. Hardware action (printing) - might block if browser dialog shows
+        await printKOT(deltaItems);
+        
+        console.log("✅ KOT Print & Sync Successful in background");
       } catch (err) {
-        console.warn("⚠️ KOT & Print background sync failed.", err);
+        console.error("❌ Background KOT+Print failed:", err);
+        // We might want a toast notification here instead of alert to not disrupt flow
+        // alert("Failed to send KOT. Check connection."); 
       }
     })();
   };
 
   const handleSave = async () => {
-    // 🔍 VALIDATION
-    if (!cart || cart.length === 0) {
-      alert("No items to save");
-      return;
-    }
-    if (!table) {
-      alert("No table selected");
-      return;
-    }
+    if (!cart || cart.length === 0) { alert("No items to save"); return; }
+    if (!table) { alert("No table selected"); return; }
 
-    // 🧹 CLEAN DATA
     const cartItems = cart
       .filter(item => item && item.name && item.price !== undefined)
-      .map(item => ({
-        name: item.name,
-        price: item.price,
-        qty: item.qty || 1,
-        note: item.note || ""
-      }));
+      .map(item => ({ name: item.name, price: item.price, quantity: item.qty || 1, qty: item.qty || 1 }));
 
-    // ✅ UPDATE LOCALLY FIRST (Instant UI)
-    onSaveOrder(table.id, cartItems, "occupied", { customerName, customerPhone, note: orderNote });
+    // 🔥 INSTANT UI ACTION
     setCart([]);
     if (onBack) onBack();
 
-    // ✅ BACKGROUND SYNC (Optional)
+    // Perform background tasks
     (async () => {
       try {
-        console.log("☁️ Shadow Sync Save Order...");
-        await fetch(BASE_URL + "/order", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tableId: table.id,
-            items: cartItems,
-            customerName,
-            phone: customerPhone,
-            note: orderNote
-          })
+        const { updateTableApi } = await import('./utils/apiClient');
+        await updateTableApi(table.id, { 
+          order_items: cartItems,
+          status: 'DRAFT'
         });
+        console.log("✅ Order Saved Successful in background");
       } catch (err) {
-        console.warn("⚠️ Save Sync failed, using local only.", err);
+        console.error("❌ Background Save order failed:", err);
       }
     })();
   };
 
   const handlePrintBill = async () => {
-     // 🔍 VALIDATION
-    if (!cart || cart.length === 0) {
-      alert("No items to print");
-      return;
-    }
-    if (!table) {
-      alert("No table selected");
-      return;
-    }
+    if (!cart || cart.length === 0) { alert("No items to print"); return; }
+    if (!table) { alert("No table selected"); return; }
 
-    // 🧹 CLEAN DATA
     const cartItems = cart
       .filter(item => item && item.name && item.price !== undefined)
-      .map(item => ({
-        name: item.name,
-        price: item.price,
-        qty: item.qty || 1,
-        note: item.note || ""
-      }));
+      .map(item => ({ name: item.name, price: item.price, quantity: item.qty || 1, qty: item.qty || 1 }));
 
-    // ✅ STEP 3: UPDATE LOCALLY FIRST (Instant UI)
-    onSaveOrder(table.id, cartItems, "occupied", { customerName, customerPhone, note: orderNote });
+    // 🔥 INSTANT UI ACTION
     setCart([]);
     if (onBack) onBack();
 
-    // ✅ STEP 4: PRINT (Local Hardware)
-    printBill();
-
-    // ✅ STEP 5: BACKGROUND SYNC (Optional)
+    // Perform background tasks
     (async () => {
       try {
-        console.log("☁️ Shadow Sync Print Bill...");
-        await fetch(BASE_URL + "/order", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tableId: table.id,
-            items: cartItems,
-            customerName,
-            phone: customerPhone,
-            note: orderNote,
-            status: 'printed'
-          })
+        // 1. Sync to backend FIRST
+        const { updateTableApi } = await import('./utils/apiClient');
+        await updateTableApi(table.id, { 
+          order_items: cartItems,
+          status: 'BILLING'
         });
+
+        // 2. Hardware action (printing)
+        await printBill();
+        
+        console.log("✅ Bill Print & Sync Successful in background");
       } catch (err) {
-        console.warn("⚠️ Print Bill background sync failed.", err);
+        console.error("❌ Background Bill Print failed:", err);
+      }
+    })();
+  };
+
+  const addItemToTable = async (item) => {
+    if (!IS_LOCAL) return alert("Read-Only Mode: Adding items disabled.");
+    if (!selectedTable) return;
+
+    // Standardize item for backend
+    const newItem = { name: item.name, price: item.price, quantity: 1, qty: 1 };
+    
+    // 🔥 INSTANT UI ACTION: Sync in background
+    (async () => {
+      try {
+        const { updateOrderApi } = await import('./utils/apiClient');
+        await updateOrderApi(selectedTable.id, { items: [newItem], status: 'OCCUPIED' });
+        console.log("✅ Background item add sync successful");
+      } catch (err) { 
+        console.error("❌ Background item add failed:", err);
       }
     })();
   };
@@ -2744,6 +2823,35 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
     setShowModifierModal(null);
   };
 
+  const handleUndo = () => {
+    if (cart.length === 0) return;
+    setCart(prev => {
+      const lastItem = prev[prev.length - 1];
+      if (!lastItem) return prev;
+      
+      // Allow undoing items that haven't been printed to kitchen yet
+      const unprintedQty = lastItem.qty - (lastItem.printedQty || 0);
+      if (unprintedQty > 0) {
+        if (lastItem.qty > 1) {
+          return prev.map((item, index) => 
+            index === prev.length - 1 ? { ...item, qty: item.qty - 1 } : item
+          );
+        } else {
+          return prev.slice(0, -1);
+        }
+      } else {
+        alert("Cannot undo items already sent to kitchen (KOT).");
+        return prev;
+      }
+    });
+  };
+
+  const clearCart = () => {
+    if (window.confirm("Remove all items from current order?")) {
+      setCart([]);
+    }
+  };
+
   const updateQty = (cartItemId, delta) => {
     if (delta > 0) {
       const cartItem = cart.find(i => i.cartItemId === cartItemId);
@@ -2811,7 +2919,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
           items: unprinted.map(i => ({ ...i, qty: i.qty - (i.printedQty || 0) })),
           subtotal, serviceCharge, roundOff, grandTotal,
           orderType: table?.type || 'Dine In'
-        }, 'KOT');
+        }, 'KOT', settings);
         // Mark as printed before saving
         updatedCart = cart.map(i => ({ ...i, printedQty: i.qty }));
       }
@@ -2840,16 +2948,17 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
         roundOff: roundOff,
         grandTotal: grandTotal,
         orderType: table?.type === 'Delivery' ? 'Delivery' : table?.type === 'Takeaway' ? 'Pick Up' : 'Dine In'
-      }, isBill ? 'BILL' : 'KOT');
+      }, isBill ? 'BILL' : 'KOT', settings);
     }
   };
 
-  const availableCategories = ['All', ...CATEGORIES.filter((cat, index) => CATEGORIES.indexOf(cat) === index)];
+  const availableCategories = ['All', ...CATEGORIES.map(c => typeof c === 'object' ? c.name : c).filter((cat, index, self) => self.indexOf(cat) === index)];
   const filteredItems = MENU_ITEMS
-    .filter(item =>
-      (activeCat === 'All' || item.category === activeCat) &&
-      item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    .filter(item => {
+      const itemCat = typeof item.category === 'object' ? item.category.name : item.category;
+      return (activeCat === 'All' || itemCat === activeCat) &&
+             item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    })
     .sort((a, b) => {
       if (a.inStock === b.inStock) return a.name.localeCompare(b.name);
       return a.inStock ? -1 : 1;
@@ -2861,22 +2970,25 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       {/* Category Sidebar */}
       <div className="no-print" style={{ width: '180px', background: 'white', display: 'flex', flexDirection: 'column', overflowY: 'auto', borderRight: '1px solid #e2e8f0', zIndex: 10 }}>
         <div style={{ padding: '20px 16px', fontSize: '11px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Menu</div>
-        {availableCategories.map(cat => (
-          <button
-            key={cat}
-            onClick={() => setActiveCat(cat)}
-            style={{ 
-              padding: '16px 20px', border: 'none', background: 'transparent', textAlign: 'left', fontSize: '14px', 
-              fontWeight: activeCat === cat ? '800' : '500', 
-              color: activeCat === cat ? 'var(--primary)' : '#475569',
-              borderLeft: `4px solid ${activeCat === cat ? 'var(--primary)' : 'transparent'}`,
-              backgroundColor: activeCat === cat ? 'var(--primary)10' : 'transparent',
-              cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-            }}
-          >
-            {cat}
-          </button>
-        ))}
+        {availableCategories.map(cat => {
+          const name = typeof cat === 'object' ? cat.name : cat;
+          return (
+            <button
+              key={name}
+              onClick={() => setActiveCat(name)}
+              style={{ 
+                padding: '16px 20px', border: 'none', background: 'transparent', textAlign: 'left', fontSize: '14px', 
+                fontWeight: activeCat === name ? '800' : '500', 
+                color: activeCat === name ? 'var(--primary)' : '#475569',
+                borderLeft: `4px solid ${activeCat === name ? 'var(--primary)' : 'transparent'}`,
+                backgroundColor: activeCat === name ? 'var(--primary)10' : 'transparent',
+                cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+              }}
+            >
+              {name}
+            </button>
+          );
+        })}
       </div>
 
       {/* Main Item Grid Area */}
@@ -3187,12 +3299,14 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
             </div>
           </div>
 
-          <div className="footer-btn-grid">
+          <div className="footer-btn-grid" style={{ padding: '8px', gap: '8px' }}>
             <button disabled={!IS_LOCAL} className="btn-maroon" onClick={handleSave} style={{ opacity: IS_LOCAL ? 1 : 0.5, cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }}>Save</button>
             <button disabled={!IS_LOCAL} className="btn-maroon" onClick={handlePrintBill} style={{ opacity: IS_LOCAL ? 1 : 0.5, cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }}>Print Bill</button>
             <button disabled={!IS_LOCAL} className="btn-grey" onClick={handleKOT} style={{ opacity: IS_LOCAL ? 1 : 0.5, cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }}>KOT</button>
             <button disabled={!IS_LOCAL} className="btn-grey" style={{ background: '#374151', opacity: IS_LOCAL ? 1 : 0.5, cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }} onClick={handleKOTPrint}>KOT & Print</button>
           </div>
+          
+
         </div>
       </div>
 
@@ -3273,6 +3387,90 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
           </div>
         </div>
       )}
+
+      {/* Settlement Modal Overlay */}
+      {showSettleModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="animate-fade-in" style={{ background: 'white', padding: '24px', borderRadius: '16px', width: '400px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontWeight: '900', fontSize: '20px', color: '#1f2937' }}>Settle {table?.name}</h3>
+              <button onClick={() => setShowSettleModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+            </div>
+
+            <div style={{ padding: '16px', background: '#fef2f2', borderRadius: '12px', marginBottom: '20px', textAlign: 'center' }}>
+              <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#991b1b', textTransform: 'uppercase', marginBottom: '4px' }}>Total Amount Due</div>
+              <div style={{ fontSize: '32px', fontWeight: '950', color: '#94161c' }}>₹{grandTotal.toFixed(2)}</div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '900', color: '#64748b', marginBottom: '6px' }}>CASH RECEIVED</label>
+                <input 
+                  type="number" 
+                  value={cashReceived} 
+                  onChange={(e) => setCashReceived(e.target.value)} 
+                  placeholder="0.00"
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '2px solid #f1f5f9', fontSize: '16px', fontWeight: 'bold', outline: 'none' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '900', color: '#64748b', marginBottom: '6px' }}>UPI RECEIVED</label>
+                <input 
+                  type="number" 
+                  value={upiReceived} 
+                  onChange={(e) => setUpiReceived(e.target.value)} 
+                  placeholder="0.00"
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '2px solid #f1f5f9', fontSize: '16px', fontWeight: 'bold', outline: 'none' }}
+                />
+              </div>
+            </div>
+
+            {/* Calculation */}
+            {(() => {
+              const totalPaid = (parseFloat(cashReceived) || 0) + (parseFloat(upiReceived) || 0);
+              const change = totalPaid - grandTotal;
+              return (
+                <div style={{ padding: '12px', borderRadius: '10px', background: '#f8fafc', marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b' }}>Total Paid</span>
+                    <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>₹{totalPaid.toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b' }}>Change to Return</span>
+                    <span style={{ fontSize: '16px', fontWeight: '900', color: change >= 0 ? '#10b981' : '#ef4444' }}>
+                      {change >= 0 ? `₹${change.toFixed(2)}` : `Pending ₹${Math.abs(change).toFixed(2)}`}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            <button 
+              disabled={((parseFloat(cashReceived) || 0) + (parseFloat(upiReceived) || 0)) < grandTotal}
+              onClick={async () => {
+                const totalPaid = (parseFloat(cashReceived) || 0) + (parseFloat(upiReceived) || 0);
+                const method = (parseFloat(upiReceived) || 0) > 0 ? ((parseFloat(cashReceived) || 0) > 0 ? 'Split' : 'UPI') : 'Cash';
+                await onSettleTable(table.id, { 
+                  cart, subtotal, discountAmt, redeemedPoints, taxes: 0, grandTotal, 
+                  paymentMethod: method, 
+                  cashAmount: parseFloat(cashReceived) || 0,
+                  upiAmount: parseFloat(upiReceived) || 0,
+                  timestamp: new Date().toISOString(), 
+                  phone: customerPhone, customerName, note: orderNote 
+                });
+                setShowSettleModal(false);
+                if (onBack) onBack();
+              }}
+              style={{ 
+                width: '100%', padding: '16px', borderRadius: '12px', border: 'none', fontSize: '16px', fontWeight: '950', color: 'white',
+                background: ((parseFloat(cashReceived) || 0) + (parseFloat(upiReceived) || 0)) >= grandTotal ? '#10b981' : '#cbd5e1',
+                cursor: ((parseFloat(cashReceived) || 0) + (parseFloat(upiReceived) || 0)) >= grandTotal ? 'pointer' : 'not-allowed'
+              }}>
+              COMPLETE SETTLEMENT
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -3311,8 +3509,34 @@ function MainApp() {
   const [socketConnected, setSocketConnected] = useState(false);
   const [isDbLoaded, setIsDbLoaded] = useState(true); 
   const [deviceStatus, setDeviceStatus] = useState('APPROVED'); // Default for offline first
+  const [isSyncing, setIsSyncing] = useState(false);
   const [deviceId, setDeviceId] = useState('LOCAL-DEVICE');
   const [cart, setCart] = useState([]);
+  const [lanUrl, setLanUrl] = useState('');
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    try {
+      // Full system sync
+      const res = await fetch(BASE_URL + "/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tables, menu: menuItems })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Success: Local data synced to master server.");
+      } else {
+        throw new Error(data.error || "Sync failed");
+      }
+    } catch (err) {
+      console.error("Manual sync failed:", err);
+      alert("Sync Error: Could not reach the server at " + BASE_URL);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const [loading, setLoading] = useState(!IS_LOCAL);
   console.log('📡 Base URL:', BASE_URL);
 
@@ -3331,13 +3555,6 @@ function MainApp() {
     }
   }
 
-  useEffect(() => {
-    if (!IS_LOCAL) {
-      fetchCloudData();
-      const interval = setInterval(fetchCloudData, 3000);
-      return () => clearInterval(interval);
-    }
-  }, []);
 
   const handleSelectTable = (table) => {
     setSelectedTable({
@@ -3371,20 +3588,28 @@ function MainApp() {
     }
   };
 
-  const deleteAnyOrder = (id) => {
+  const deleteAnyOrder = async (id) => {
     if (!IS_LOCAL) return alert("Read-Only Mode: Deleting orders disabled.");
     const isFloorTable = !String(id).startsWith('DEL-') && !String(id).startsWith('TAK-');
     if (isFloorTable) {
-      setTables(prev => prev.map(t => String(t.id) === String(id) ? { ...t, orders: [], items: [], status: 'free', createdAt: null } : t));
+      try {
+        const res = await fetch(`${BASE_URL}/table/${id}/clear`, { method: 'POST' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `Server error ${res.status}`);
+        }
+        // Socket event will update the UI automatically
+      } catch (err) {
+        console.error("Failed to clear table:", err);
+        alert("Failed to clear table: " + err.message);
+      }
     } else {
       setNonTableOrders(prev => prev.filter(o => String(o.id) !== String(id)));
     }
   };
 
   const clearTableFast = (id) => {
-    if (window.confirm("Are you sure you want to completely clear this order without settling?")) {
-      deleteAnyOrder(id);
-    }
+    deleteAnyOrder(id);
   };
 
   const handleCreateNonTableOrder = (type) => {
@@ -3410,55 +3635,54 @@ function MainApp() {
       const res = await fetch(BASE_URL + "/tables", { signal: AbortSignal.timeout(3000) });
       if (res.ok) {
         const data = await res.json();
-        setTables(data.map(t => ({...t, status: t.status?.toLowerCase() || 'free', orders: t.items || t.orders || []})));
+        const safeData = Array.isArray(data) ? data : (data.tables || []);
+        setTables(safeData.map(t => ({
+          ...t,
+          status: t.status,
+          orders: t.items || t.orders || t.order_items || []
+        })));
       }
     } catch(e) {}
   };
 
-  // --- OFFLINE-FIRST BACKGROUND SYNC (cloud is always optional) ---
   const loadMenu = async () => {
-    // 1. Always serve from localStorage first
-    const local = loadFromLocal('pos_menu');
-    if (local && local.length > 0) {
-      setMenuItems(local);
-      return; // Already have data — cloud sync is background only
-    }
-    // 2. If empty, try fetching from cloud
+    localStorage.removeItem('pos_menu'); // purge old state
     try {
       const res = await fetch(BASE_URL + "/menu", { signal: AbortSignal.timeout(4000) });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setMenuItems(data);
-          saveToLocal('pos_menu', data);
+        // Backend might return flat array OR { success, menu: {Category: [items]} }
+        if (Array.isArray(data)) {
+          setMenuItems(data.map(i => ({ ...i, inStock: i.available ?? i.inStock ?? true })));
+        } else if (data.menu) {
+          // Flatten the grouped menu
+          const flatMenu = Object.values(data.menu).flat();
+          setMenuItems(flatMenu.map(i => ({ ...i, inStock: i.available ?? i.inStock ?? true })));
         }
       }
-    } catch (err) { console.warn("⚠️ Cloud menu fetch skipped (offline)."); }
+    } catch (err) { 
+      console.error("Failed to load menu:", err);
+    }
   };
 
   const loadTables = async () => {
-    // 1. Always serve from localStorage first
-    const local = loadFromLocal('pos_tables');
-    if (local && local.length > 0) {
-      setTables(local);
-      return; // Already have data — cloud sync is background only
-    }
-    // 2. If empty, try fetching from cloud
-    try {
-      const res = await fetch(BASE_URL + "/tables", { signal: AbortSignal.timeout(4000) });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          const normalized = data.map(t => ({
-            ...t,
-            status: t.status?.toLowerCase() || 'free',
-            orders: t.items || t.orders || []
-          }));
-          setTables(normalized);
-          saveToLocal('pos_tables', normalized);
-        }
-      }
-    } catch (err) { console.warn("⚠️ Cloud tables fetch skipped (offline)."); }
+    return fetch(BASE_URL + "/tables")
+      .then(res => res.json())
+      .then(data => {
+        const raw = Array.isArray(data) ? data : [];
+        const normalized = raw.map(t => ({
+          ...t,
+          name:   t.name || t.table_number || String(t.id),
+          type:   t.type || t.zone || 'Main Floor',
+          status: t.status,
+          orders: t.items || t.orders || t.order_items || []
+        }));
+        setTables(normalized);
+      })
+      .catch(err => {
+        console.error("TABLE LOAD FAILED:", err);
+        setTables([]);
+      });
   };
 
   const loadTable = async (tableId) => {
@@ -3476,32 +3700,17 @@ function MainApp() {
     if (!IS_LOCAL) return alert("Read-Only Mode: Adding items disabled.");
     if (!selectedTable) return;
 
-    const newItem = { id: Date.now(), name: item.name, price: item.price, qty: 1 };
+    // Standardize item for backend
+    const newItem = { name: item.name, price: item.price, quantity: 1, qty: 1 };
     
-    setTables(prev => {
-      const updated = prev.map(t => {
-        if (String(t.id) === String(selectedTable.id)) {
-          const currentOrders = t.orders || [];
-          return {
-            ...t,
-            status: 'occupied',
-            orders: [...currentOrders, newItem],
-            createdAt: t.createdAt || Date.now()
-          };
-        }
-        return t;
-      });
-      saveToLocal('pos_tables', updated);
-      return updated;
-    });
-
     try {
-      await fetch(BASE_URL + "/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tableId: selectedTable.id, items: [newItem] })
-      });
-    } catch (err) { console.log("?? Offline: Order cached locally"); }
+      const { updateOrderApi } = await import('./utils/apiClient');
+      await updateOrderApi(selectedTable.id, { items: [newItem] });
+      // UI will update via socket table_updated or order_updated
+    } catch (err) { 
+      console.error("Failed to add item:", err);
+      alert("Failed to add item. Check connection.");
+    }
   };
 
   const handleGlobalSearch = (val) => {
@@ -3557,69 +3766,94 @@ function MainApp() {
     billHeader: 'TYDE CAFE',
     billFooter: 'Thank You!',
     resFont: 14,
-    kotFontSize: 13
+    kotFontSize: 13,
+    separateKotStations: false,
+    printerStations: []
   }));
 
-  const [menuItems, setMenuItems] = useState(() => loadFromLocal('pos_menu', INITIAL_MENU_ITEMS));
-  const [categories, setCategories] = useState(() => loadFromLocal('pos_categories', INITIAL_CATEGORIES));
-  const [tables, setTables] = useState(() => loadFromLocal('pos_tables', INITIAL_TABLES));
-  const [products, setProducts] = useState(() => loadFromLocal('pos_products', INITIAL_PRODUCTS));
-  const [productCategories, setProductCategories] = useState(() => loadFromLocal('pos_product_categories', INITIAL_PRODUCT_CATEGORIES));
+  const [menuItems, setMenuItems] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [tables, setTables] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [productCategories, setProductCategories] = useState([]);
   const [floorPlanSections, setFloorPlanSections] = useState(() => loadFromLocal('pos_floor_sections', ['DINE IN', 'AC', 'TERRACE']));
   const [customers, setCustomers] = useState(() => loadFromLocal('pos_customers', {}));
 
   useEffect(() => { if (IS_LOCAL) saveToLocal('pos_settings', settings); }, [settings]);
-  useEffect(() => { if (IS_LOCAL) saveToLocal('pos_menu', menuItems); }, [menuItems]);
-  useEffect(() => { if (IS_LOCAL) saveToLocal('pos_categories', categories); }, [categories]);
-  useEffect(() => { if (IS_LOCAL) saveToLocal('pos_tables', tables); }, [tables]);
-  useEffect(() => { if (IS_LOCAL) saveToLocal('pos_products', products); }, [products]);
-  useEffect(() => { if (IS_LOCAL) saveToLocal('pos_product_categories', productCategories); }, [productCategories]);
+
+  // --- VERSION & CONFIG FETCH ---
+  const [appVersion, setAppVersion] = useState({ version: 'v1.0-stable', lastUpdated: '2026-04-19' });
+
+  useEffect(() => {
+    fetch('/version.json')
+      .then(res => res.json())
+      .then(data => setAppVersion(data))
+      .catch(err => console.warn('Failed to load version info:', err));
+  }, []);
+
+  useEffect(() => {
+    if (IS_LOCAL) {
+      fetch(BASE_URL + "/api/lan").then(r => r.json()).then(d => setLanUrl(d.url)).catch(() => {});
+      loadTables();
+      loadMenu();
+      
+      // Load Global Settings from Backend
+      fetch(BASE_URL + "/api/config/pos_settings")
+        .then(r => r.json())
+        .then(data => {
+          if (data && Object.keys(data).length > 0) {
+            setSettings(prev => {
+              const merged = { ...prev, ...data };
+              saveToLocal('pos_settings', merged);
+              settingsRef.current = merged; // Update ref too
+              return merged;
+            });
+          }
+        })
+        .catch(err => console.log("Backend settings load failed (using local only)"));
+    }
+    if (!IS_LOCAL) {
+      fetchCloudData();
+      const interval = setInterval(fetchCloudData, 3000);
+      return () => clearInterval(interval);
+    }
+  }, []);
+
+  // Sync settings to backend on change
+  useEffect(() => {
+    if (IS_LOCAL && settings) {
+      const timer = setTimeout(() => {
+        fetch(BASE_URL + "/api/config/pos_settings", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(settings)
+        }).catch(err => console.warn("Failed to sync settings to backend"));
+      }, 2000); // Debounce
+      return () => clearTimeout(timer);
+    }
+  }, [settings]);
+
+  useEffect(() => { /* menuItems are backend-only — no local persistence */ }, [menuItems]);
+  useEffect(() => { /* categories are backend-only — no local persistence */ }, [categories]);
+  useEffect(() => { /* tables are backend-only — no local persistence */ }, [tables]);
+  useEffect(() => { /* products are backend-only — no local persistence */ }, [products]);
+  useEffect(() => { /* productCategories are backend-only — no local persistence */ }, [productCategories]);
   useEffect(() => { if (IS_LOCAL) saveToLocal('pos_floor_sections', floorPlanSections); }, [floorPlanSections]);
   useEffect(() => { if (IS_LOCAL) saveToLocal('pos_customers', customers); }, [customers]);
   useEffect(() => { if (IS_LOCAL) saveToLocal('pos_order_history', orderHistory); }, [orderHistory]);
   useEffect(() => { if (IS_LOCAL) saveToLocal('pos_nontable_orders', nonTableOrders); }, [nonTableOrders]);
 
-  const [isSyncing, setIsSyncing] = useState(false);
 
   const syncToBackend = async (isSilent = false) => {
-    if (isSyncing) return;
-    setIsSyncing(true);
-    try {
-      const localTables = loadFromLocal("pos_tables");
-      const localMenu = loadFromLocal("pos_menu");
-      const localCategories = loadFromLocal("pos_categories");
-
-      await fetch(BASE_URL + "/sync/tables", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(localTables)
-      });
-
-      await fetch(BASE_URL + "/sync/menu", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(localMenu)
-      });
-
-      await fetch(BASE_URL + "/sync/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(localCategories)
-      });
-    } catch (err) {
-      if (!isSilent) console.error("Sync Failure:", err);
-    } finally {
-      setIsSyncing(false);
-    }
+    // REDUNDANT in backend-driven architecture
   };
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      syncToBackend(true); 
       syncToCloud(); // Fire to new cloud URL after data changes (menu, tables, orders)
     }, 5000);
     return () => clearTimeout(timer);
-  }, [tables, menuItems, nonTableOrders, categories]);
+  }, [menuItems, nonTableOrders, categories]);
 
   // Periodic Cloud Sync every 30 seconds
   useEffect(() => {
@@ -3631,40 +3865,59 @@ function MainApp() {
   }, []);
   
   const loadCategories = async () => {
-    // 1. Always serve from localStorage first
-    const local = loadFromLocal('pos_categories');
-    if (local && local.length > 0) {
-      setCategories(local);
-      return;
-    }
-    // 2. If empty, try fetching from cloud
+    localStorage.removeItem('pos_categories'); // purge old state
     try {
       const res = await fetch(BASE_URL + "/categories", { signal: AbortSignal.timeout(4000) });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
           setCategories(data);
-          saveToLocal('pos_categories', data);
         }
       }
     } catch (err) {
-      console.warn("⚠️ Cloud categories fetch skipped (offline).");
+      console.error("Failed to load categories:", err);
     }
   };
 
   useEffect(() => {
-    // On start: load from localStorage (already done at useState init).
-    // These calls check local first; fetch cloud only if local is empty.
+    // On start: load other data
     checkForUpdate();
     loadCategories();
     loadMenu();
-    loadTables();
+  }, []);
+
+  useEffect(() => {
+    localStorage.removeItem('pos_tables');
+    fetch(BASE_URL + "/tables")
+      .then(res => res.json())
+      .then(data => {
+        const raw = Array.isArray(data) ? data : [];
+        const normalized = raw.map(t => ({
+          ...t,
+          name:   t.name || t.table_number || String(t.id),
+          type:   t.type || t.zone || 'Main Floor',
+          status: t.status,
+          orders: t.items || t.orders || t.order_items || []
+        }));
+        setTables(normalized);
+      })
+      .catch(() => setTables([]));
   }, []);
 
   const [newCaptainOrders, setNewCaptainOrders] = useState([]);
   const processedCaptainIds = useRef(new Set());
   const socketRef = useRef(null);
   const notificationSound = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'));
+  const settingsRef = useRef(settings);
+  const menuRef = useRef([...menuItems, ...products]);
+
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
+  useEffect(() => {
+    menuRef.current = [...menuItems, ...products];
+  }, [menuItems, products]);
 
   useEffect(() => {
     // Socket.io is fully optional — POS works 100% without it
@@ -3686,24 +3939,90 @@ function MainApp() {
         setSocketConnected(false);
       });
 
-      socketRef.current.on('order_created', async (newOrder) => {
-        // Only refresh from cloud if there's new captain order
-        try {
-          const res = await fetch(BASE_URL + "/tables", { signal: AbortSignal.timeout(3000) });
-          if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data) && data.length > 0) {
-              const normalized = data.map(t => ({
-                ...t,
-                status: t.status?.toLowerCase() || 'free',
-                orders: t.items || t.orders || []
-              }));
-              setTables(normalized);
-              saveToLocal('pos_tables', normalized);
-            }
+      socketRef.current.on('table_updated', (allTables) => {
+        console.log("LIVE SYNC:", Array.isArray(allTables) ? allTables.length : 'NOT_ARRAY');
+        const safeTables = Array.isArray(allTables) ? allTables : [];
+        const normalized = safeTables.map(t => ({
+          ...t,
+          name:   t.name || t.table_number || String(t.id),
+          type:   t.type || t.zone || 'Main Floor',
+          status: t.status, // Use backend status directly ('running' | 'vacant')
+          orders: t.items || t.orders || t.order_items || []
+        }));
+        setTables(normalized);
+      });
+
+        socketRef.current.on('order_updated', (payload) => {
+        console.log("📢 Sync: Order Update Received", payload?.table_number || payload?.table_id);
+        
+        // --- Duplicate Prevention Guard ---
+        const orderUid = payload.order_id || payload.id;
+        if (orderUid && processedCaptainIds.current.has(orderUid)) {
+          console.log("⏭️ Sync: Order already processed, skipping print", orderUid);
+          return;
+        }
+
+        const matchFn = (t) => String(t.id) === String(payload.id) || String(t.id) === String(payload.table_id) || String(t.table_number) === String(payload.table_number);
+
+        // Use backend status directly
+        setTables(prev => prev.map(t => {
+          if (matchFn(t)) {
+            return { ...t, status: payload.status, orders: payload.items || [], last_updated: payload.startedAt };
           }
-        } catch { /* offline */ }
-        notificationSound.current.play().catch(e => console.log("Sound play failed:", e));
+          return t;
+        }));
+
+        setSelectedTable(prev => {
+          if (prev && matchFn(prev)) {
+            return { ...prev, status: payload.status, orders: payload.items || [], last_updated: payload.startedAt };
+          }
+          return prev;
+        });
+
+        if (payload.is_new_kot && payload.new_items && payload.new_items.length > 0) {
+          // Mark as processed immediately to prevent double print
+          if (orderUid) processedCaptainIds.current.add(orderUid);
+          
+          console.log("🖨️ Auto-printing incoming KOT for Table", payload.table_number);
+          setNewCaptainOrders(prev => [{
+            id: payload.order_id || payload.id || Date.now(),
+            table_number: payload.table_number,
+            items: payload.new_items,
+            timestamp: new Date().toISOString(),
+            status: 'NEW'
+          }, ...prev]);
+
+          printPosToSerial({
+            orderId: payload.table_id || payload.id,
+            tableName: `Table ${payload.table_number || payload.table_id || payload.id}`,
+            items: payload.new_items.map(i => {
+              const name = String(i.name || '').trim().toLowerCase();
+              const info = menuRef.current.find(m => 
+                String(m.name || '').trim().toLowerCase() === name || 
+                String(m.id) === String(i.id || i.item_id)
+              );
+              return { 
+                ...i, 
+                qty: i.quantity || i.qty || 1,
+                category: i.category || info?.category || 'General'
+              };
+            }),
+            orderType: 'Dine In'
+          }, 'KOT', settingsRef.current);
+        }
+      });
+
+      socketRef.current.on('menu_updated', (menuPayload) => {
+        console.log("MENU SYNC:", menuPayload);
+        if (menuPayload && menuPayload.categories) {
+          setCategories(menuPayload.categories);
+        }
+        if (menuPayload && menuPayload.menu) {
+          const flatMenu = Array.isArray(menuPayload.menu) ? menuPayload.menu : Object.values(menuPayload.menu).flat();
+          setMenuItems(flatMenu.map(i => ({ ...i, inStock: i.available ?? i.inStock ?? true })));
+        } else if (Array.isArray(menuPayload)) {
+           setMenuItems(menuPayload.map(i => ({ ...i, inStock: i.available ?? i.inStock ?? true })));
+        }
       });
 
       return () => {
@@ -3716,27 +4035,20 @@ function MainApp() {
 
   const settleTable = async (tableId, orderDetails) => {
     if (!IS_LOCAL) return alert("Read-Only Mode: Settling tables disabled.");
-    const updatedTables = tables.map(t => {
-      if (String(t.id) === String(tableId)) {
-        return { ...t, status: 'free', orders: [], createdAt: null };
-      }
-      return t;
-    });
-    setTables(updatedTables);
-    saveToLocal('pos_tables', updatedTables);
-
-    const history = loadFromLocal('pos_order_history');
-    const newHistory = [{ ...orderDetails, timestamp: Date.now() }, ...history].slice(0, 1000);
-    setOrderHistory(newHistory);
-    saveToLocal('pos_order_history', newHistory);
-
+    
     try {
-      await fetch(BASE_URL + "/settle", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tableId, orderDetails })
-      });
-    } catch (err) { console.log("?? Offline: Settlement cached locally"); }
+      const { settleTableApi } = await import('./utils/apiClient');
+      await settleTableApi(tableId, orderDetails.paymentMethod || 'Cash', orderDetails);
+      
+      // Update local history for records
+      const history = loadFromLocal('pos_order_history');
+      const newHistory = [{ ...orderDetails, timestamp: Date.now() }, ...history].slice(0, 1000);
+      setOrderHistory(newHistory);
+      saveToLocal('pos_order_history', newHistory);
+    } catch (err) { 
+      console.error("Settlement Failed:", err);
+      alert("Failed to settle bill. Check connection.");
+    }
   };
 
   const saveOrderToTable = async (tableId, orderItems, newStatus, extraData = {}) => {
@@ -3750,6 +4062,7 @@ function MainApp() {
     }
 
     if (tid.startsWith('DEL-') || tid.startsWith('TAK-')) {
+      // Local management for non-table orders (still kept for offline resilience)
       setNonTableOrders(prev => {
         const updated = prev.map(o => {
              if (String(o.id).trim().toUpperCase() === tid) {
@@ -3762,46 +4075,28 @@ function MainApp() {
       });
       setView('nontables');
     } else {
-      setTables(prev => {
-        const updated = prev.map(t => {
-          if (String(t.id).trim().toUpperCase() === String(tableId).trim().toUpperCase()) {
-            return { ...t, orders: orderItems, items: orderItems, status: newStatus, customerName: extraData.customerName, phone: extraData.customerPhone, note: extraData.note };
-          }
-          return t;
-        });
-        saveToLocal('pos_tables', updated);
-        return updated;
-      });
       setView('tables');
     }
 
     setSelectedTable(null);
 
-    (async () => {
-      try {
-        const { createOrder, updateTableApi } = await import('./utils/apiClient');
-        if (newStatus === 'kot') {
-          await createOrder({
-            table_number: tid,
-            items: orderItems.map(i => ({ name: i.name, quantity: i.qty, price: i.price, notes: i.note || '' })),
-            notes: extraData.note || ''
-          });
-        }
+    try {
+      const { createOrder, updateOrderApi } = await import('./utils/apiClient');
+      if (newStatus === 'kot') {
+        await createOrder({
+          table_number: tid,
+          items: orderItems.map(i => ({ name: i.name, quantity: i.qty, price: i.price, notes: i.note || '' })),
+          notes: extraData.note || ''
+        });
+      } else {
         const isFloorTable = !tid.startsWith('DEL-') && !tid.startsWith('TAK-');
         if (isFloorTable) {
-           await updateTableApi(tableId, {
-             status: 'occupied',
-             items: orderItems,
-             customerName: extraData.customerName,
-             phone: extraData.customerPhone,
-             note: extraData.note
-           });
-           await loadTables();
+           await updateOrderApi(tableId, { items: orderItems, status: 'kot_pending' });
         }
-      } catch (syncErr) {
-        console.warn("⚠️ saveOrderToTable Backend Sync Failed:", syncErr);
       }
-    })();
+    } catch (syncErr) {
+      console.warn("⚠️ saveOrderToTable Backend Sync Failed:", syncErr);
+    }
   };
 
 
@@ -3928,7 +4223,7 @@ function MainApp() {
               grandTotal,
               roundOff: (grandTotal - (getOrderTotal(quickPrintTable.orders) - discountAmt + service)).toFixed(2),
               cashier: settings.cashierName || 'Biller'
-            }, 'BILL');
+            }, 'BILL', settings);
             setQuickPrintTable(null);
           }} 
         />
@@ -3966,6 +4261,10 @@ function MainApp() {
           activeView={view}
           onViewChange={setView}
           stats={stats}
+          isConnected={socketConnected}
+          isSyncing={isSyncing}
+          onManualSync={handleManualSync}
+          lanUrl={lanUrl}
         />
       )}
 
@@ -4109,6 +4408,9 @@ function MainApp() {
               setNewOrders={setNewCaptainOrders}
               onManualSync={manualSyncCaptainOrders}
               settings={settings}
+              isOnline={socketConnected}
+              backendUrl={lanUrl || BASE_URL}
+              menuItems={[...menuItems, ...products]}
               onInjectOrder={(apiOrder) => {
                 // Map the API order into the POS table system
                 const tableNum = String(apiOrder.table_number);
@@ -4150,6 +4452,8 @@ function MainApp() {
               onDeleteDevice={handleDeleteDevice}
               isConnected={socketConnected}
               onRestoreData={restoreFromCloud}
+              appVersion={appVersion}
+              categories={categories}
             />
           )}
           {view === 'printersettings' && (
@@ -4193,11 +4497,11 @@ function MainApp() {
                   const targetTable = tables.find(t => t.id === newId);
                   if (targetTable) {
                     setTables(prev => prev.map(t => {
-                      if (t.id === newId) return { ...t, orders: currentCart, status: 'occupied', createdAt: t.createdAt || Date.now() };
-                      if (t.id === oldId) return { ...t, orders: [], status: 'free', createdAt: null };
+                      if (t.id === newId) return { ...t, orders: currentCart, status: 'kot_pending', createdAt: t.createdAt || Date.now() };
+                      if (t.id === oldId) return { ...t, orders: [], status: 'vacant', createdAt: null };
                       return t;
                     }));
-                    setSelectedTable({ ...targetTable, orders: currentCart, items: currentCart, status: 'occupied' });
+                    setSelectedTable({ ...targetTable, orders: currentCart, items: currentCart, status: 'kot_pending' });
                   }
                 }
               }}

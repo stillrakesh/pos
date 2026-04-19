@@ -4,16 +4,26 @@ import { statements } from '../db.js';
 const router = Router();
 
 // Helper to get full formatted menu for broadcast
+// Emits { categories: string[], items: MenuItem[] } — flat array per spec
 const getFullMenu = () => {
   const items = statements.getAllMenu();
   const cleaned = items.map(item => ({ ...item, available: item.available === 1 }));
-  const grouped = {};
-  for (const item of cleaned) {
-    if (!grouped[item.category]) grouped[item.category] = [];
-    grouped[item.category].push(item);
-  }
-  return { menu: grouped, categories: Object.keys(grouped) };
+  const categories = [...new Set(cleaned.map(i => i.category).filter(Boolean))].sort();
+  return { categories, items: cleaned };
 };
+
+// ─────────────────────────────────────────────────────────────
+// GET /api/menu/categories — Simple string array for Captain App
+// ─────────────────────────────────────────────────────────────
+router.get('/categories', (req, res) => {
+  try {
+    const items = statements.getAllMenu();
+    const cats = [...new Set(items.map(i => i.category).filter(Boolean))].sort();
+    res.json(cats.length ? cats : ['Main Course', 'Starters', 'Snacks', 'Drinks', 'Desserts']);
+  } catch (err) {
+    res.json(['Main Course', 'Starters', 'Snacks', 'Drinks', 'Desserts']);
+  }
+});
 
 // ─────────────────────────────────────────────────────────────
 // GET /api/menu — Return available items grouped by category
@@ -90,7 +100,12 @@ router.get('/:id', (req, res) => {
 // ─────────────────────────────────────────────────────────────
 router.post('/', (req, res) => {
   try {
-    const { items, name, category, price, available } = req.body;
+    let { items, name, category, price, available, inStock } = req.body;
+    
+    // Support POS frontend alias
+    if (available === undefined && inStock !== undefined) {
+      available = inStock;
+    }
 
     // BULK MENU SYNC
     if (items && Array.isArray(items)) {
@@ -103,19 +118,21 @@ router.post('/', (req, res) => {
         const all = statements.getAllMenu();
         const existing = all.find(e => e.name === itemName);
         
+        const itemAvailable = mi.available !== undefined ? mi.available : (mi.inStock !== undefined ? mi.inStock : true);
+        
         if (existing) {
           statements.updateMenuItem({
             id: existing.id,
             category: itemCat,
             price: itemPrice,
-            available: mi.available !== false
+            available: itemAvailable !== false
           });
         } else {
           statements.insertMenuItem({
             name: itemName,
             category: itemCat,
             price: itemPrice,
-            available: mi.available !== false
+            available: itemAvailable !== false
           });
         }
       });
@@ -184,7 +201,12 @@ router.put('/:id', (req, res) => {
       });
     }
 
-    const { name, category, price, available } = req.body;
+    let { name, category, price, available, inStock } = req.body;
+    
+    // Support POS frontend alias
+    if (available === undefined && inStock !== undefined) {
+      available = inStock;
+    }
 
     if (price !== undefined && (typeof price !== 'number' || price < 0)) {
       return res.status(400).json({ 

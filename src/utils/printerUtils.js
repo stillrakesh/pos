@@ -26,8 +26,8 @@ import {
  * @param {Object} orderData - Order object with items, tableName, etc.
  * @param {string} type - 'BILL' or 'KOT'
  */
-export const printPosToSerial = async (orderData, type = 'BILL') => {
-  // Load settings
+export const printPosToSerial = async (orderData, type = 'BILL', customSettings = null) => {
+  // Load default settings
   let settings = {
     resName: 'Tyde Cafe',
     headerText: 'Nerul Ferry Terminal',
@@ -55,11 +55,17 @@ export const printPosToSerial = async (orderData, type = 'BILL') => {
     billHeader: 'Tyde Cafe',
     billFooter: 'Sea you soon - under the moon',
     address: 'Nerul Ferry Terminal',
+    separateKotStations: false,
+    printerStations: []
   };
 
   try {
-    const rawSettings = await get('pos_printer_settings');
-    if (rawSettings) settings = { ...settings, ...rawSettings };
+    if (customSettings) {
+      settings = { ...settings, ...customSettings };
+    } else {
+      const rawSettings = await get('pos_printer_settings');
+      if (rawSettings) settings = { ...settings, ...rawSettings };
+    }
   } catch (e) {
     console.warn('[Print] Settings load failed, using defaults');
   }
@@ -89,6 +95,7 @@ export const printPosToSerial = async (orderData, type = 'BILL') => {
       qty: item.qty || item.quantity || 1,
       price: item.price || 0,
       note: item.note || item.specialNote || '',
+      category: item.category || 'General'
     })),
     subtotal: orderData.subtotal || 0,
     discountAmt: orderData.discountAmt || 0,
@@ -99,23 +106,79 @@ export const printPosToSerial = async (orderData, type = 'BILL') => {
 
   // ─── Try QZ Tray (silent printing) ────────────────────────
   try {
-    const result = await printViaQzTray(normalizedOrder, type, qzSettings);
+    if (type === 'KOT' && (settings.separateKotByCategory || settings.separateKotStations)) {
+      // Load KOT Stations from settings (backend/config source) or legacy groups
+      const stations = settings.printerStations || settings.kotGroups || [];
+      
+      // Group items
+      const grouped = {};
+      
+      normalizedOrder.items.forEach(item => {
+        // Find if this item's category belongs to a station
+        const station = stations.find(s => (s.categories || []).includes(item.category));
+        const stationName = station ? station.name : 'MAIN KITCHEN';
 
-    if (result.success) {
-      console.log(`[Print] ✅ ${type} printed silently via QZ Tray`);
+        if (!grouped[stationName]) grouped[stationName] = [];
+        grouped[stationName].push(item);
+      });
+
+      const groupNames = Object.keys(grouped);
+      console.log(`[Print] Grouping KOT into ${groupNames.length} slips using stations:`, groupNames);
+
+      for (const sName of groupNames) {
+        const slipOrder = {
+          ...normalizedOrder,
+          items: grouped[sName],
+          categoryHeader: sName.toUpperCase() 
+        };
+        const res = await printViaQzTray(slipOrder, type, qzSettings);
+        if (!res.success) throw new Error(res.message);
+      }
       return;
     }
 
-    // QZ connected but print failed (printer issue)
-    console.warn(`[Print] QZ Tray error: ${result.message}`);
-    throw new Error(result.message);
+    const result = await printViaQzTray(normalizedOrder, type, qzSettings);
+
+    if (!result.success) {
+      throw new Error(result.message);
+    }
+    
+    console.log(`[Print] ✅ ${type} printed silently via QZ Tray`);
+    return;
   } catch (qzErr) {
     const msg = qzErr?.message || String(qzErr);
     
     // If QZ Tray is genuinely not running, fall back to browser print
-    if (msg.includes('not running') || msg.includes('WebSocket') || msg.includes('ECONNREFUSED')) {
+    // If QZ Tray is not running, not configured, or connection failed, fall back to browser print
+    if (
+      msg.includes('not running') || 
+      msg.includes('WebSocket') || 
+      msg.includes('ECONNREFUSED') || 
+      msg.includes('No printer selected') ||
+      msg.includes('not connected')
+    ) {
       console.warn('[Print] QZ Tray not available, falling back to browser print dialog...');
-      fallbackBrowserPrint(normalizedOrder, type, settings);
+      
+      if (type === 'KOT' && (settings.separateKotByCategory || settings.separateKotStations)) {
+        const stations = settings.printerStations || settings.kotGroups || [];
+        const grouped = {};
+        normalizedOrder.items.forEach(item => {
+          const station = stations.find(s => (s.categories || []).includes(item.category));
+          const stationName = station ? station.name : 'MAIN KITCHEN';
+          if (!grouped[stationName]) grouped[stationName] = [];
+          grouped[stationName].push(item);
+        });
+        
+        const slips = Object.keys(grouped).map(sName => ({
+          ...normalizedOrder,
+          items: grouped[sName],
+          categoryHeader: sName.toUpperCase()
+        }));
+        
+        fallbackBrowserPrint(slips, type, settings);
+      } else {
+        fallbackBrowserPrint([normalizedOrder], type, settings);
+      }
       return;
     }
 
@@ -203,123 +266,119 @@ function fallbackBrowserPrint(orderData, type, settings) {
       
       @media print { 
         @page { margin: 0; size: 80mm auto; } 
+        .page-break { page-break-after: always; }
       }
     </style></head><body>
-    ${type === 'KOT' ? `
-      <div class="center" style="margin-top: 5px;">
-        <div style="font-size:13px">Running Table</div>
-        <div style="font-size:13px">${dateStr} ${timeStr}</div>
-        <div style="font-size:13px">KOT - ${orderData.orderId || '---'}</div>
-        <div class="bold" style="font-size: 14px; margin-top: 4px;">${orderData.orderType || 'Dine In'}</div>
-        <div class="bold" style="font-size: 14px;">Table No: ${orderData.tableName}</div>
-      </div>
-      <div style="border-top: 1.5px dotted black; margin: 8px 0;"></div>
-      <table class="item-table" style="margin-top: 5px;">
-        <thead>
-          <tr class="bold">
-            <th style="width: 140px; text-align: left;">Item</th>
-            <th style="width: 60px; text-align: right;">Qty</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${orderData.items.map(item => `
-            <tr>
-              <td style="padding: 5px 0;">
-                <span class="bold" style="font-size: 14px;">${item.name}</span>
-                ${item.note ? `<br/><span style="font-size: 12px; font-style: italic; color: #333;">* Note: ${item.note}</span>` : ''}
-              </td>
-              <td style="text-align: right; font-size: 15px;" class="bold">${item.qty}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      <div style="border-top: 1.5px dotted black; margin-top: 10px;"></div>
-    ` : `
-      <div class="center" style="margin-top: 5px;">
-        <div class="bold" style="font-size: 14px;">${settings.resName || 'Tyde Cafe'}</div>
-        <div style="font-size: 13px;">${settings.headerText || 'Nerul Ferry Terminal'}</div>
-      </div>
-      
-      <div class="line" style="margin-top: 10px;"></div>
-      <div style="font-size: 13px; margin: 5px 0;">Name: ______________________</div>
-      <div class="line"></div>
-      
-      <!-- 2-COLUMN HEADER (3 ROWS) -->
-      <div class="flex-row">
-        <span>Date: ${dateStr}</span>
-        <span class="bold">Dine In: ${orderData.tableName}</span>
-      </div>
-      <div class="flex-row">
-        <span>${timeStr}</span>
-        <span>Bill No.: ${orderData.billNumber || '---'}</span>
-      </div>
-      <div class="flex-row">
-        <span>Cashier: ${orderData.cashier || 'biller'}</span>
-        <span></span>
-      </div>
-      
-      <div class="line" style="margin-bottom: 0;"></div>
-      <table class="item-table">
-        <thead>
-          <tr class="bold">
-            <th class="col-item">Item</th>
-            <th class="col-qty">Qty</th>
-            <th class="col-price">Price</th>
-            <th class="col-amt">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${orderData.items.map(item => `
-            <tr>
-              <td class="col-item">${item.name}</td>
-              <td class="col-qty">${item.qty}</td>
-              <td class="col-price">${item.price.toFixed(0)}</td>
-              <td class="col-amt">${(item.qty * item.price).toFixed(0)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      <div class="line" style="margin-top: 0;"></div>
-      
-      <div class="totals-area">
-        <!-- SUB TOTAL ROW -->
-        <div class="totals-stack">
-          <div style="flex: 1; padding-left: 50px; display: flex; justify-content: space-between; align-items: flex-start;">
-            <div style="line-height: 1;">Sub<br/>Total</div>
-            <div class="col-amt">${(orderData.subtotal || 0).toFixed(2)}</div>
+    ${(Array.isArray(orderData) ? orderData : [orderData]).map((order, idx, arr) => `
+      <div class="${idx < arr.length - 1 ? 'page-break' : ''}">
+        ${type === 'KOT' ? `
+          <div class="center" style="margin-top: 5px;">
+            <div class="bold" style="font-size: 16px;">Table: ${order.tableName}</div>
+            ${order.categoryHeader ? `<div class="bold" style="font-size: 16px; margin: 4px 0;">Category: ${order.categoryHeader}</div>` : ''}
           </div>
-        </div>
-        
-        <div class="flex-row">
-          <span>Total Qty: ${orderData.items.reduce((s, i) => s + i.qty, 0)}</span>
-          <span></span>
-        </div>
-        
-        <!-- SERVICE CHARGE ROW -->
-        <div class="totals-stack">
-          <div style="flex: 1; display: flex; justify-content: space-between; align-items: flex-start;">
-             <div style="line-height: 1.1;">Service Charge<br/><span style="font-size: 11px;">(Optional)</span></div>
-             <div class="col-amt">${(orderData.serviceCharge || 0).toFixed(2)}</div>
+          <div style="border-top: 1.5px dotted black; margin: 8px 0;"></div>
+          <table class="item-table" style="margin-top: 5px;">
+            <tbody>
+              ${order.items.map(item => `
+                <tr>
+                  <td style="padding: 5px 0;">
+                    <span class="bold" style="font-size: 15px;">${item.name}</span>
+                    ${item.note ? `<br/><span style="font-size: 12px; font-style: italic; color: #333;">* Note: ${item.note}</span>` : ''}
+                  </td>
+                  <td style="text-align: right; font-size: 16px;" class="bold">x${item.qty}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div style="border-top: 1.5px dotted black; margin-top: 10px;"></div>
+          <div class="center" style="margin-top: 8px; font-size: 12px; color: #666;">
+            Time: ${dateStr} ${timeStr}
           </div>
-        </div>
-        
-        <div class="line" style="margin-top: 10px; border-top-width: 1px;"></div>
-        
-        <div class="flex-row" style="justify-content: flex-end; font-size: 11px; margin-top: 4px;">
-          <span style="margin-right: 15px;">Round off</span>
-          <span class="col-amt">${(orderData.roundOff || 0) >= 0 ? '+' : ''}${parseFloat(orderData.roundOff || 0).toFixed(2)}</span>
-        </div>
-        
-        <div class="grand-total-row bold">
-          <span>Grand Total</span>
-          <span style="font-size: 16px;">${settings.currencySymbol || '₹'}${ (orderData.grandTotal || 0).toFixed(2) }</span>
-        </div>
+        ` : `
+          <div class="center" style="margin-top: 5px;">
+            <div class="bold" style="font-size: 14px;">${settings.resName || 'Tyde Cafe'}</div>
+            <div style="font-size: 13px;">${settings.headerText || 'Nerul Ferry Terminal'}</div>
+          </div>
+          
+          <div class="line" style="margin-top: 10px;"></div>
+          <div style="font-size: 13px; margin: 5px 0;">Name: ______________________</div>
+          <div class="line"></div>
+          
+          <div class="flex-row">
+            <span>Date: ${dateStr}</span>
+            <span class="bold">Dine In: ${order.tableName}</span>
+          </div>
+          <div class="flex-row">
+            <span>${timeStr}</span>
+            <span>Bill No.: ${order.billNumber || '---'}</span>
+          </div>
+          <div class="flex-row">
+            <span>Cashier: ${order.cashier || 'biller'}</span>
+            <span></span>
+          </div>
+          
+          <div class="line" style="margin-bottom: 0;"></div>
+          <table class="item-table">
+            <thead>
+              <tr class="bold">
+                <th class="col-item">Item</th>
+                <th class="col-qty">Qty</th>
+                <th class="col-price">Price</th>
+                <th class="col-amt">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${order.items.map(item => `
+                <tr>
+                  <td class="col-item">${item.name}</td>
+                  <td class="col-qty">${item.qty}</td>
+                  <td class="col-price">${item.price.toFixed(0)}</td>
+                  <td class="col-amt">${(item.qty * item.price).toFixed(0)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class="line" style="margin-top: 0;"></div>
+          
+          <div class="totals-area">
+            <div class="totals-stack">
+              <div style="flex: 1; padding-left: 50px; display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="line-height: 1;">Sub<br/>Total</div>
+                <div class="col-amt">${(order.subtotal || 0).toFixed(2)}</div>
+              </div>
+            </div>
+            
+            <div class="flex-row">
+              <span>Total Qty: ${order.items.reduce((s, i) => s + i.qty, 0)}</span>
+              <span></span>
+            </div>
+            
+            <div class="totals-stack">
+              <div style="flex: 1; display: flex; justify-content: space-between; align-items: flex-start;">
+                 <div style="line-height: 1.1;">Service Charge<br/><span style="font-size: 11px;">(Optional)</span></div>
+                 <div class="col-amt">${(order.serviceCharge || 0).toFixed(2)}</div>
+              </div>
+            </div>
+            
+            <div class="line" style="margin-top: 10px; border-top-width: 1px;"></div>
+            
+            <div class="flex-row" style="justify-content: flex-end; font-size: 11px; margin-top: 4px;">
+              <span style="margin-right: 15px;">Round off</span>
+              <span class="col-amt">${(order.roundOff || 0) >= 0 ? '+' : ''}${parseFloat(order.roundOff || 0).toFixed(2)}</span>
+            </div>
+            
+            <div class="grand-total-row bold">
+              <span>Grand Total</span>
+              <span style="font-size: 16px;">${settings.currencySymbol || '₹'}${ (order.grandTotal || 0).toFixed(2) }</span>
+            </div>
+          </div>
+          
+          <div class="center" style="font-size: 13px; margin-top: 15px; margin-bottom: 10px;">
+            ${settings.footerText || 'Sea you soon — under the moon'}
+          </div>
+        `}
       </div>
-      
-      <div class="center" style="font-size: 13px; margin-top: 15px; margin-bottom: 10px;">
-        ${settings.footerText || 'Sea you soon — under the moon'}
-      </div>
-    `}
+    `).join('')}
     <div style="height: 20px;"></div>
     <script>
       window.onload = () => {

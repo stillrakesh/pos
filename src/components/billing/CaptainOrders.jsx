@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Wifi, WifiOff, Printer, CheckSquare, Clock, Zap, Volume2, VolumeX, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Wifi, WifiOff, Printer, CheckSquare, Clock, Zap, Volume2, VolumeX, RefreshCw, AlertTriangle, Smartphone, Link } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import { BASE_URL } from '../../constants';
 import { fetchOrders, updateOrderStatus } from '../../utils/apiClient';
 import { printPosToSerial } from '../../utils/printerUtils';
 import { isQzConnected } from '../../utils/qzTrayPrinter';
@@ -16,19 +18,32 @@ import { formatCurrency } from '../../utils/formatters';
  * - Audio notification on new orders
  * - Shows connection status indicator
  */
-const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrder, settings }) => {
+const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrder, settings, isOnline, backendUrl, menuItems = [] }) => {
   const [printedOrders, setPrintedOrders] = useState([]);      // Recently printed (for display)
-  const [isOnline, setIsOnline] = useState(false);             // API connection status
   const [autoPrint, setAutoPrint] = useState(true);           // Auto-print toggle
   const [soundEnabled, setSoundEnabled] = useState(true);      // Sound notification toggle
   const [isPrinting, setIsPrinting] = useState(null);          // Currently printing order ID
   const [printError, setPrintError] = useState(null);          // Last print error message
   const [printMethod, setPrintMethod] = useState('detecting'); // 'qz-tray' | 'web-serial' | 'none'
+  const [captainMode, setCaptainMode] = useState(() => {
+    return localStorage.getItem('captain_mode_enabled') === 'true';
+  });       // Captain Mode toggle
+  const [networkInfo, setNetworkInfo] = useState({ ip: 'localhost', port: 3001 });
 
   // Duplicate prevention: Set of order IDs that have been processed (printed or queued)
   const processedIdsRef = useRef(new Set());
   const pollTimerRef = useRef(null);
   const audioRef = useRef(null);
+
+  // Create accurate Captain App URL based strictly on Backend's active IP
+  const getCaptainUrl = () => {
+    try {
+      const urlObj = new URL(backendUrl || BASE_URL);
+      return `http://${urlObj.hostname}:3001/captain/`;
+    } catch {
+      return `http://localhost:3001/captain/`;
+    }
+  };
 
   // Detect preferred print method on mount
   useEffect(() => {
@@ -40,6 +55,18 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
       setPrintMethod('none');
     }
   }, []);
+
+  // Init state from localstorage OR default
+  useEffect(() => {
+    localStorage.setItem('captain_mode_enabled', captainMode);
+    // Push state to backend dynamically
+    const url = backendUrl || BASE_URL;
+    fetch(`${url}/api/captain-mode`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: captainMode })
+    }).catch(err => console.error('Failed to sync captain mode status with backend', err));
+  }, [captainMode, backendUrl]);
 
   // Initialize notification sound
   useEffect(() => {
@@ -89,22 +116,27 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
     setPrintError(null);
 
     try {
-      // Format items for the KOT printer
+      // Format items for the KOT printer with category enrichment
       const kotData = {
         tableName: `T${order.table_number}`,
         orderType: 'Captain App',
         orderId: `API-${order.id}`,
-        items: order.items.map(item => ({
-          name: item.name,
-          qty: item.quantity,
-          price: item.price,
-          note: ''
-        })),
+        items: order.items.map(item => {
+          // Lookup category from local menu if missing
+          const menuItem = (menuItems || []).find(m => m.name === item.name || m.id === item.id || m.item_id === item.item_id);
+          return {
+            name: item.name,
+            qty: item.quantity,
+            price: item.price,
+            category: item.category || menuItem?.category || 'General',
+            note: ''
+          };
+        }),
         notes: order.notes || ''
       };
 
       // Print via unified engine (QZ Tray silent → browser fallback)
-      await printPosToSerial(kotData, 'KOT');
+      await printPosToSerial(kotData, 'KOT', settings);
       setPrintMethod('qz-tray');
 
       // Update status on server
@@ -177,16 +209,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
           </div>
           <div>
             <h2 style={{ fontSize: '22px', fontWeight: '950', letterSpacing: '-0.5px', margin: 0 }}>
-              Captain Orders
-              {newOrders.length > 0 && (
-                <span style={{ 
-                  marginLeft: '12px', fontSize: '13px', fontWeight: '900', padding: '4px 12px', 
-                  borderRadius: '999px', background: '#ef4444', color: 'white',
-                  animation: 'pulse 2s infinite'
-                }}>
-                  {newOrders.length} NEW
-                </span>
-              )}
+              Captain Control Panel
             </h2>
             <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               {isOnline ? 'Connected to API — polling every 3s' : 'API server offline — retrying...'}
@@ -204,6 +227,20 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
         </div>
 
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {/* Captain Mode toggle */}
+          <button
+            onClick={() => setCaptainMode(!captainMode)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '10px 16px', borderRadius: '12px', fontSize: '12px', fontWeight: '900',
+              border: `1px solid ${captainMode ? 'rgba(56, 189, 248, 0.3)' : 'rgba(255,255,255,0.1)'}`,
+              background: captainMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.05)',
+              color: captainMode ? '#38bdf8' : '#64748b', cursor: 'pointer',
+              textTransform: 'uppercase', letterSpacing: '0.5px'
+            }}
+          >
+            <Smartphone size={14} /> Captain Mode: {captainMode ? 'ON' : 'OFF'}
+          </button>
           {/* Sound toggle */}
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
@@ -244,6 +281,43 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
           </button>
         </div>
       </div>
+
+      {/* ── CAPTAIN MODE CONTROL PANEL ──────────────────────── */}
+      {captainMode && (
+        <div style={{ padding: '24px 28px', background: '#1e293b', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: '24px', alignItems: 'center' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Captain Mode Connection</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px', color: '#e2e8f0', fontWeight: '700' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: isOnline ? '#10b981' : '#ef4444' }}>
+                  {isOnline ? <CheckSquare size={16} /> : <AlertTriangle size={16} />} Backend: {isOnline ? 'Running' : 'Offline'}
+                </span>
+                <span style={{ color: '#64748b' }}>|</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: navigator.onLine ? '#10b981' : '#f59e0b' }}>
+                  <Wifi size={16} /> Internet: {navigator.onLine ? 'Online' : 'Offline'}
+                </span>
+                <span style={{ color: '#64748b' }}>|</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#38bdf8' }}>
+                  <Link size={16} /> Extracted Origin: {backendUrl || BASE_URL}
+                </span>
+              </div>
+            </div>
+            
+            <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: '12px', color: '#38bdf8', fontWeight: '700', marginBottom: '4px' }}>Captain Access URL</div>
+                <div style={{ fontSize: '18px', fontWeight: '950', color: 'white' }}>{getCaptainUrl()}</div>
+              </div>
+            </div>
+          </div>
+          
+          {/* QR Code Container */}
+          <div style={{ background: 'white', padding: '12px', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+            <QRCodeSVG value={getCaptainUrl()} size={120} />
+            <span style={{ fontSize: '11px', color: '#0f172a', fontWeight: '900', textTransform: 'uppercase' }}>Scan to connect</span>
+          </div>
+        </div>
+      )}
 
       {/* ── PRINT ERROR BANNER ──────────────────────────── */}
       {printError && (
@@ -353,12 +427,12 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
               <Wifi size={48} color={isOnline ? '#818cf8' : '#64748b'} className={isOnline ? 'animate-pulse' : ''} />
             </div>
             <h3 style={{ fontSize: '28px', fontWeight: '950', color: '#e2e8f0', marginBottom: '12px' }}>
-              {isOnline ? 'All Caught Up' : 'Searching for API...'}
+              {isOnline ? 'All Caught Up' : 'Offline Mode'}
             </h3>
             <p style={{ color: '#64748b', fontSize: '16px', fontWeight: '700', maxWidth: '400px', lineHeight: 1.6 }}>
               {isOnline 
                 ? 'No new orders to print right now. History will appear here as soon as a Captain pushes an order.' 
-                : 'Connecting to Vercel...'}
+                : 'Waiting for local API server connection...'}
             </p>
           </div>
         )}

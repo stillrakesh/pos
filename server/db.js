@@ -1,3 +1,5 @@
+// ⚠️ STABLE CORE - DO NOT MODIFY WITHOUT BACKUP
+
 import initSqlJs from 'sql.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -6,7 +8,7 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const DB_PATH = join(__dirname, 'pos_orders.db');
+const DB_PATH = join(__dirname, '..', 'data', 'pos_orders.db');
 
 let db;
 let saveTimer = null;
@@ -50,7 +52,7 @@ export async function initDatabase() {
       seats         INTEGER DEFAULT 4,
       zone          TEXT DEFAULT 'Main',
       last_updated  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-      created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+      created_at    TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     );
   `);
 
@@ -81,7 +83,31 @@ export async function initDatabase() {
   db.run(`CREATE INDEX IF NOT EXISTS idx_tables_status ON tables(status)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_menu_cat_avail ON menu(category, available)`);
 
+  // ─── Sync Queue Table ────────────────────────────────────────
+  // One-way queue for pushing local data to cloud backup
+  db.run(`
+    CREATE TABLE IF NOT EXISTS sync_queue (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      type       TEXT NOT NULL,
+      payload    TEXT NOT NULL,
+      status     TEXT NOT NULL DEFAULT 'pending',
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    );
+  `);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_sync_queue_status ON sync_queue(status)`);
+
+  // --- Global Config Table ---
+  db.run(`
+    CREATE TABLE IF NOT EXISTS config (
+      key   TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+  `);
+
   // --- Migrations: Add missing columns if they don't exist ---
+  try {
+    const tableInfo = db.exec("PRAGMA table_info(tables)");
+    const columnNames = tableInfo[0].values.map(v => v[1]);
     if (!columnNames.includes('x')) db.run("ALTER TABLE tables ADD COLUMN x INTEGER DEFAULT 50");
     if (!columnNames.includes('y')) db.run("ALTER TABLE tables ADD COLUMN y INTEGER DEFAULT 50");
     if (!columnNames.includes('shape')) db.run("ALTER TABLE tables ADD COLUMN shape TEXT DEFAULT 'rounded'");
@@ -220,7 +246,7 @@ export const statements = {
     return { lastInsertRowid: lastId };
   },
 
-  updateTable({ id, table_number, status, order_items, x, y, shape, seats, zone }) {
+  updateTable({ id, table_number, status, order_items, x, y, shape, seats, zone, created_at }) {
     const setClauses = [];
     const params = [];
     if (table_number !== undefined) { setClauses.push('table_number = ?'); params.push(table_number); }
@@ -231,6 +257,15 @@ export const statements = {
     if (shape !== undefined) { setClauses.push('shape = ?'); params.push(shape); }
     if (seats !== undefined) { setClauses.push('seats = ?'); params.push(seats); }
     if (zone !== undefined) { setClauses.push('zone = ?'); params.push(zone); }
+    
+    if (created_at !== undefined) {
+      if (created_at === null) {
+        setClauses.push('created_at = NULL');
+      } else {
+        setClauses.push('created_at = ?');
+        params.push(created_at);
+      }
+    }
     
     setClauses.push("last_updated = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')");
     
@@ -245,6 +280,49 @@ export const statements = {
     db.run(`DELETE FROM tables WHERE id = ?`, [id]);
     persistToFile();
     return { changes: db.getRowsModified() };
+  },
+
+  replaceAllTables(tablesArray) {
+    if (!Array.isArray(tablesArray)) return;
+    
+    console.log(`[DB] Syncing ${tablesArray.length} tables from client...`);
+    
+    for (const t of tablesArray) {
+      const tableNum = String(t.table_number || t.name?.replace('Table ', '') || t.id);
+      const items = typeof t.order_items === 'string' ? t.order_items : JSON.stringify(t.orders || t.items || t.order_items || []);
+      const status = (t.status || 'AVAILABLE').toUpperCase();
+      
+      // Check if table exists
+      const existingRes = db.exec(`SELECT id, order_items FROM tables WHERE table_number = ?`, [tableNum]);
+      const rows = rowsToObjects(existingRes);
+
+      if (rows.length > 0) {
+        // UPDATE existing - but ONLY if status is different or items exist in incoming
+        // This prevents overwriting a richer backend state with a stale POS state
+        const existingItems = JSON.parse(rows[0].order_items || '[]');
+        const incomingItems = JSON.parse(items || '[]');
+        
+        // If incoming has no items but existing HAS items, don't overwrite items!
+        if (incomingItems.length === 0 && existingItems.length > 0) {
+          db.run(
+            `UPDATE tables SET status = ?, last_updated = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE table_number = ?`,
+            [status, tableNum]
+          );
+        } else {
+          db.run(
+            `UPDATE tables SET status = ?, order_items = ?, x = ?, y = ?, shape = ?, seats = ?, zone = ?, last_updated = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE table_number = ?`,
+            [status, items, t.pos?.x || t.x || 50, t.pos?.y || t.y || 50, t.shape || 'rounded', t.seats || 4, t.zone || t.type || 'Main', tableNum]
+          );
+        }
+      } else {
+        // INSERT new
+        db.run(
+          `INSERT INTO tables (table_number, status, order_items, x, y, shape, seats, zone, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
+          [tableNum, status, items, t.pos?.x || t.x || 50, t.pos?.y || t.y || 50, t.shape || 'rounded', t.seats || 4, t.zone || t.type || 'Main']
+        );
+      }
+    }
+    persistToFile();
   },
 
   // ─── Device Statements ──────────────────────────────────────
@@ -319,5 +397,77 @@ export const statements = {
     db.run(`DELETE FROM menu WHERE id = ?`, [id]);
     persistToFile();
     return { changes: db.getRowsModified() };
+  },
+
+  replaceAllMenu(menuArray) {
+    if (!Array.isArray(menuArray)) return;
+    
+    // Clear existing
+    db.run(`DELETE FROM menu`);
+    
+    // Insert new
+    for (const item of menuArray) {
+      db.run(
+        `INSERT INTO menu (name, category, price, available) VALUES (?, ?, ?, ?)`,
+        [
+          item.name,
+          item.category || 'Uncategorised',
+          item.price || 0,
+          item.available !== undefined ? (item.available ? 1 : 0) : 1
+        ]
+      );
+    }
+    persistToFile();
+  },
+
+  // ─── Sync Queue Statements ──────────────────────────────────
+
+  enqueueSyncItem({ type, payload }) {
+    db.run(
+      `INSERT INTO sync_queue (type, payload) VALUES (?, ?)`,
+      [type, typeof payload === 'string' ? payload : JSON.stringify(payload)]
+    );
+    persistToFile();
+    return { changes: db.getRowsModified() };
+  },
+
+  getPendingSyncItems({ limit = 20 } = {}) {
+    const result = db.exec(
+      `SELECT * FROM sync_queue WHERE status = 'pending' ORDER BY created_at ASC LIMIT ?`,
+      [limit]
+    );
+    return rowsToObjects(result);
+  },
+
+  markSyncComplete({ id }) {
+    db.run(`UPDATE sync_queue SET status = 'completed' WHERE id = ?`, [id]);
+    persistToFile();
+  },
+
+  markSyncFailed({ id }) {
+    db.run(`UPDATE sync_queue SET status = 'failed' WHERE id = ?`, [id]);
+    persistToFile();
+  },
+
+  cleanOldSyncItems() {
+    // Remove completed items older than 7 days
+    db.run(`DELETE FROM sync_queue WHERE status = 'completed' AND created_at < datetime('now', '-7 days')`);
+    persistToFile();
+  },
+
+  // ─── Config Statements ──────────────────────────────────────
+  
+  getConfig({ key }) {
+    const result = db.exec(`SELECT value FROM config WHERE key = ?`, [key]);
+    const rows = rowsToObjects(result);
+    return rows[0] ? JSON.parse(rows[0].value) : null;
+  },
+
+  setConfig({ key, value }) {
+    db.run(
+      `INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)`,
+      [key, JSON.stringify(value)]
+    );
+    persistToFile();
   }
 };

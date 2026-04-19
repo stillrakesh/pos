@@ -84,12 +84,22 @@ export async function syncAppData(tables, menuItems, categories) {
 export async function createOrder(orderData) {
   const path = `/orders`;
   const url = `${BASE_URL}${path}`;
-  console.log('📡 Calling URL:', url);
+  // Normalize: accept { table_id, items } or { table_number, items }
+  const payload = {
+    table_id:     orderData.table_id ? String(orderData.table_id) : undefined,
+    table_number: orderData.table_number ? String(orderData.table_number) : undefined,
+    items: (orderData.items || []).map(i => ({
+      name:     String(i.name || ''),
+      quantity: Number(i.quantity || i.qty || 1),
+      price:    Number(i.price || 0)
+    })),
+    notes: orderData.notes || ''
+  };
 
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(orderData)
+    body: JSON.stringify(payload)
   });
   if (!res.ok) throw new Error(`POST ${path} failed: ${res.status}`);
   return res.json();
@@ -113,6 +123,40 @@ export async function fetchTables() {
  */
 export async function updateTableApi(tableId, data) {
   const path = `/tables/${tableId}`;
+  const url = `${BASE_URL}${path}`;
+  console.log('📡 Calling URL:', url);
+
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error(`PUT ${path} failed: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Settle table bill via API.
+ */
+export async function settleTableApi(tableId, paymentMode, orderDetails) {
+  const path = `/billing/settle`;
+  const url = `${BASE_URL}${path}`;
+  console.log('📡 Calling URL:', url);
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ table_id: tableId, payment_mode: paymentMode, order_details: orderDetails })
+  });
+  if (!res.ok) throw new Error(`POST ${path} failed: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Update order items via PUT /orders/:tableId (POS merge/override)
+ */
+export async function updateOrderApi(tableId, data) {
+  const path = `/orders/${tableId}`;
   const url = `${BASE_URL}${path}`;
   console.log('📡 Calling URL:', url);
 

@@ -44,7 +44,16 @@ export async function connectQzTray() {
     });
 
     console.log('[QZ Tray] 🌐 Connecting via WebSocket...');
-    await qz.websocket.connect();
+    
+    // Reduce retries and timeout to avoid long hangs when service is not running
+    qz.websocket.setConnectRetries(0);
+    
+    // Wrap connection in a race to ensure it fails fast (2 seconds max)
+    await Promise.race([
+      qz.websocket.connect(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('QZ Connection Timeout')), 1500))
+    ]);
+    
     console.log('[QZ Tray] ✅ WebSocket Connected!');
     _connected = true;
 
@@ -175,35 +184,37 @@ function generateKotCommands(order, settings) {
   const boldOn = esc + 'E' + '\u0001';
   const boldOff = esc + 'E' + '\u0000';
   const sizeNormal = gs + '!' + '\u0000';
-  const sizeLarge = gs + '!' + '\u0011';
   
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
   const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
-  // Header per image: Running Table -> Date Time -> KOT ID -> Role -> Table No
+  // Header per requested format: Table -> Category -> Items -> Time
   let data = [
     center, 
-    sizeNormal, 'Running Table\n',
-    dateStr + ' ' + timeStr + '\n',
-    'KOT - ' + (order.orderId || '---') + '\n',
-    boldOn, (order.orderType || 'Dine In') + '\n',
-    'Table No: ' + (order.tableName || '--') + '\n',
+    sizeNormal, boldOn, 'Table: ' + (order.tableName || '--') + '\n',
+    order.categoryHeader ? `Category: ${order.categoryHeader}\n` : '',
     boldOff, '................................\n', // Dotted line
     left,
-    'Item           Special Note   Qty\n',
   ];
+  
+  if (order.categoryHeader) {
+    data.push('\n'); // Space after category header
+  }
 
   for (const item of order.items) {
-    const itemName = item.name.substring(0, 14).padEnd(15);
-    const itemNote = (item.note || '--').substring(0, 12).padEnd(14);
-    const itemQty = item.qty.toString().padStart(3);
-    
-    data.push(boldOn, itemName, boldOff, itemNote, itemQty, '\n');
+    const itemName = item.name.substring(0, 20).padEnd(20);
+    const itemQty = ' x' + (item.qty || 1);
+    data.push(boldOn, itemName, itemQty, boldOff, '\n');
+    if (item.note) {
+      data.push('  Note: ' + item.note + '\n');
+    }
   }
 
   data.push(
-    '\n\n\n\n\n',
+    '\n',
+    center,
+    'Time: ' + dateStr + ' ' + timeStr + '\n',
     esc + 'm' // Cut
   );
 
