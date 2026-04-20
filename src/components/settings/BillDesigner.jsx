@@ -287,41 +287,18 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
             )}
 
             {section.type === 'orderInfo' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#475569', fontWeight: '600' }}>
-                  <input type="checkbox" checked={section.data.showBillNo} onChange={(e) => updateSectionData(index, 'showBillNo', e.target.checked)} />
-                  <input type="text" value={section.data.billNoLabel ?? 'Bill No: '} onChange={(e) => updateSectionData(index, 'billNoLabel', e.target.value)} style={{ padding: '4px', fontSize: '11px', width: '90px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#475569', fontWeight: '600' }}>
-                  <input type="checkbox" checked={section.data.showTableNo} onChange={(e) => updateSectionData(index, 'showTableNo', e.target.checked)} />
-                  <input type="text" value={section.data.tableNoLabel ?? 'Table/Takeaway: '} onChange={(e) => updateSectionData(index, 'tableNoLabel', e.target.value)} style={{ padding: '4px', fontSize: '11px', width: '90px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#475569', fontWeight: '600' }}>
-                  <input type="checkbox" checked={section.data.showOrderType} onChange={(e) => updateSectionData(index, 'showOrderType', e.target.checked)} />
-                  <input type="text" value={section.data.orderTypeLabel ?? 'Type: '} onChange={(e) => updateSectionData(index, 'orderTypeLabel', e.target.value)} style={{ padding: '4px', fontSize: '11px', width: '90px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#475569', fontWeight: '600' }}>
-                  <input type="checkbox" checked={section.data.showDateTime} onChange={(e) => updateSectionData(index, 'showDateTime', e.target.checked)} />
-                  <input type="text" value={section.data.dateLabel ?? 'Date: '} onChange={(e) => updateSectionData(index, 'dateLabel', e.target.value)} style={{ padding: '4px', fontSize: '11px', width: '45px', border: '1px solid #cbd5e1', borderRadius: '4px' }} placeholder="Date Lbl" />
-                  <input type="text" value={section.data.timeLabel ?? 'Time: '} onChange={(e) => updateSectionData(index, 'timeLabel', e.target.value)} style={{ padding: '4px', fontSize: '11px', width: '45px', border: '1px solid #cbd5e1', borderRadius: '4px' }} placeholder="Time Lbl" />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#475569', fontWeight: '600' }}>
-                  <input type="checkbox" checked={section.data.showCashier} onChange={(e) => updateSectionData(index, 'showCashier', e.target.checked)} />
-                  <input type="text" value={section.data.cashierLabel ?? 'Cashier: '} onChange={(e) => updateSectionData(index, 'cashierLabel', e.target.value)} style={{ padding: '4px', fontSize: '11px', width: '90px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showBillNo} onChange={(e) => updateSectionData(index, 'showBillNo', e.target.checked)} /> Show Bill No</label>
+                <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showTableNo} onChange={(e) => updateSectionData(index, 'showTableNo', e.target.checked)} /> Show Table No</label>
+                <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showOrderType} onChange={(e) => updateSectionData(index, 'showOrderType', e.target.checked)} /> Show Order Type</label>
+                <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showDateTime} onChange={(e) => updateSectionData(index, 'showDateTime', e.target.checked)} /> Show Date/Time</label>
               </div>
             )}
 
             {section.type === 'customerInfo' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#475569', fontWeight: '600' }}>
-                  <input type="checkbox" checked={section.data.showName} onChange={(e) => updateSectionData(index, 'showName', e.target.checked)} />
-                  <input type="text" value={section.data.nameLabel ?? 'Name: '} onChange={(e) => updateSectionData(index, 'nameLabel', e.target.value)} style={{ padding: '4px', fontSize: '11px', width: '90px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#475569', fontWeight: '600' }}>
-                  <input type="checkbox" checked={section.data.showMobile} onChange={(e) => updateSectionData(index, 'showMobile', e.target.checked)} />
-                  <input type="text" value={section.data.mobileLabel ?? 'Mobile: '} onChange={(e) => updateSectionData(index, 'mobileLabel', e.target.value)} style={{ padding: '4px', fontSize: '11px', width: '90px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showName} onChange={(e) => updateSectionData(index, 'showName', e.target.checked)} /> Show Name</label>
+                <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showMobile} onChange={(e) => updateSectionData(index, 'showMobile', e.target.checked)} /> Show Mobile</label>
               </div>
             )}
 
@@ -423,22 +400,24 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
               );
               break;
             case 'orderInfo':
-              const orderLines = [];
-              if (section.data.showBillNo) orderLines.push((section.data.billNoLabel ?? 'Bill No: ') + '12345');
-              if (section.data.showTableNo) orderLines.push((section.data.tableNoLabel ?? 'Table: ') + '4');
-              if (section.data.showOrderType) orderLines.push((section.data.orderTypeLabel ?? 'Type: ') + 'Dine In');
-              if (section.data.showDateTime) {
-                 orderLines.push((section.data.dateLabel ?? 'Date: ') + '21/04/24');
-                 orderLines.push((section.data.timeLabel ?? 'Time: ') + '19:30');
-              }
-              if (section.data.showCashier) orderLines.push((section.data.cashierLabel ?? 'Cashier: ') + 'John Doe');
-              content = <div style={{ whiteSpace: 'pre-wrap' }}>{orderLines.join('\n')}</div>;
+              content = (
+                <div style={{ paddingBottom: '5px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: section.style.layout === 'full' ? '1fr 1fr' : '1fr', gap: '4px' }}>
+                    {section.data.showBillNo && <div>Bill No: {mockOrder.billNo}</div>}
+                    {section.data.showTableNo && <div>Table: {mockOrder.table}</div>}
+                    {section.data.showOrderType && <div>Type: {mockOrder.type}</div>}
+                    {section.data.showDateTime && <div>Date: {mockOrder.date}</div>}
+                  </div>
+                </div>
+              );
               break;
             case 'customerInfo':
-              const custLines = [];
-              if (section.data.showName) custLines.push((section.data.nameLabel ?? 'Customer: ') + 'John Doe');
-              if (section.data.showMobile) custLines.push((section.data.mobileLabel ?? 'Mobile: ') + '+91 9876543210');
-              content = <div style={{ whiteSpace: 'pre-wrap' }}>{custLines.join('\n')}</div>;
+              content = (
+                <div style={{ paddingBottom: '5px' }}>
+                  {section.data.showName && <div>Customer: {mockOrder.customer}</div>}
+                  {section.data.showMobile && <div>Mobile: {mockOrder.mobile}</div>}
+                </div>
+              );
               break;
             case 'itemList':
               let headW = (editingTemplate.paperWidth === 58 ? 32 : 48) - (section.data.showQty?(section.data.colQty || 4):0) - (section.data.showPrice?(section.data.colPrice || 8):0) - (section.data.showTotal?(section.data.colTotal || 8):0) - 1;
@@ -507,7 +486,6 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                 </div>
               );
               break;
-            default:
               return null;
           }
 
