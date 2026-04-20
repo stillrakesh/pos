@@ -360,6 +360,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
     };
 
     return (
+      <div style={{ 
         width: `${editingTemplate.paperWidth * 4}px`, // scaled for preview
         background: 'white', 
         padding: `${(editingTemplate.global?.marginTop || 0) * 15 + 20}px ${(editingTemplate.global?.marginRight || 0) * 15 + 20}px ${(editingTemplate.global?.marginBottom || 0) * 15 + 20}px ${(editingTemplate.global?.marginLeft || 0) * 15 + 20}px`, 
