@@ -3,8 +3,8 @@ import { io } from 'socket.io-client';
 import { 
   Menu, Search, Store, Monitor, LayoutGrid, Clock, Bell, User, Wifi,
   ChevronDown, ChevronUp, Info, CreditCard, Banknote, Printer, Eye, Plus,
-  Minus, X, Utensils, Smartphone, BarChart3, TrendingUp, PieChart, AlertTriangle, Truck, ShoppingBag, ChefHat, MessageSquare, CheckSquare, Sunset, Trash2, Package,
-  Settings2, ReceiptText, RefreshCw, RotateCcw
+  Minus, X, Utensils, Smartphone, BarChart3, TrendingUp, PieChart, AlertTriangle, Truck, ShoppingBag, ChefHat, MessageSquare, CheckSquare, Sunset, Trash2, Package, XCircle,
+  Settings2, ReceiptText, RefreshCw, RotateCcw, Percent
 } from 'lucide-react';
 import './index.css';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, LineChart, Line } from 'recharts';
@@ -21,13 +21,13 @@ function saveToLocal(key, data) {
   }
 }
 
-function loadFromLocal(key) {
+function loadFromLocal(key, fallback = []) {
   try {
     const val = localStorage.getItem(key);
-    return val ? JSON.parse(val) : [];
+    return val ? JSON.parse(val) : fallback;
   } catch (err) {
     console.warn(`Local Load Error (${key}):`, err);
-    return [];
+    return fallback;
   }
 }
 
@@ -168,8 +168,8 @@ const getMinutesElapsed = (createdAt) => {
 };
 
 const getChannelLabel = (order = {}) => {
-  if (order.type === 'Delivery' || String(order.id || order.tableId || '').startsWith('DEL-')) return 'Delivery';
-  if (order.type === 'Takeaway' || String(order.id || order.tableId || '').startsWith('TAK-')) return 'Takeaway';
+  if (order.type === 'Delivery' || String(order.id || order.tableId || '').startsWith('DEL-') || String(order.id || order.tableId || '').startsWith('DL-')) return 'Delivery';
+  if (order.type === 'Takeaway' || String(order.id || order.tableId || '').startsWith('TAK-') || String(order.id || order.tableId || '').startsWith('TA-')) return 'Takeaway';
   return 'Dine In';
 };
 
@@ -467,7 +467,13 @@ const OrderHistoryView = ({ orderHistory, activePickups = [], onSelectActive, gl
       return;
     }
 
-    const data = orderHistory.map(order => ({
+    const filteredHistory = (orderHistory || []).filter(order => {
+      if (!order) return false;
+      const isPaid = order.paymentStatus !== 'UNPAID' && order.payment_status !== 'UNPAID';
+      return isPaid;
+    });
+
+    const data = filteredHistory.map(order => ({
       'Date': new Date(order.timestamp).toLocaleDateString(),
       'Time': new Date(order.timestamp).toLocaleTimeString(),
       'Order ID': order.id,
@@ -1229,7 +1235,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
 
   const removeTable = (id) => {
     const tableInfo = tables.find(t => t.id === id);
-    if (tableInfo && tableInfo.status !== 'free') {
+    if (tableInfo && tableInfo.status !== 'vacant') {
       alert("Cannot remove a table with an active order.");
       return;
     }
@@ -1632,6 +1638,7 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
           { id: 'billing', label: 'Bill Designer', icon: <ReceiptText size={18} /> },
           { id: 'connection', label: 'Backend Server', icon: <Wifi size={18} /> },
           { id: 'printer', label: 'Printer Setup', icon: <Printer size={18} /> },
+          { id: 'taxes', label: 'Taxes & Charges', icon: <Percent size={18} /> },
           { id: 'devices', label: 'Linked Devices', icon: <Smartphone size={18} /> },
           { id: 'system', label: 'System & Safety', icon: <Settings2 size={18} /> }
         ].map(tab => (
@@ -1750,6 +1757,72 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
             onSave={handleSave}
             categories={categories} 
           />
+        )}
+
+        {activeTab === 'taxes' && (
+          <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#1f2937' }}>
+                   <Percent size={20} color="var(--primary)" /> Global Taxes & Charges
+                </h3>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>Default Rules</span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                {/* GST Settings */}
+                <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                   <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b', marginBottom: '16px' }}>GST Configuration</h4>
+                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                     <span style={{ fontSize: '13px', color: '#64748b' }}>Enable GST by default</span>
+                     <button 
+                       onClick={() => setLocalSettings(prev => ({ ...prev, gstEnabled: !prev.gstEnabled }))}
+                       style={{ width: '40px', height: '20px', borderRadius: '10px', background: localSettings.gstEnabled ? 'var(--primary)' : '#cbd5e1', position: 'relative', cursor: 'pointer', border: 'none' }}
+                     >
+                       <div style={{ position: 'absolute', top: '2px', left: localSettings.gstEnabled ? '22px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: 'white', transition: 'all 0.2s' }} />
+                     </button>
+                   </div>
+                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                     <span style={{ fontSize: '13px', color: '#64748b' }}>Default GST Rate (%)</span>
+                     <input 
+                       type="number" value={localSettings.gstRate} 
+                       onChange={(e) => setLocalSettings(prev => ({ ...prev, gstRate: parseFloat(e.target.value) || 0 }))}
+                       style={{ width: '60px', padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', textAlign: 'center' }} 
+                     />
+                   </div>
+                </div>
+
+                {/* Service Charge Settings */}
+                <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                   <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b', marginBottom: '16px' }}>Service Charge</h4>
+                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                     <span style={{ fontSize: '13px', color: '#64748b' }}>Enable SC by default</span>
+                     <button 
+                       onClick={() => setLocalSettings(prev => ({ ...prev, autoServiceCharge: !prev.autoServiceCharge }))}
+                       style={{ width: '40px', height: '20px', borderRadius: '10px', background: localSettings.autoServiceCharge ? 'var(--primary)' : '#cbd5e1', position: 'relative', cursor: 'pointer', border: 'none' }}
+                     >
+                       <div style={{ position: 'absolute', top: '2px', left: localSettings.autoServiceCharge ? '22px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: 'white', transition: 'all 0.2s' }} />
+                     </button>
+                   </div>
+                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                     <span style={{ fontSize: '13px', color: '#64748b' }}>Default SC Rate (%)</span>
+                     <input 
+                       type="number" value={localSettings.serviceChargeRate} 
+                       onChange={(e) => setLocalSettings(prev => ({ ...prev, serviceChargeRate: parseFloat(e.target.value) || 0 }))}
+                       style={{ width: '60px', padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', textAlign: 'center' }} 
+                     />
+                   </div>
+                </div>
+              </div>
+
+              <div style={{ padding: '16px', background: '#fffbeb', borderRadius: '12px', border: '1px solid #fef3c7', fontSize: '12px', color: '#92400e', lineHeight: '1.5' }}>
+                <Info size={14} style={{ marginBottom: '4px', display: 'block' }} />
+                Global settings apply only to <b>newly created</b> table sessions. Active tables will retain their current settings until cleared. Service Charge is automatically disabled for Takeaway orders.
+              </div>
+
+              <button onClick={handleSave} style={{ alignSelf: 'flex-start', padding: '12px 24px', background: localSettings.accentColor, color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Save Tax Rules</button>
+            </div>
+          </div>
         )}
 
         {activeTab === 'devices' && (
@@ -2152,7 +2225,7 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
               }}>
 
               {filteredTables.filter(t => t.type === section).map(table => {
-                const tableTotal = getOrderTotal(table.orders);
+                const tableTotal = table.total || 0;
                 const isRunning = table.status !== 'vacant';
                 const isPrinted = table.status === 'billing';
                 const isSaved = table.status === 'draft';
@@ -2225,7 +2298,7 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
           ) : (
             <div className="pp-table-grid no-scrollbar">
               {filteredTables.filter(t => t.type === section).map(table => {
-                const tableTotal = getOrderTotal(table.orders);
+                const tableTotal = table.total || 0;
                 const isRunning = table.status !== 'vacant';
                 const isPrinted = table.status === 'billing';
                 const isSaved = table.status === 'draft';
@@ -2366,18 +2439,23 @@ const KitchenDisplay = ({ orders, onUpdateStatus }) => {
   );
 };
 
-const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange, onQuickSettle, onQuickPrint, onClearOrder, globalSearch }) => {
+const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange, onQuickSettle, onQuickPrint, onClearOrder, onCancelOrder, globalSearch }) => {
   const [localSearch, setLocalSearch] = useState('');
+  const [confirmingAction, setConfirmingAction] = useState(null); // { id, type: 'cancel' | 'delete' }
   const getOrderTotal = (orderArr) => (orderArr || []).reduce((acc, item) => acc + ((item.price || 0) * (item.qty || 0)), 0);
 
   const searchVal = globalSearch || localSearch;
 
-  const filteredOrders = orders.filter(o => 
-    (o.id && String(o.id).toLowerCase().includes(searchVal.toLowerCase())) ||
-    (o.customerName && String(o.customerName).toLowerCase().includes(searchVal.toLowerCase())) ||
-    (o.phone && String(o.phone).includes(searchVal)) ||
-    (o.type && String(o.type).toLowerCase().includes(searchVal.toLowerCase()))
-  );
+  const filteredOrders = orders.filter(o => {
+    const hasItems = (o.orders || o.items || []).length > 0;
+    if (!hasItems) return false;
+    if (o.status === 'CANCELED') return false;
+    
+    return (o.id && String(o.id).toLowerCase().includes(searchVal.toLowerCase())) ||
+      (o.customerName && String(o.customerName).toLowerCase().includes(searchVal.toLowerCase())) ||
+      (o.phone && String(o.phone).includes(searchVal)) ||
+      (o.type && String(o.type).toLowerCase().includes(searchVal.toLowerCase()));
+  });
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '28px', background: '#f8fafc' }} className="animate-fade-in no-scrollbar">
@@ -2392,7 +2470,7 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
             <Search size={16} color="#94a3b8" />
             <input 
               type="text" 
-              placeholder="Search TAK Order ID / Mobile..." 
+              placeholder="Search Pickup Order ID / Mobile..." 
               value={localSearch}
               onChange={e => setLocalSearch(e.target.value)}
               style={{ border: 'none', background: 'transparent', width: '100%', fontSize: '13px', outline: 'none' }} 
@@ -2427,7 +2505,7 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
             <div style={{ color: '#94a3b8', fontSize: '15px', fontWeight: '500' }}>No matching pickup orders found.</div>
           </div>
         )}
-        {[...filteredOrders].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)).map(order => {
+        {[...filteredOrders].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 20).map(order => {
           const tableTotal = getOrderTotal(order.orders || []);
           let bg = order.type === 'Delivery' ? '#fff1f2' : '#f0f9ff';
           let text = order.type === 'Delivery' ? '#be123c' : '#0369a1';
@@ -2455,10 +2533,22 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
                 }}
                 style={{ flex: 1, padding: '20px', cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }}
               >
-                <div style={{ paddingRight: '120px' }}>
-                  <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#1e293b', marginBottom: '4px' }}>{order.customerName || order.name}</div>
-                  <TimeElapsed createdAt={order.createdAt} />
-                </div>
+                 <div style={{ paddingRight: '120px' }}>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                     <div style={{ fontSize: '11px', fontWeight: '900', color: 'var(--primary)' }}>{order.id}</div>
+                     <div style={{ 
+                       fontSize: '9px', fontWeight: '900', padding: '2px 6px', borderRadius: '4px',
+                       background: (order.paymentStatus === 'UNPAID' || order.payment_status === 'UNPAID') ? '#fef2f2' : '#f0fdf4',
+                       color: (order.paymentStatus === 'UNPAID' || order.payment_status === 'UNPAID') ? '#ef4444' : '#10b981',
+                       border: `1px solid ${(order.paymentStatus === 'UNPAID' || order.payment_status === 'UNPAID') ? '#fecaca' : '#bbf7d0'}`,
+                       textTransform: 'uppercase'
+                     }}>
+                       {order.paymentStatus || order.payment_status || 'PAID'}
+                     </div>
+                   </div>
+                   <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#1e293b', marginBottom: '4px' }}>{order.customerName || order.name}</div>
+                   <TimeElapsed createdAt={order.createdAt} />
+                 </div>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '16px', marginTop: '12px' }}>
                   <Clock size={12} color="#64748b" />
@@ -2477,17 +2567,36 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
               </div>
 
               {/* Absolute Action Controls (Upper Right) */}
-              <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px' }}>
+              <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px', zIndex: 100 }}>
                 <div style={{ fontSize: '10px', background: bg, color: text, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold', border: `1px solid ${border}`, textTransform: 'uppercase' }}>{order.type}</div>
                 <div style={{ display: 'flex', gap: '6px' }}>
-                  <button 
-                    disabled={!IS_LOCAL}
-                    title="Delete" 
-                    onClick={(e) => { e.stopPropagation(); if(confirm(`Wipe order ${order.id}?`)) onClearOrder(order.id); }} 
-                    style={{ padding: '8px', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '8px', cursor: IS_LOCAL ? 'pointer' : 'not-allowed', display: 'flex', opacity: IS_LOCAL ? 1 : 0.5 }}
-                  >
-                    <Trash2 size={16} color="#ef4444" />
-                  </button>
+                  {(String(order.paymentStatus || order.payment_status || '').toUpperCase() === 'PAID') ? (
+                    <button 
+                      disabled={!IS_LOCAL}
+                      title="Cancel Order" 
+                      onClick={(e) => { 
+                        e.preventDefault();
+                        e.stopPropagation(); 
+                        setConfirmingAction({ id: order.id, type: 'cancel' });
+                      }} 
+                      style={{ padding: '8px', background: '#fff7ed', border: '1px solid #ffedd5', borderRadius: '8px', cursor: IS_LOCAL ? 'pointer' : 'not-allowed', display: 'flex', opacity: IS_LOCAL ? 1 : 0.5, zIndex: 110 }}
+                    >
+                      <XCircle size={16} color="#f97316" />
+                    </button>
+                  ) : (
+                    <button 
+                      disabled={!IS_LOCAL}
+                      title="Delete" 
+                      onClick={(e) => { 
+                        e.preventDefault();
+                        e.stopPropagation(); 
+                        setConfirmingAction({ id: order.id, type: 'delete' });
+                      }} 
+                      style={{ padding: '8px', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '8px', cursor: IS_LOCAL ? 'pointer' : 'not-allowed', display: 'flex', opacity: IS_LOCAL ? 1 : 0.5, zIndex: 110 }}
+                    >
+                      <Trash2 size={16} color="#ef4444" />
+                    </button>
+                  )}
                   <button 
                     disabled={!IS_LOCAL}
                     title="Settle" 
@@ -2498,6 +2607,43 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
                   </button>
                 </div>
               </div>
+
+              {/* Custom Inline Confirmation Overlay */}
+              {confirmingAction && confirmingAction.id === order.id && (
+                <div 
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ 
+                    position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.98)', 
+                    zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', 
+                    justifyContent: 'center', borderRadius: '20px', padding: '16px', textAlign: 'center',
+                    backdropFilter: 'blur(8px)', border: '2px solid var(--primary)',
+                    boxShadow: '0 8px 30px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  <p style={{ fontWeight: '900', marginBottom: '16px', color: '#1e293b', fontSize: '14px' }}>
+                    {confirmingAction.type === 'cancel' ? 'CANCEL PAID ORDER?' : 'DELETE UNPAID ORDER?'}
+                  </p>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirmingAction.type === 'cancel') onCancelOrder(order.id);
+                        else onClearOrder(order.id);
+                        setConfirmingAction(null);
+                      }}
+                      style={{ background: '#821a1d', color: '#fff', padding: '10px 24px', borderRadius: '12px', border: 'none', fontWeight: '900', fontSize: '13px' }}
+                    >
+                      YES
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setConfirmingAction(null); }}
+                      style={{ background: '#f1f5f9', color: '#475569', padding: '10px 24px', borderRadius: '12px', border: 'none', fontWeight: '900', fontSize: '13px' }}
+                    >
+                      NO
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
@@ -2507,7 +2653,7 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
 };
 
 
-const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, onSaveOrder, onAddItem, onSettleTable, onChangeTable, MENU_ITEMS, CATEGORIES, customers, settings, loadTables }) => {
+const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, onSaveOrder, onCancelOrder, onAddItem, onSettleTable, onChangeTable, MENU_ITEMS, CATEGORIES, customers, settings, loadTables }) => {
   // Fix redundant 'Table Table' title
   const displayTitle = table?.name?.toLowerCase().includes('table') 
     ? table.name 
@@ -2551,17 +2697,29 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   const [showNoteModal, setShowNoteModal] = useState(null);
   const [customNoteText, setCustomNoteText] = useState('');
 
-  // Service Charge & Discount State
-  const [applyServiceCharge, setApplyServiceCharge] = useState(isPickup ? false : (settings?.autoServiceCharge ?? true));
-  const [serviceChargeRate, setServiceChargeRate] = useState(settings?.serviceChargeRate ?? 5);
+  // Service Charge & Tax Logic
+  const isVacant = !table?.status || table.status === 'vacant';
+  const [applyServiceCharge, setApplyServiceCharge] = useState(
+    isPickup ? false : (isVacant ? (settings?.autoServiceCharge ?? true) : (table?.service_charge_enabled ?? false))
+  );
+  const [serviceChargeRate, setServiceChargeRate] = useState(
+    isVacant ? (settings?.serviceChargeRate ?? 5) : (table?.service_charge_rate ?? 5)
+  );
+
+  const [applyGst, setApplyGst] = useState(
+    isVacant ? (settings?.gstEnabled ?? false) : (table?.gst_enabled ?? false)
+  );
+  const [gstRate, setGstRate] = useState(
+    isVacant ? (settings?.gstRate ?? 5) : (table?.gst_rate ?? 5)
+  );
 
   const [applyDiscount, setApplyDiscount] = useState(false);
   const [discountRate, setDiscountRate] = useState(10);
   const [splitWays, setSplitWays] = useState(1);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [discountAuth, setDiscountAuth] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('Cash');
-  const [isPaid, setIsPaid] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState(table?.paymentMethod || table?.payment_method || 'Cash');
+  const [isPaid, setIsPaid] = useState(isPickup ? (table?.paymentStatus !== 'UNPAID' && table?.payment_status !== 'UNPAID') : false);
   const [showSettleModal, setShowSettleModal] = useState(false);
   const [cashReceived, setCashReceived] = useState('');
   const [upiReceived, setUpiReceived] = useState('');
@@ -2588,7 +2746,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       tableName: table?.name || `Table ${table?.id}`,
       customerName, customerPhone,
       items: cart,
-      subtotal, serviceCharge, roundOff, grandTotal,
+      subtotal, serviceCharge, gstAmount, roundOff, grandTotal,
       orderType: table?.type || 'Dine In'
     }, 'BILL', settings);
   };
@@ -2596,6 +2754,9 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   const handleKOT = async () => {
     if (!cart || cart.length === 0) { alert("No items to send"); return; }
     if (!table) { alert("No table selected"); return; }
+
+    const tid = String(table.id || '').toUpperCase();
+    const isTakeaway = tid.startsWith('TA-') || tid.startsWith('DL-') || tid.startsWith('TAK-') || tid.startsWith('DEL-');
 
     const deltaItems = cart.map(item => {
       const existing = (initialOrder || []).find(i => i.name === item.name);
@@ -2607,7 +2768,21 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
 
     if (deltaItems.length === 0) { alert("No new items to send to KOT"); return; }
 
+    if (isTakeaway) {
+      await onSaveOrder(table.id, cart, 'kot_pending', {
+        customerName, customerPhone, note: orderNote,
+        paymentStatus: isPaid ? 'PAID' : 'UNPAID',
+        paymentMethod: paymentMethod,
+        gst_enabled: applyGst, gst_rate: gstRate,
+        service_charge_enabled: applyServiceCharge, service_charge_rate: serviceChargeRate
+      });
+      setCart([]);
+      if (onBack) onBack();
+      return;
+    }
+
     // 🔥 INSTANT UI ACTION
+    const fullCartForSync = [...cart];
     setCart([]);
     if (onBack) onBack();
 
@@ -2615,7 +2790,15 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
     (async () => {
       try {
         const { updateOrderApi } = await import('./utils/apiClient');
-        await updateOrderApi(table.id, { items: deltaItems, status: 'KOT_PENDING' });
+        await updateOrderApi(table.id, { 
+          items: fullCartForSync, 
+          status: 'KOT_PENDING',
+          gst_enabled: applyGst,
+          gst_rate: gstRate,
+          service_charge_enabled: applyServiceCharge,
+          service_charge_rate: serviceChargeRate,
+          note: orderNote
+        });
         console.log("✅ KOT Sync Successful in background");
       } catch (err) {
         console.error("❌ Background KOT failed:", err);
@@ -2627,6 +2810,9 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
     if (!cart || cart.length === 0) { alert("No items to send"); return; }
     if (!table) { alert("No table selected"); return; }
 
+    const tid = String(table.id || '').toUpperCase();
+    const isTakeaway = tid.startsWith('TA-') || tid.startsWith('DL-') || tid.startsWith('TAK-') || tid.startsWith('DEL-');
+
     const deltaItems = cart.map(item => {
       const existing = (initialOrder || []).find(i => i.name === item.name);
       const existingQty = existing ? (existing.qty || existing.quantity || 0) : 0;
@@ -2637,7 +2823,22 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
 
     if (deltaItems.length === 0) { alert("No new items to print KOT"); return; }
 
+    if (isTakeaway) {
+      await onSaveOrder(table.id, cart, 'kot_printed', {
+        customerName, customerPhone, note: orderNote,
+        paymentStatus: isPaid ? 'PAID' : 'UNPAID',
+        paymentMethod: paymentMethod,
+        gst_enabled: applyGst, gst_rate: gstRate,
+        service_charge_enabled: applyServiceCharge, service_charge_rate: serviceChargeRate
+      });
+      await printKOT(deltaItems);
+      setCart([]);
+      if (onBack) onBack();
+      return;
+    }
+
     // 🔥 INSTANT UI ACTION
+    const fullCartForSync = [...cart];
     setCart([]);
     if (onBack) onBack();
 
@@ -2646,7 +2847,15 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       try {
         // 1. Sync to backend FIRST (to update status instantly)
         const { updateOrderApi } = await import('./utils/apiClient');
-        await updateOrderApi(table.id, { items: deltaItems, status: 'KOT_PRINTED' });
+        await updateOrderApi(table.id, { 
+          items: fullCartForSync, 
+          status: 'KOT_PRINTED',
+          gst_enabled: applyGst,
+          gst_rate: gstRate,
+          service_charge_enabled: applyServiceCharge,
+          service_charge_rate: serviceChargeRate,
+          note: orderNote
+        });
         
         // 2. Hardware action (printing) - might block if browser dialog shows
         await printKOT(deltaItems);
@@ -2661,67 +2870,48 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   };
 
   const handleSave = async () => {
-    if (!cart || cart.length === 0) { alert("No items to save"); return; }
+    if (!cart || cart.length === 0) { alert("Please add at least 1 item to the order."); return; }
     if (!table) { alert("No table selected"); return; }
-
-    const cartItems = cart
-      .filter(item => item && item.name && item.price !== undefined)
-      .map(item => ({ name: item.name, price: item.price, quantity: item.qty || 1, qty: item.qty || 1 }));
-
-    // 🔥 INSTANT UI ACTION
-    setCart([]);
-    if (onBack) onBack();
-
-    // Perform background tasks
-    (async () => {
-      try {
-        const { updateTableApi } = await import('./utils/apiClient');
-        await updateTableApi(table.id, { 
-          order_items: cartItems,
-          status: 'DRAFT'
-        });
-        console.log("✅ Order Saved Successful in background");
-      } catch (err) {
-        console.error("❌ Background Save order failed:", err);
-      }
-    })();
+    await onSaveOrder(table.id, cart, 'occupied', { 
+      customerName, 
+      customerPhone, 
+      note: orderNote,
+      paymentStatus: isPaid ? 'PAID' : 'UNPAID',
+      paymentMethod: paymentMethod,
+      gst_enabled: applyGst,
+      gst_rate: gstRate,
+      service_charge_enabled: applyServiceCharge,
+      service_charge_rate: serviceChargeRate
+    });
   };
 
   const handlePrintBill = async () => {
-    if (!cart || cart.length === 0) { alert("No items to print"); return; }
+    if (!cart || cart.length === 0) { alert("Please add at least 1 item to the order."); return; }
     if (!table) { alert("No table selected"); return; }
+    
+    const tid = String(table.id || '').toUpperCase();
+    const isTakeaway = tid.startsWith('TA-') || tid.startsWith('DL-') || tid.startsWith('TAK-') || tid.startsWith('DEL-');
+    
+    // Mark as completed if already paid, otherwise printed
+    const finalStatus = (isTakeaway && isPaid) ? 'completed' : 'printed';
 
-    const cartItems = cart
-      .filter(item => item && item.name && item.price !== undefined)
-      .map(item => ({ name: item.name, price: item.price, quantity: item.qty || 1, qty: item.qty || 1 }));
-
-    // 🔥 INSTANT UI ACTION
-    setCart([]);
-    if (onBack) onBack();
-
-    // Perform background tasks
-    (async () => {
-      try {
-        // 1. Sync to backend FIRST
-        const { updateTableApi } = await import('./utils/apiClient');
-        await updateTableApi(table.id, { 
-          order_items: cartItems,
-          status: 'BILLING'
-        });
-
-        // 2. Hardware action (printing)
-        await printBill();
-        
-        console.log("✅ Bill Print & Sync Successful in background");
-      } catch (err) {
-        console.error("❌ Background Bill Print failed:", err);
-      }
-    })();
+    await onSaveOrder(table.id, cart, finalStatus, { 
+      customerName, 
+      customerPhone, 
+      note: orderNote,
+      paymentStatus: isPaid ? 'PAID' : 'UNPAID',
+      paymentMethod: paymentMethod,
+      gst_enabled: applyGst,
+      gst_rate: gstRate,
+      service_charge_enabled: applyServiceCharge,
+      service_charge_rate: serviceChargeRate
+    });
+    await printBill();
   };
 
   const addItemToTable = async (item) => {
     if (!IS_LOCAL) return alert("Read-Only Mode: Adding items disabled.");
-    if (!selectedTable) return;
+    if (!table) return;
 
     // Standardize item for backend
     const newItem = { name: item.name, price: item.price, quantity: 1, qty: 1 };
@@ -2730,7 +2920,14 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
     (async () => {
       try {
         const { updateOrderApi } = await import('./utils/apiClient');
-        await updateOrderApi(selectedTable.id, { items: [newItem], status: 'OCCUPIED' });
+        await updateOrderApi(table.id, { 
+          items: [newItem], 
+          status: 'OCCUPIED',
+          gst_enabled: applyGst,
+          gst_rate: gstRate,
+          service_charge_enabled: applyServiceCharge,
+          service_charge_rate: serviceChargeRate
+        });
         console.log("✅ Background item add sync successful");
       } catch (err) { 
         console.error("❌ Background item add failed:", err);
@@ -2738,21 +2935,55 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
     })();
   };
 
+  // 1. Sync cart when initialOrder changes (background sync)
   useEffect(() => {
     setCart(initialOrder || []);
-    setOrderNote(table?.note || '');
-    setCustomerPhone(table?.phone || '');
-    setCustomerName(table?.customerName || '');
+  }, [initialOrder]);
+
+  // 2. Sync tax & metadata ONLY on table switch or global default change
+  useEffect(() => {
+    if (!table) return;
+    const isVacant = !table.status || table.status === 'vacant';
+    
+    setOrderNote(table.note || '');
+    setCustomerPhone(table.phone || '');
+    setCustomerName(table.customerName || '');
     setRedeemedPoints(0);
-    setApplyServiceCharge(table?.type === 'Takeaway' || table?.type === 'Delivery' ? false : (settings?.autoServiceCharge ?? true));
-  }, [initialOrder, table?.id, table?.note, table?.phone, table?.customerName, table?.type, settings?.autoServiceCharge]);
+    
+    // --- Tax & Service Charge Logic ---
+    // For running tables, prioritize saved settings. For vacant, use defaults.
+    const tableGst = table.gst_enabled !== undefined ? Boolean(table.gst_enabled) : null;
+    const finalGst = isVacant ? (settings?.gstEnabled ?? false) : (tableGst !== null ? tableGst : (settings?.gstEnabled ?? false));
+    setApplyGst(finalGst);
+    setGstRate(isVacant ? (settings?.gstRate || 5) : (table.gst_rate || settings?.gstRate || 5));
+
+    if (isPickup) {
+      setApplyServiceCharge(false);
+      setIsPaid(table.paymentStatus !== 'UNPAID' && table.payment_status !== 'UNPAID');
+      setPaymentMethod(table.paymentMethod || table.payment_method || 'Cash');
+    } else {
+      const tableSc = table.service_charge_enabled !== undefined ? Boolean(table.service_charge_enabled) : null;
+      const finalSc = isVacant ? (settings?.autoServiceCharge ?? false) : (tableSc !== null ? tableSc : (settings?.autoServiceCharge ?? false));
+      setApplyServiceCharge(finalSc);
+      setServiceChargeRate(isVacant ? (settings?.serviceChargeRate || 5) : (table.service_charge_rate || settings?.serviceChargeRate || 5));
+    }
+  }, [table?.id, settings?.gstEnabled, settings?.autoServiceCharge, settings?.gstRate, settings?.serviceChargeRate, isPickup]);
+
+  // 3. Sync customer details if they change externally
+  useEffect(() => {
+    if (table) {
+      setCustomerName(table.customerName || '');
+      setCustomerPhone(table.phone || '');
+    }
+  }, [table?.customerName, table?.phone]);
 
   // Calculations
   const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
   const discountAmt = applyDiscount ? (subtotal * (discountRate / 100)) : 0;
   const taxableAmount = Math.max(0, subtotal - discountAmt - redeemedPoints);
   const serviceCharge = applyServiceCharge ? (taxableAmount * (serviceChargeRate / 100)) : 0;
-  const rawTotal = taxableAmount + serviceCharge;
+  const gstAmount = applyGst ? ((taxableAmount + serviceCharge) * (gstRate / 100)) : 0;
+  const rawTotal = taxableAmount + serviceCharge + gstAmount;
   const grandTotal = Math.round(rawTotal);
   const roundOff = grandTotal - rawTotal;
 
@@ -2878,6 +3109,10 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   };
 
   const handleAction = async (actionType) => {
+    if (isPickup && (!cart || cart.length === 0)) {
+      alert("Please add at least 1 item to the order.");
+      return;
+    }
     console.log("🔥 handleAction triggered for:", actionType);
     let updatedCart = [...cart];
     let itemsToPrint = [];
@@ -3053,10 +3288,35 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
         <div style={{ background: 'var(--primary)', color: 'white', padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontWeight: '900', fontSize: '15px' }}>{displayTitle}</div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            {(String(table?.id).startsWith('TAK-') || String(table?.id).startsWith('DEL-')) && (
-                <button onClick={() => { if(confirm(`Confirm deletion of order ${table.id}?`)) onSaveOrder(table.id, [], 'free'); }} style={{ background: '#ef4444', border: 'none', color: 'white', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}><Trash2 size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }}/>Delete</button>
+            {(String(table?.id).startsWith('TAK-') || String(table?.id).startsWith('DEL-') || String(table?.id).startsWith('TA-') || String(table?.id).startsWith('DL-')) && (
+              <>
+                {(table.paymentStatus === 'PAID' || table.payment_status === 'PAID') ? (
+                  <button 
+                    onClick={() => { 
+                      if(confirm(`Cancel PAID order ${table.id}?`)) {
+                        onCancelOrder(table.id);
+                        onBack([]); // Close ordering view
+                      }
+                    }} 
+                    style={{ background: '#f97316', border: 'none', color: 'white', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}
+                  >
+                    <XCircle size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }}/>Cancel Order
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => { 
+                      if(confirm(`Confirm deletion of order ${table.id}?`)) {
+                        onSaveOrder(table.id, [], 'free'); 
+                      }
+                    }} 
+                    style={{ background: '#ef4444', border: 'none', color: 'white', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}
+                  >
+                    <Trash2 size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }}/>Delete
+                  </button>
+                )}
+              </>
             )}
-            <button onClick={onBack} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}>Close</button>
+            <button onClick={() => onBack(cart)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}>Close</button>
           </div>
         </div>
 
@@ -3081,8 +3341,8 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
               {displayTitle}
             </div>
           )}
-          <button onClick={onBack} style={{ background: 'transparent', border: 'none', fontSize: '11px', color: '#6b7280', cursor: 'pointer', textDecoration: 'underline' }}>
-            {table && (String(table.id).startsWith('DEL-') || String(table.id).startsWith('TAK-')) ? 'Back to Online' : 'Back to Tables'}
+          <button onClick={() => onBack(cart)} style={{ background: 'transparent', border: 'none', fontSize: '11px', color: '#6b7280', cursor: 'pointer', textDecoration: 'underline' }}>
+            {table && (String(table.id).startsWith('DEL-') || String(table.id).startsWith('TAK-') || String(table.id).startsWith('TA-') || String(table.id).startsWith('DL-')) ? 'Back to Online' : 'Back to Tables'}
           </button>
           <div style={{ marginLeft: 'auto', background: 'var(--primary)', color: 'white', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
             {table?.type === 'Delivery' ? 'Delivery' : table?.type === 'Takeaway' ? 'Takeaway' : 'Dine In'}
@@ -3181,6 +3441,27 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
               <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>₹{subtotal.toFixed(2)}</span>
             </div>
 
+            {applyDiscount && discountAmt > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ fontSize: '13px', color: '#64748b' }}>Discount ({discountRate}%)</span>
+                <span style={{ fontSize: '14px', color: '#ef4444' }}>-₹{discountAmt.toFixed(2)}</span>
+              </div>
+            )}
+
+            {applyServiceCharge && serviceCharge > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ fontSize: '13px', color: '#64748b' }}>Service Charge ({serviceChargeRate}%)</span>
+                <span style={{ fontSize: '14px', color: '#1e293b' }}>₹{serviceCharge.toFixed(2)}</span>
+              </div>
+            )}
+
+            {applyGst && gstAmount > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ fontSize: '13px', color: '#64748b' }}>GST ({gstRate}%)</span>
+                <span style={{ fontSize: '14px', color: '#1e293b' }}>₹{gstAmount.toFixed(2)}</span>
+              </div>
+            )}
+
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
               style={{
@@ -3224,7 +3505,18 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                     <label htmlFor="service-toggle" style={{ fontSize: '12px', fontWeight: '500', color: '#475569' }}>Service Charge %</label>
                   </div>
                   {applyServiceCharge && (
-                    <input type="number" value={serviceChargeRate} onChange={(e) => setServiceChargeRate(e.target.value)} style={{ width: '50px', padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center', fontSize: '12px' }} />
+                    <input type="number" value={serviceChargeRate} onChange={(e) => setServiceChargeRate(parseFloat(e.target.value) || 0)} style={{ width: '50px', padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center', fontSize: '12px' }} />
+                  )}
+                </div>
+
+                {/* GST */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input type="checkbox" id="gst-toggle" checked={applyGst} onChange={(e) => setApplyGst(e.target.checked)} />
+                    <label htmlFor="gst-toggle" style={{ fontSize: '12px', fontWeight: '500', color: '#475569' }}>GST %</label>
+                  </div>
+                  {applyGst && (
+                    <input type="number" value={gstRate} onChange={(e) => setGstRate(parseFloat(e.target.value) || 0)} style={{ width: '50px', padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center', fontSize: '12px' }} />
                   )}
                 </div>
 
@@ -3513,6 +3805,8 @@ function MainApp() {
   const [deviceId, setDeviceId] = useState('LOCAL-DEVICE');
   const [cart, setCart] = useState([]);
   const [lanUrl, setLanUrl] = useState('');
+  const [takeawayCounter, setTakeawayCounter] = useState(() => loadFromLocal('pos_ta_counter', 1));
+  const [lastCounterDate, setLastCounterDate] = useState(() => loadFromLocal('pos_ta_date', new Date().toDateString()));
 
   const handleManualSync = async () => {
     setIsSyncing(true);
@@ -3590,7 +3884,12 @@ function MainApp() {
 
   const deleteAnyOrder = async (id) => {
     if (!IS_LOCAL) return alert("Read-Only Mode: Deleting orders disabled.");
-    const isFloorTable = !String(id).startsWith('DEL-') && !String(id).startsWith('TAK-');
+    const sid = String(id || '').trim().toUpperCase();
+    if (!sid) return;
+    console.log("[deleteAnyOrder] Attempting to delete ID:", sid);
+
+    const isFloorTable = !sid.startsWith('DEL-') && !sid.startsWith('TAK-') && !sid.startsWith('TA-') && !sid.startsWith('DL-');
+    
     if (isFloorTable) {
       try {
         const res = await fetch(`${BASE_URL}/table/${id}/clear`, { method: 'POST' });
@@ -3598,14 +3897,40 @@ function MainApp() {
           const errData = await res.json().catch(() => ({}));
           throw new Error(errData.message || `Server error ${res.status}`);
         }
-        // Socket event will update the UI automatically
       } catch (err) {
         console.error("Failed to clear table:", err);
         alert("Failed to clear table: " + err.message);
       }
     } else {
-      setNonTableOrders(prev => prev.filter(o => String(o.id) !== String(id)));
+      setNonTableOrders(prev => {
+        if (!Array.isArray(prev)) return [];
+        const order = prev.find(o => String(o.id || '').trim().toUpperCase() === sid);
+        const status = (order?.paymentStatus || order?.payment_status || '').toUpperCase();
+        const isPaid = status === 'PAID';
+        
+        console.log("[deleteAnyOrder] Order lookup result:", order?.id, "Status:", status, "isPaid:", isPaid);
+        
+        if (isPaid) {
+          alert("Cannot delete a PAID order. Use 'Cancel Order' instead.");
+          return prev;
+        }
+        const updated = prev.filter(o => String(o.id || '').trim().toUpperCase() !== sid);
+        saveToLocal('pos_nontable_orders', updated);
+        return updated;
+      });
     }
+  };
+
+  const handleCancelOrder = (id) => {
+    if (!IS_LOCAL) return alert("Read-Only Mode: Canceling orders disabled.");
+    const sid = String(id || '').trim().toUpperCase();
+    console.log("[handleCancelOrder] Attempting to cancel ID:", sid);
+    setNonTableOrders(prev => {
+      if (!Array.isArray(prev)) return [];
+      const updated = prev.map(o => String(o.id || '').trim().toUpperCase() === sid ? { ...o, status: 'CANCELED' } : o);
+      saveToLocal('pos_nontable_orders', updated);
+      return updated;
+    });
   };
 
   const clearTableFast = (id) => {
@@ -3614,15 +3939,27 @@ function MainApp() {
 
   const handleCreateNonTableOrder = (type) => {
     if (!IS_LOCAL) return alert("Read-Only Mode: Order creation disabled.");
-    const id = (type === 'Delivery' ? 'DEL-' : 'TAK-') + Math.floor(1000 + Math.random() * 9000);
+    
+    const today = new Date().toDateString();
+    let currentCounter = takeawayCounter;
+
+    const prefix = type === 'Delivery' ? 'DL' : 'TA';
+    const formattedCounter = String(currentCounter).padStart(3, '0');
+    const id = `${prefix}-${formattedCounter}`;
+    
+    setTakeawayCounter(currentCounter + 1);
+    saveToLocal('pos_ta_counter', currentCounter + 1);
+
     const newOrder = {
       id,
-      name: `${type} ${id.split('-')[1]}`,
+      name: `${type} ${formattedCounter}`,
       type,
       status: 'occupied',
       orders: [],
       items: [],
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      paymentStatus: 'PAID',
+      paymentMethod: 'Cash'
     };
     setNonTableOrders(prev => [...prev, newOrder]);
     setSelectedTable(newOrder);
@@ -3639,7 +3976,11 @@ function MainApp() {
         setTables(safeData.map(t => ({
           ...t,
           status: t.status,
-          orders: t.items || t.orders || t.order_items || []
+          orders: t.items || t.orders || t.order_items || [],
+          gst_enabled: Boolean(t.gst_enabled),
+          gst_rate: t.gst_rate,
+          service_charge_enabled: Boolean(t.service_charge_enabled),
+          service_charge_rate: t.service_charge_rate
         })));
       }
     } catch(e) {}
@@ -3675,9 +4016,24 @@ function MainApp() {
           name:   t.name || t.table_number || String(t.id),
           type:   t.type || t.zone || 'Main Floor',
           status: t.status,
-          orders: t.items || t.orders || t.order_items || []
+          orders: t.items || t.orders || t.order_items || [],
+          gst_enabled: Boolean(t.gst_enabled),
+          gst_rate: t.gst_rate,
+          service_charge_enabled: Boolean(t.service_charge_enabled),
+          service_charge_rate: t.service_charge_rate
         }));
         setTables(normalized);
+        
+        // Sync floorPlanSections with backend zones to ensure visibility in FloorDesigner
+        const backendZones = [...new Set(normalized.map(t => t.type))].filter(Boolean);
+        setFloorPlanSections(prev => {
+          const combined = [...new Set([...prev, ...backendZones])];
+          if (JSON.stringify(combined) !== JSON.stringify(prev)) {
+            saveToLocal('pos_floor_sections', combined);
+            return combined;
+          }
+          return prev;
+        });
       })
       .catch(err => {
         console.error("TABLE LOAD FAILED:", err);
@@ -3705,7 +4061,7 @@ function MainApp() {
     
     try {
       const { updateOrderApi } = await import('./utils/apiClient');
-      await updateOrderApi(selectedTable.id, { items: [newItem] });
+      await updateOrderApi(selectedTable.id, { items: [newItem], status: 'OCCUPIED' });
       // UI will update via socket table_updated or order_updated
     } catch (err) { 
       console.error("Failed to add item:", err);
@@ -3746,16 +4102,56 @@ function MainApp() {
     }
   };
 
-  const saveToLocal = (key, data) => localStorage.setItem(key, JSON.stringify(data));
-  const loadFromLocal = (key, fallback = []) => {
-    try {
-      const saved = localStorage.getItem(key);
-      return saved ? JSON.parse(saved) : fallback;
-    } catch (e) { return fallback; }
-  };
 
   const [orderHistory, setOrderHistory] = useState(() => loadFromLocal('pos_order_history'));
   const [nonTableOrders, setNonTableOrders] = useState(() => loadFromLocal('pos_nontable_orders'));
+
+  // --- DAILY RESET & MIGRATION LOGIC ---
+  useEffect(() => {
+    const today = new Date().toDateString();
+    if (lastCounterDate !== today) {
+      console.log("📅 Day change detected. Resetting counters and migrating orders...");
+      
+      // 1. Reset Takeaway Counter
+      setTakeawayCounter(1);
+      saveToLocal('pos_ta_counter', 1);
+      
+      // 2. Migrate Previous Day's Orders
+      const toMove = [];
+      const toKeep = [];
+      
+      nonTableOrders.forEach(order => {
+        const orderDate = new Date(order.createdAt || Date.now()).toDateString();
+        const isToday = orderDate === today;
+        const isPaid = order.paymentStatus === 'PAID' || order.payment_status === 'PAID' || order.status === 'settled' || order.status === 'completed' || order.status === 'CANCELED';
+        
+        if (!isToday && isPaid) {
+          toMove.push({ 
+            ...order, 
+            status: order.status === 'CANCELED' ? 'CANCELED' : 'COMPLETED',
+            migratedAt: today 
+          });
+        } else {
+          toKeep.push(order);
+        }
+      });
+      
+      if (toMove.length > 0) {
+        setOrderHistory(prev => {
+          const updatedHistory = [...toMove, ...prev].slice(0, 2000);
+          saveToLocal('pos_order_history', updatedHistory);
+          return updatedHistory;
+        });
+      }
+      
+      setNonTableOrders(toKeep);
+      saveToLocal('pos_nontable_orders', toKeep);
+      
+      // 3. Update lastCounterDate
+      setLastCounterDate(today);
+      saveToLocal('pos_ta_date', today);
+    }
+  }, [lastCounterDate, nonTableOrders, orderHistory]);
   const [devices, setDevices] = useState([]);
   const [settings, setSettings] = useState(() => loadFromLocal('pos_settings', {
     resName: 'Tyde Cafe',
@@ -3763,6 +4159,8 @@ function MainApp() {
     paperSize: '80mm',
     serviceChargeRate: 5,
     autoServiceCharge: true,
+    gstEnabled: false,
+    gstRate: 5,
     billHeader: 'TYDE CAFE',
     billFooter: 'Thank You!',
     resFont: 14,
@@ -3803,7 +4201,12 @@ function MainApp() {
         .then(data => {
           if (data && Object.keys(data).length > 0) {
             setSettings(prev => {
-              const merged = { ...prev, ...data };
+              const normalizedData = {
+                ...data,
+                gstEnabled: data.gstEnabled !== undefined ? (data.gstEnabled === 1 || data.gstEnabled === true) : prev.gstEnabled,
+                autoServiceCharge: data.autoServiceCharge !== undefined ? (data.autoServiceCharge === 1 || data.autoServiceCharge === true) : prev.autoServiceCharge
+              };
+              const merged = { ...prev, ...normalizedData };
               saveToLocal('pos_settings', merged);
               settingsRef.current = merged; // Update ref too
               return merged;
@@ -3849,6 +4252,7 @@ function MainApp() {
   };
 
   useEffect(() => {
+    if (!IS_LOCAL) return;
     const timer = setTimeout(() => {
       syncToCloud(); // Fire to new cloud URL after data changes (menu, tables, orders)
     }, 5000);
@@ -3857,6 +4261,7 @@ function MainApp() {
 
   // Periodic Cloud Sync every 30 seconds
   useEffect(() => {
+    if (!IS_LOCAL) return;
     const cloudInterval = setInterval(() => {
       console.log("☁️ 30s Interval: Syncing to cloud...");
       syncToCloud();
@@ -3897,7 +4302,11 @@ function MainApp() {
           name:   t.name || t.table_number || String(t.id),
           type:   t.type || t.zone || 'Main Floor',
           status: t.status,
-          orders: t.items || t.orders || t.order_items || []
+          orders: t.items || t.orders || t.order_items || [],
+          gst_enabled: Boolean(t.gst_enabled),
+          gst_rate: t.gst_rate,
+          service_charge_enabled: Boolean(t.service_charge_enabled),
+          service_charge_rate: t.service_charge_rate
         }));
         setTables(normalized);
       })
@@ -3947,7 +4356,11 @@ function MainApp() {
           name:   t.name || t.table_number || String(t.id),
           type:   t.type || t.zone || 'Main Floor',
           status: t.status, // Use backend status directly ('running' | 'vacant')
-          orders: t.items || t.orders || t.order_items || []
+          orders: t.items || t.orders || t.order_items || [],
+          gst_enabled: Boolean(t.gst_enabled),
+          gst_rate: t.gst_rate,
+          service_charge_enabled: Boolean(t.service_charge_enabled),
+          service_charge_rate: t.service_charge_rate
         }));
         setTables(normalized);
       });
@@ -3967,14 +4380,32 @@ function MainApp() {
         // Use backend status directly
         setTables(prev => prev.map(t => {
           if (matchFn(t)) {
-            return { ...t, status: payload.status, orders: payload.items || [], last_updated: payload.startedAt };
+            return { 
+              ...t, 
+              status: payload.status, 
+              orders: payload.items || [], 
+              last_updated: payload.startedAt,
+              gst_enabled: Boolean(payload.gst_enabled),
+              gst_rate: payload.gst_rate,
+              service_charge_enabled: Boolean(payload.service_charge_enabled),
+              service_charge_rate: payload.service_charge_rate
+            };
           }
           return t;
         }));
 
         setSelectedTable(prev => {
           if (prev && matchFn(prev)) {
-            return { ...prev, status: payload.status, orders: payload.items || [], last_updated: payload.startedAt };
+            return { 
+              ...prev, 
+              status: payload.status, 
+              orders: payload.items || [], 
+              last_updated: payload.startedAt,
+              gst_enabled: Boolean(payload.gst_enabled),
+              gst_rate: payload.gst_rate,
+              service_charge_enabled: Boolean(payload.service_charge_enabled),
+              service_charge_rate: payload.service_charge_rate
+            };
           }
           return prev;
         });
@@ -4061,12 +4492,12 @@ function MainApp() {
       return;
     }
 
-    if (tid.startsWith('DEL-') || tid.startsWith('TAK-')) {
+    if (tid.startsWith('DL-') || tid.startsWith('TA-') || tid.startsWith('DEL-') || tid.startsWith('TAK-')) {
       // Local management for non-table orders (still kept for offline resilience)
       setNonTableOrders(prev => {
         const updated = prev.map(o => {
              if (String(o.id).trim().toUpperCase() === tid) {
-               return { ...o, orders: orderItems, items: orderItems, status: newStatus, customerName: extraData.customerName, phone: extraData.customerPhone, note: extraData.note };
+               return { ...o, orders: orderItems, items: orderItems, status: newStatus, customerName: extraData.customerName, phone: extraData.customerPhone, note: extraData.note, paymentStatus: extraData.paymentStatus, paymentMethod: extraData.paymentMethod };
              }
              return o;
         });
@@ -4075,6 +4506,21 @@ function MainApp() {
       });
       setView('nontables');
     } else {
+      // 1. UPDATE LOCALLY FIRST (Optimistic UI)
+      setTables(prev => prev.map(t => {
+        if (String(t.id).toUpperCase() === tid || String(t.table_number).toUpperCase() === tid) {
+          return { 
+            ...t, 
+            status: newStatus || 'occupied', 
+            orders: orderItems,
+            gst_enabled: extraData.gst_enabled,
+            gst_rate: extraData.gst_rate,
+            service_charge_enabled: extraData.service_charge_enabled,
+            service_charge_rate: extraData.service_charge_rate
+          };
+        }
+        return t;
+      }));
       setView('tables');
     }
 
@@ -4086,12 +4532,26 @@ function MainApp() {
         await createOrder({
           table_number: tid,
           items: orderItems.map(i => ({ name: i.name, quantity: i.qty, price: i.price, notes: i.note || '' })),
-          notes: extraData.note || ''
+          notes: extraData.note || '',
+          gst_enabled: extraData.gst_enabled,
+          gst_rate: extraData.gst_rate,
+          service_charge_enabled: extraData.service_charge_enabled,
+          service_charge_rate: extraData.service_charge_rate
         });
       } else {
-        const isFloorTable = !tid.startsWith('DEL-') && !tid.startsWith('TAK-');
+        const isFloorTable = !tid.startsWith('DL-') && !tid.startsWith('TA-') && !tid.startsWith('DEL-') && !tid.startsWith('TAK-');
         if (isFloorTable) {
-           await updateOrderApi(tableId, { items: orderItems, status: 'kot_pending' });
+           // Normalize status for backend (it expects uppercase)
+           const backendStatus = String(newStatus || 'occupied').toUpperCase();
+           await updateOrderApi(tableId, { 
+             items: orderItems, 
+             status: backendStatus,
+             gst_enabled: extraData.gst_enabled,
+             gst_rate: extraData.gst_rate,
+             service_charge_enabled: extraData.service_charge_enabled,
+             service_charge_rate: extraData.service_charge_rate,
+             note: extraData.note
+           });
         }
       }
     } catch (syncErr) {
@@ -4212,7 +4672,7 @@ function MainApp() {
           table={quickPrintTable} 
           settings={settings} 
           onClose={() => setQuickPrintTable(null)} 
-          onPrint={(discountAmt, service, grandTotal) => {
+          onPrint={(discountAmt, service, gstAmount, grandTotal) => {
             printPosToSerial({ 
               ...quickPrintTable, 
               items: quickPrintTable.orders, 
@@ -4220,8 +4680,9 @@ function MainApp() {
               subtotal: getOrderTotal(quickPrintTable.orders),
               discountAmt,
               serviceCharge: service,
+              gstAmount: gstAmount,
               grandTotal,
-              roundOff: (grandTotal - (getOrderTotal(quickPrintTable.orders) - discountAmt + service)).toFixed(2),
+              roundOff: (grandTotal - (getOrderTotal(quickPrintTable.orders) - discountAmt + service + gstAmount)).toFixed(2),
               cashier: settings.cashierName || 'Biller'
             }, 'BILL', settings);
             setQuickPrintTable(null);
@@ -4364,7 +4825,7 @@ function MainApp() {
             />
           )}
           {view === 'nontables' && (
-            <NonTableManagement orders={nonTableOrders} onSelectOrder={handleSelectTable} onCreateOrder={handleCreateNonTableOrder} onViewChange={setView} onQuickSettle={setQuickSettleTable} onQuickPrint={handleQuickPrint} onClearOrder={clearTableFast} globalSearch={globalSearch} />
+            <NonTableManagement orders={nonTableOrders} onSelectOrder={handleSelectTable} onCreateOrder={handleCreateNonTableOrder} onViewChange={setView} onQuickSettle={setQuickSettleTable} onQuickPrint={handleQuickPrint} onClearOrder={clearTableFast} onCancelOrder={handleCancelOrder} globalSearch={globalSearch} />
           )}
           {view === 'analytics' && (
             <ReportsHub orderHistory={orderHistory} menuItems={menuItems} tables={tables} nonTableOrders={nonTableOrders} products={products} />
@@ -4498,6 +4959,9 @@ function MainApp() {
                   if (targetTable) {
                     setTables(prev => prev.map(t => {
                       if (t.id === newId) return { ...t, orders: currentCart, status: 'kot_pending', createdAt: t.createdAt || Date.now() };
+                      if (t.id === oldId && (String(selectedTable.id).startsWith('DEL-') || String(selectedTable.id).startsWith('TAK-') || String(selectedTable.id).startsWith('TA-') || String(selectedTable.id).startsWith('DL-'))) {
+                        return { ...t, orders: [], status: 'vacant', createdAt: null };
+                      }
                       if (t.id === oldId) return { ...t, orders: [], status: 'vacant', createdAt: null };
                       return t;
                     }));
@@ -4505,8 +4969,13 @@ function MainApp() {
                   }
                 }
               }}
-              onBack={() => {
-                if (selectedTable && (String(selectedTable.id).startsWith('DEL-') || String(selectedTable.id).startsWith('TAK-'))) {
+              onBack={(currentCart) => {
+                if (selectedTable && (String(selectedTable.id).startsWith('DEL-') || String(selectedTable.id).startsWith('TAK-') || String(selectedTable.id).startsWith('TA-') || String(selectedTable.id).startsWith('DL-'))) {
+                  // AUTO-DELETE IF EMPTY (only if currentCart is also empty)
+                  const items = currentCart || [];
+                  if (items.length === 0 && selectedTable.status !== 'CANCELED') {
+                    deleteAnyOrder(selectedTable.id);
+                  }
                   setView('nontables');
                 } else {
                   setView('tables');
@@ -4514,6 +4983,7 @@ function MainApp() {
                 setSelectedTable(null);
               }}
               onSaveOrder={saveOrderToTable}
+              onCancelOrder={handleCancelOrder}
               onAddItem={addItemToTable}
               onSettleTable={settleTable}
               loadTables={loadTables}

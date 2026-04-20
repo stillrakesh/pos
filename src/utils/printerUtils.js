@@ -100,6 +100,7 @@ export const printPosToSerial = async (orderData, type = 'BILL', customSettings 
     subtotal: orderData.subtotal || 0,
     discountAmt: orderData.discountAmt || 0,
     serviceCharge: orderData.serviceCharge || 0,
+    gstAmount: orderData.gstAmount || 0,
     roundOff: orderData.roundOff || 0,
     grandTotal: orderData.grandTotal || orderData.total || 0,
   };
@@ -353,12 +354,23 @@ function fallbackBrowserPrint(orderData, type, settings) {
               <span></span>
             </div>
             
+            ${order.serviceCharge > 0 ? `
             <div class="totals-stack">
               <div style="flex: 1; display: flex; justify-content: space-between; align-items: flex-start;">
                  <div style="line-height: 1.1;">Service Charge<br/><span style="font-size: 11px;">(Optional)</span></div>
                  <div class="col-amt">${(order.serviceCharge || 0).toFixed(2)}</div>
               </div>
             </div>
+            ` : ''}
+
+            ${order.gstAmount > 0 ? `
+            <div class="totals-stack">
+              <div style="flex: 1; display: flex; justify-content: space-between; align-items: flex-start;">
+                 <div style="line-height: 1.1;">GST</div>
+                 <div class="col-amt">${(order.gstAmount || 0).toFixed(2)}</div>
+              </div>
+            </div>
+            ` : ''}
             
             <div class="line" style="margin-top: 10px; border-top-width: 1px;"></div>
             

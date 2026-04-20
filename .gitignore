@@ -23,7 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 
-# SQLite database (runtime data)
-server/*.db
-server/*.db-wal
-server/*.db-shm
+# Data & Backups
+data/*.db
+data/*.db-wal
+data/*.db-shm
+backup/
+

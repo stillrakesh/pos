@@ -5,7 +5,9 @@ import { formatCurrency } from '../../utils/formatters';
 export const QuickPrintModal = ({ table, settings, onClose, onPrint }) => {
   const [discountVal, setDiscountVal] = useState('0');
   const [discountType, setDiscountType] = useState('amount'); // 'amount' or 'percent'
-  const [serviceChargeEnabled, setServiceChargeEnabled] = useState(!!settings?.autoServiceCharge);
+  const [serviceChargeEnabled, setServiceChargeEnabled] = useState(table?.service_charge_enabled ?? !!settings?.autoServiceCharge);
+  const [gstEnabled, setGstEnabled] = useState(table?.gst_enabled ?? !!settings?.gstEnabled);
+  const gstRate = table?.gst_rate ?? settings?.gstRate ?? 5;
 
   if (!table) return null;
 
@@ -19,7 +21,9 @@ export const QuickPrintModal = ({ table, settings, onClose, onPrint }) => {
   }
 
   const service = serviceChargeEnabled ? Math.floor((subtotal - discountAmt) * (settings.serviceChargeRate || 5) / 100) : 0;
-  const grandTotal = subtotal - discountAmt + service;
+  const taxableAmount = subtotal - discountAmt + service;
+  const gstAmount = gstEnabled ? Math.floor(taxableAmount * (gstRate / 100)) : 0;
+  const grandTotal = Math.round(taxableAmount + gstAmount);
 
   return (
     <div className="no-print" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10001, backdropFilter: 'blur(4px)' }}>
@@ -72,6 +76,22 @@ export const QuickPrintModal = ({ table, settings, onClose, onPrint }) => {
             </div>
           </div>
 
+          {/* GST Toggle */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#f0fdf4', borderRadius: '10px' }}>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: '900', color: '#166534' }}>GST ({gstRate}%)</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#166534' }}>{formatCurrency(gstAmount)}</span>
+              <button 
+                onClick={() => setGstEnabled(!gstEnabled)}
+                style={{ width: '36px', height: '20px', borderRadius: '10px', background: gstEnabled ? '#10b981' : '#cbd5e1', border: 'none', cursor: 'pointer', position: 'relative' }}
+              >
+                <div style={{ position: 'absolute', top: '2px', left: gstEnabled ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: 'white', transition: 'left 0.2s' }}></div>
+              </button>
+            </div>
+          </div>
+
           <div style={{ borderTop: '2px dashed #f1f5f9', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '800' }}>PAYABLE AMOUNT</div>
             <div style={{ fontSize: '24px', fontWeight: '950', color: '#94161c' }}>{formatCurrency(grandTotal)}</div>
@@ -79,7 +99,7 @@ export const QuickPrintModal = ({ table, settings, onClose, onPrint }) => {
         </div>
 
         <button 
-          onClick={() => onPrint(discountAmt, service, grandTotal)}
+          onClick={() => onPrint(discountAmt, service, gstAmount, grandTotal)}
           style={{ width: '100%', padding: '16px', background: '#a3112a', color: 'white', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '950', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
         >
           <Printer size={20} /> PRINT BILL
@@ -97,8 +117,10 @@ export const QuickSettleModal = ({ table, settings, onClose, onSettle }) => {
 
   const cartItems = (table.orders || table.items || []);
   const subtotal = cartItems.reduce((acc, i) => acc + (i.price * i.qty), 0);
-  const service = settings?.autoServiceCharge ? Math.floor(subtotal * (settings.serviceChargeRate || 5) / 100) : 0;
-  const grandTotal = subtotal + service;
+  const service = (table.service_charge_enabled ?? settings?.autoServiceCharge) ? Math.floor(subtotal * (table.service_charge_rate ?? settings.serviceChargeRate ?? 5) / 100) : 0;
+  const taxable = subtotal + service;
+  const gst = (table.gst_enabled ?? settings?.gstEnabled) ? Math.floor(taxable * (table.gst_rate ?? settings.gstRate ?? 5) / 100) : 0;
+  const grandTotal = Math.round(taxable + gst);
 
   const amountPaid = parseFloat(amountPaidStr) || 0;
   const changeDue = amountPaid > grandTotal ? amountPaid - grandTotal : 0;

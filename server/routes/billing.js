@@ -50,6 +50,8 @@ router.post('/settle', (req, res) => {
       return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'table_id is required' });
     }
 
+    const isVirtual = String(table_id).toUpperCase().startsWith('TA-') || String(table_id).toUpperCase().startsWith('DEL-') || String(table_id).toUpperCase().startsWith('ONL-');
+    
     const allTables = statements.getAllTables();
     let table = allTables.find(t => {
       const matchId = String(t.id);
@@ -58,23 +60,26 @@ router.post('/settle', (req, res) => {
       return matchId === search || matchNum === search;
     });
 
-    if (!table) {
+    if (!table && !isVirtual) {
       return res.status(404).json({ error: 'NOT_FOUND', message: `Table #${table_id} not found` });
     }
 
     // Mark all active orders for this table as COMPLETED
-    const activeOrders = statements.getOrdersByTable({ table_number: table.table_number });
+    const tableNum = table ? table.table_number : String(table_id);
+    const activeOrders = statements.getOrdersByTable({ table_number: tableNum });
     activeOrders.forEach(order => {
       statements.updateOrderStatus({ id: order.id, status: 'COMPLETED' });
     });
 
-    // Clear table
-    statements.updateTable({
-      id: table.id,
-      status: 'AVAILABLE',
-      order_items: '[]',
-      created_at: ''
-    });
+    // Clear table if physical
+    if (table) {
+      statements.updateTable({
+        id: table.id,
+        status: 'AVAILABLE',
+        order_items: '[]',
+        created_at: ''
+      });
+    }
 
     // Enqueue for cloud sync (one-way, local → cloud)
     try {
@@ -82,7 +87,7 @@ router.post('/settle', (req, res) => {
         type: 'payment_done',
         payload: {
           table_id,
-          table_number: table.table_number,
+          table_number: table ? table.table_number : table_id,
           payment_mode: payment_mode || 'unknown',
           order_details: order_details || {},
           settled_at: new Date().toISOString()
@@ -98,13 +103,14 @@ router.post('/settle', (req, res) => {
       const allTables = statements.getAllTables().map(normalizeTableRow);
       io.emit('table_updated', allTables);
       io.emit('order_updated', {
-        id: String(table.id), table_id: String(table.id),
-        table_number: table.table_number,
+        id: String(table ? table.id : table_id), 
+        table_id: String(table ? table.id : table_id),
+        table_number: tableNum,
         items: [], total: 0, status: 'vacant'
       });
     }
 
-    const updated = statements.getTableById({ id: table.id });
+    const updated = table ? statements.getTableById({ id: table.id }) : null;
     res.json({ success: true, message: 'Bill settled', table: updated });
   } catch (err) {
     console.error('[POST /api/billing/settle] Error:', err);

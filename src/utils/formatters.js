@@ -15,6 +15,6 @@ export const getMinutesElapsed = (createdAt) => {
 
 export const getChannelLabel = (order = {}) => {
   if (order.type === 'Delivery' || String(order.id || order.tableId || '').startsWith('DEL-')) return 'Delivery';
-  if (order.type === 'Takeaway' || String(order.id || order.tableId || '').startsWith('TAK-')) return 'Takeaway';
+  if (order.type === 'Takeaway' || String(order.id || order.tableId || '').startsWith('TA-')) return 'Takeaway';
   return 'Dine In';
 };

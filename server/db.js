@@ -113,6 +113,18 @@ export async function initDatabase() {
     if (!columnNames.includes('shape')) db.run("ALTER TABLE tables ADD COLUMN shape TEXT DEFAULT 'rounded'");
     if (!columnNames.includes('seats')) db.run("ALTER TABLE tables ADD COLUMN seats INTEGER DEFAULT 4");
     if (!columnNames.includes('zone')) db.run("ALTER TABLE tables ADD COLUMN zone TEXT DEFAULT 'Main'");
+    if (!columnNames.includes('gst_enabled')) db.run("ALTER TABLE tables ADD COLUMN gst_enabled INTEGER DEFAULT 0");
+    if (!columnNames.includes('gst_rate')) db.run("ALTER TABLE tables ADD COLUMN gst_rate REAL DEFAULT 0");
+    if (!columnNames.includes('service_charge_enabled')) db.run("ALTER TABLE tables ADD COLUMN service_charge_enabled INTEGER DEFAULT 0");
+    if (!columnNames.includes('service_charge_rate')) db.run("ALTER TABLE tables ADD COLUMN service_charge_rate REAL DEFAULT 0");
+
+    // Also add to orders for historical accuracy
+    const orderInfo = db.exec("PRAGMA table_info(orders)");
+    const orderColumnNames = orderInfo[0].values.map(v => v[1]);
+    if (!orderColumnNames.includes('gst_enabled')) db.run("ALTER TABLE orders ADD COLUMN gst_enabled INTEGER DEFAULT 0");
+    if (!orderColumnNames.includes('gst_rate')) db.run("ALTER TABLE orders ADD COLUMN gst_rate REAL DEFAULT 0");
+    if (!orderColumnNames.includes('service_charge_enabled')) db.run("ALTER TABLE orders ADD COLUMN service_charge_enabled INTEGER DEFAULT 0");
+    if (!orderColumnNames.includes('service_charge_rate')) db.run("ALTER TABLE orders ADD COLUMN service_charge_rate REAL DEFAULT 0");
 
     console.log('  📊 Migration: Table layout columns verified');
   } catch (err) {
@@ -172,10 +184,10 @@ function rowsToObjects(result) {
 // but these wrappers keep the API identical for the routes.
 
 export const statements = {
-  insertOrder({ table_number, items, notes, status }) {
+  insertOrder({ table_number, items, notes, status, gst_enabled, gst_rate, service_charge_enabled, service_charge_rate }) {
     db.run(
-      `INSERT INTO orders (table_number, items, notes, status) VALUES (?, ?, ?, ?)`,
-      [table_number, items, notes || '', status]
+      `INSERT INTO orders (table_number, items, notes, status, gst_enabled, gst_rate, service_charge_enabled, service_charge_rate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [table_number, items, notes || '', status, gst_enabled || 0, gst_rate || 0, service_charge_enabled || 0, service_charge_rate || 0]
     );
     const lastId = db.exec(`SELECT last_insert_rowid() as id`)[0].values[0][0];
     persistToFile();
@@ -236,17 +248,18 @@ export const statements = {
     return rows[0] || null;
   },
 
-  insertTable({ table_number, status, order_items, x, y, shape, seats, zone }) {
+  insertTable({ table_number, status, order_items, x, y, shape, seats, zone, gst_enabled, gst_rate, service_charge_enabled, service_charge_rate }) {
     db.run(
-      `INSERT INTO tables (table_number, status, order_items, x, y, shape, seats, zone, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
-      [table_number, status || 'AVAILABLE', order_items || '[]', x || 50, y || 50, shape || 'rounded', seats || 4, zone || 'Main']
+      `INSERT INTO tables (table_number, status, order_items, x, y, shape, seats, zone, gst_enabled, gst_rate, service_charge_enabled, service_charge_rate, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
+      [table_number, status || 'AVAILABLE', order_items || '[]', x || 50, y || 50, shape || 'rounded', seats || 4, zone || 'Main', gst_enabled || 0, gst_rate || 0, service_charge_enabled || 0, service_charge_rate || 0]
     );
     const lastId = db.exec(`SELECT last_insert_rowid() as id`)[0].values[0][0];
     persistToFile();
     return { lastInsertRowid: lastId };
   },
 
-  updateTable({ id, table_number, status, order_items, x, y, shape, seats, zone, created_at }) {
+  updateTable(req) {
+    const { id, table_number, status, order_items, x, y, shape, seats, zone, created_at } = req;
     const setClauses = [];
     const params = [];
     if (table_number !== undefined) { setClauses.push('table_number = ?'); params.push(table_number); }
@@ -257,6 +270,10 @@ export const statements = {
     if (shape !== undefined) { setClauses.push('shape = ?'); params.push(shape); }
     if (seats !== undefined) { setClauses.push('seats = ?'); params.push(seats); }
     if (zone !== undefined) { setClauses.push('zone = ?'); params.push(zone); }
+    if (req.gst_enabled !== undefined) { setClauses.push('gst_enabled = ?'); params.push(req.gst_enabled ? 1 : 0); }
+    if (req.gst_rate !== undefined) { setClauses.push('gst_rate = ?'); params.push(req.gst_rate); }
+    if (req.service_charge_enabled !== undefined) { setClauses.push('service_charge_enabled = ?'); params.push(req.service_charge_enabled ? 1 : 0); }
+    if (req.service_charge_rate !== undefined) { setClauses.push('service_charge_rate = ?'); params.push(req.service_charge_rate); }
     
     if (created_at !== undefined) {
       if (created_at === null) {
@@ -310,8 +327,8 @@ export const statements = {
           );
         } else {
           db.run(
-            `UPDATE tables SET status = ?, order_items = ?, x = ?, y = ?, shape = ?, seats = ?, zone = ?, last_updated = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE table_number = ?`,
-            [status, items, t.pos?.x || t.x || 50, t.pos?.y || t.y || 50, t.shape || 'rounded', t.seats || 4, t.zone || t.type || 'Main', tableNum]
+            `UPDATE tables SET status = ?, order_items = ?, x = ?, y = ?, shape = ?, seats = ?, zone = ?, gst_enabled = ?, gst_rate = ?, service_charge_enabled = ?, service_charge_rate = ?, last_updated = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE table_number = ?`,
+            [status, items, t.pos?.x || t.x || 50, t.pos?.y || t.y || 50, t.shape || 'rounded', t.seats || 4, t.zone || t.zoneLabel || 'Main', t.gst_enabled || 0, t.gst_rate || 0, t.service_charge_enabled || 0, t.service_charge_rate || 0, tableNum]
           );
         }
       } else {

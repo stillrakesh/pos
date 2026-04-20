@@ -1,3 +1,4 @@
+// ⚠️ STABLE CORE - DO NOT MODIFY WITHOUT BACKUP
 import { Router } from 'express';
 import { statements } from '../db.js';
 
@@ -13,35 +14,53 @@ function normalizeTableRow(t) {
     name: String(i.name || ''), price: Number(i.price || 0),
     quantity: Number(i.quantity || i.qty || 1), qty: Number(i.qty || i.quantity || 1)
   }));
-  const total = cleanItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  
+  const subtotal = cleanItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  const scEnabled = Boolean(t.service_charge_enabled === 1 || t.service_charge_enabled === true);
+  const scRate = Number(t.service_charge_rate || 5);
+  const scAmount = scEnabled ? Math.floor(subtotal * scRate / 100) : 0;
+  
+  const taxable = subtotal + scAmount;
+  const gstEnabled = Boolean(t.gst_enabled === 1 || t.gst_enabled === true);
+  const gstRate = Number(t.gst_rate || 5);
+  const gstAmount = gstEnabled ? Math.floor(taxable * gstRate / 100) : 0;
+  const grandTotal = Math.round(taxable + gstAmount);
+
   const rawStatus = String(t.status || '').toUpperCase();
   const hasItems = cleanItems.length > 0;
-  // Any of these means the table is not vacant
   const isActive = ['DRAFT', 'KOT_PENDING', 'KOT_PRINTED', 'BILLING', 'OCCUPIED', 'SAVED', 'PRINTED', 'RUNNING'].includes(rawStatus);
   const isRunning = isActive || hasItems;
-  
-  // Map raw DB status to canonical frontend status
+
   let finalStatus = 'vacant';
   if (isRunning) {
     if (rawStatus === 'DRAFT') finalStatus = 'draft';
     else if (rawStatus === 'KOT_PENDING') finalStatus = 'kot_pending';
     else if (rawStatus === 'KOT_PRINTED') finalStatus = 'kot_printed';
     else if (rawStatus === 'BILLING' || rawStatus === 'PRINTED') finalStatus = 'billing';
-    else finalStatus = 'kot_pending'; // Default for legacy 'OCCUPIED' or 'RUNNING'
+    else finalStatus = 'kot_pending';
   }
 
   let createdAtTs = null;
   if (t.created_at) { const d = new Date(t.created_at); if (!isNaN(d.getTime())) createdAtTs = d.getTime(); }
+  
   return {
     ...t,
     id: String(t.id),
+    tableId: String(t.id),
+    table_number: String(t.table_number || t.id),
     name: String(t.name || t.table_number || `Table ${t.id}`),
     status: finalStatus,
-    dbStatus: rawStatus, // Keep raw for advanced UI logic
+    dbStatus: rawStatus,
     items: cleanItems, orders: cleanItems, order_items: cleanItems,
     pos: { x: t.x ?? 50, y: t.y ?? 50 },
-    total, orderValue: total,
+    total: grandTotal, 
+    orderValue: grandTotal, 
+    subtotal: subtotal,
     createdAt: createdAtTs,
+    gst_enabled: gstEnabled,
+    gst_rate: gstRate,
+    service_charge_enabled: scEnabled,
+    service_charge_rate: scRate
   };
 }
 
@@ -116,7 +135,11 @@ router.post('/', (req, res) => {
             y: t.y || t.pos?.y,
             shape: t.shape,
             seats: t.seats,
-            zone: t.zone || t.zoneLabel
+            zone: t.zone || t.zoneLabel,
+            gst_enabled: t.gst_enabled,
+            gst_rate: t.gst_rate,
+            service_charge_enabled: t.service_charge_enabled,
+            service_charge_rate: t.service_charge_rate
           });
         } else {
           statements.insertTable({
@@ -127,7 +150,11 @@ router.post('/', (req, res) => {
             y: t.y || t.pos?.y,
             shape: t.shape,
             seats: t.seats,
-            zone: t.zone || t.zoneLabel
+            zone: t.zone || t.zoneLabel,
+            gst_enabled: t.gst_enabled,
+            gst_rate: t.gst_rate,
+            service_charge_enabled: t.service_charge_enabled,
+            service_charge_rate: t.service_charge_rate
           });
         }
       });
@@ -154,7 +181,11 @@ router.post('/', (req, res) => {
       y: req.body.y ?? req.body.pos?.y,
       shape: req.body.shape,
       seats: req.body.seats,
-      zone: req.body.zone || req.body.zoneLabel
+      zone: req.body.zone || req.body.zoneLabel,
+      gst_enabled: req.body.gst_enabled,
+      gst_rate: req.body.gst_rate,
+      service_charge_enabled: req.body.service_charge_enabled,
+      service_charge_rate: req.body.service_charge_rate
     });
 
     const allTables = statements.getAllTables().map(normalizeTableRow);
@@ -217,7 +248,11 @@ router.put('/:id', (req, res) => {
       y: req.body.y ?? req.body.pos?.y,
       shape: req.body.shape,
       seats: req.body.seats,
-      zone: req.body.zone
+      zone: req.body.zone,
+      gst_enabled: req.body.gst_enabled,
+      gst_rate: req.body.gst_rate,
+      service_charge_enabled: req.body.service_charge_enabled,
+      service_charge_rate: req.body.service_charge_rate
     });
 
     const updated = statements.getTableById({ id });

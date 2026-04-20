@@ -125,21 +125,45 @@ const ReportsHub = ({ orderHistory, menuItems, tables = [], nonTableOrders = [],
   };
 
   const { start, end } = getRangeBounds();
-  const filteredHistory = orderHistory.filter(order => {
+  const getChannelLabel = (order) => {
+    if (!order) return 'Unknown';
+    if (order.tableId === 'Takeaway' || order.type === 'Takeaway' || String(order.id).startsWith('TA-')) return 'Takeaway';
+    if (order.tableId === 'Delivery' || order.type === 'Delivery' || String(order.id).startsWith('DEL-')) return 'Delivery';
+    if (order.tableId === 'Online' || order.type === 'Online' || String(order.id).startsWith('ONL-')) return 'Online';
+    return 'Dine In';
+  };
+
+  const combinedHistory = [
+    ...(orderHistory || []),
+    ...(nonTableOrders || []).map(o => ({
+      ...o,
+      timestamp: o.timestamp || o.createdAt || Date.now(),
+      grandTotal: o.grandTotal || (typeof getOrderTotal === 'function' ? getOrderTotal(o.orders || o.items || []) : 0)
+    }))
+  ];
+
+  const filteredHistory = combinedHistory.filter(order => {
+    if (!order || !order.timestamp) return false;
     const timestamp = new Date(order.timestamp);
-    return timestamp >= start && timestamp <= end;
+    if (isNaN(timestamp.getTime())) return false;
+    const isPaid = (order.paymentStatus === 'PAID' || order.payment_status === 'PAID') && order.status !== 'CANCELED';
+    return timestamp >= start && timestamp <= end && isPaid;
   });
 
   // Basic Metrics
   const totalNetSales = filteredHistory.reduce((acc, order) => acc + (order.grandTotal || 0), 0);
   const totalOrders = filteredHistory.length;
   const avgOrderValue = totalOrders > 0 ? totalNetSales / totalOrders : 0;
-  const totalItemsSold = filteredHistory.reduce((acc, order) => acc + (order.cart || order.order || []).reduce((sum, item) => sum + (item.qty || 0), 0), 0);
+  const totalItemsSold = filteredHistory.reduce((acc, order) => {
+    const items = order.cart || order.orders || order.items || [];
+    return acc + items.reduce((sum, item) => sum + (item.qty || item.quantity || 0), 0);
+  }, 0);
   
   // Pivot Logic for Products
   const productMap = {};
   // Initialize with all menu items and products to catch those with zero sales
-  [...menuItems, ...products].forEach(item => {
+  [...(menuItems || []), ...(products || [])].forEach(item => {
+    if (!item || !item.name) return;
     if (!productMap[item.name]) {
       productMap[item.name] = { 
         name: item.name, 
@@ -184,7 +208,10 @@ const ReportsHub = ({ orderHistory, menuItems, tables = [], nonTableOrders = [],
   const paymentMethods = ['Cash', 'Card', 'UPI'];
   const paymentData = paymentMethods.map(method => ({
     name: method,
-    value: filteredHistory.filter(o => o.paymentMethod === method).reduce((acc, o) => acc + (o.grandTotal || 0), 0)
+    value: filteredHistory.filter(o => {
+      const m = (o.paymentMethod || o.payment_method || '').toLowerCase();
+      return m === method.toLowerCase();
+    }).reduce((acc, o) => acc + (o.grandTotal || 0), 0)
   })).filter(d => d.value > 0);
 
   // Growth / Trend Data (Daily)

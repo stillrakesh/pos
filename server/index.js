@@ -71,9 +71,16 @@ io.on('connection', (socket) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// Middleware
+// Middleware & CORS (with Chrome Private Network Access support)
 // ─────────────────────────────────────────────────────────────
-app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] }));
+app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] }));
+app.use((req, res, next) => {
+  // Fix for Chrome Mobile "Private Network Access" policy
+  if (req.headers['access-control-request-private-network']) {
+    res.header('Access-Control-Allow-Private-Network', 'true');
+  }
+  next();
+});
 app.use(express.json({ limit: '2mb' }));
 
 // ─────────────────────────────────────────────────────────────
@@ -487,8 +494,19 @@ function normalizeTableResponse(t) {
     note:     String(i.note || '')
   }));
 
-  const runningTotal = cleanItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+  const subtotal = cleanItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
   
+  // Tax Calculation
+  const scEnabled = Boolean(t.service_charge_enabled === 1 || t.service_charge_enabled === true);
+  const scRate = Number(t.service_charge_rate || 5);
+  const scAmount = scEnabled ? Math.floor(subtotal * scRate / 100) : 0;
+  
+  const taxable = subtotal + scAmount;
+  const gstEnabled = Boolean(t.gst_enabled === 1 || t.gst_enabled === true);
+  const gstRate = Number(t.gst_rate || 5);
+  const gstAmount = gstEnabled ? Math.floor(taxable * gstRate / 100) : 0;
+  const grandTotal = Math.round(taxable + gstAmount);
+
   // Convert ISO/SQL string to numeric timestamp for POS TimeElapsed component
   let createdAtTs = null;
   if (t.created_at && String(t.created_at).trim() !== '') {
@@ -522,11 +540,16 @@ function normalizeTableResponse(t) {
     orders:       cleanItems,
     order_items:  cleanItems,
     pos:          { x: t.x ?? 50, y: t.y ?? 50 },
-    total:        runningTotal,
-    orderValue:   runningTotal,
-    order_value:  runningTotal,
+    total:        grandTotal,
+    orderValue:   grandTotal,
+    order_value:  grandTotal,
+    subtotal:     subtotal,
     createdAt:    createdAtTs,
-    updatedAt:    t.last_updated || new Date().toISOString()
+    updatedAt:    t.last_updated || new Date().toISOString(),
+    gst_enabled:  gstEnabled,
+    gst_rate:     gstRate,
+    service_charge_enabled: scEnabled,
+    service_charge_rate: scRate
   };
 }
 
@@ -554,7 +577,11 @@ function getFullOrder(tableIdOrOrderId) {
       items: normalized.items,
       total: normalized.total,
       status: normalized.status,
-      startedAt: normalized.createdAt || new Date().toISOString()
+      startedAt: normalized.createdAt || new Date().toISOString(),
+      gst_enabled: normalized.gst_enabled,
+      gst_rate: normalized.gst_rate,
+      service_charge_enabled: normalized.service_charge_enabled,
+      service_charge_rate: normalized.service_charge_rate
     };
   } catch (err) {
     console.error("getFullOrder failed:", err);

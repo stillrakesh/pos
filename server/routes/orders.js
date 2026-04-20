@@ -9,7 +9,7 @@ const router = Router();
 // ─────────────────────────────────────────────────────────────
 router.post('/', (req, res) => {
   try {
-    const { table_number, table_id, items, notes } = req.body;
+    const { table_number, table_id, items, notes, gst_enabled, gst_rate, service_charge_enabled, service_charge_rate } = req.body;
 
     // Accept table_id OR table_number (Captain sends table_id)
     const resolvedTableNum = table_number || table_id;
@@ -76,7 +76,11 @@ router.post('/', (req, res) => {
       table_number: String(targetTable.table_number),
       items: JSON.stringify(normalizedItems),
       notes: notes || '',
-      status: 'NEW'
+      status: 'NEW',
+      gst_enabled: gst_enabled,
+      gst_rate: gst_rate,
+      service_charge_enabled: service_charge_enabled,
+      service_charge_rate: service_charge_rate
     });
 
     const order = statements.getOrderById({ id: result.lastInsertRowid });
@@ -85,6 +89,11 @@ router.post('/', (req, res) => {
     const io = req.app.get('io');
 
     // --- Merge items into table, update status OCCUPIED ---
+    const finalGstEnabled = gst_enabled !== undefined ? gst_enabled : (targetTable ? targetTable.gst_enabled : false);
+    const finalGstRate = gst_rate !== undefined ? gst_rate : (targetTable ? targetTable.gst_rate : 5);
+    const finalScEnabled = service_charge_enabled !== undefined ? service_charge_enabled : (targetTable ? targetTable.service_charge_enabled : false);
+    const finalScRate = service_charge_rate !== undefined ? service_charge_rate : (targetTable ? targetTable.service_charge_rate : 5);
+
     try {
       const existing = (() => {
         try { return JSON.parse(targetTable.order_items || '[]'); } catch (e) { return []; }
@@ -113,7 +122,11 @@ router.post('/', (req, res) => {
         id:          targetTable.id,
         status:      'OCCUPIED',
         order_items: JSON.stringify(mergedItems),
-        created_at:  isNew ? new Date().toISOString() : targetTable.created_at
+        created_at:  isNew ? new Date().toISOString() : targetTable.created_at,
+        gst_enabled: finalGstEnabled,
+        gst_rate: finalGstRate,
+        service_charge_enabled: finalScEnabled,
+        service_charge_rate: finalScRate
       });
 
       if (io) {
@@ -129,7 +142,11 @@ router.post('/', (req, res) => {
           total,
           status:       'kot_pending',
           startedAt:    new Date().toISOString(),
-          is_new_kot:   true
+          is_new_kot:   true,
+          gst_enabled:  finalGstEnabled,
+          gst_rate:     finalGstRate,
+          service_charge_enabled: finalScEnabled,
+          service_charge_rate: finalScRate
         });
         // Also emit full table_updated so both POS and Captain reflect new state
         const updatedTables = statements.getAllTables().map(normalizeTableRow);
@@ -157,7 +174,18 @@ function normalizeTableRow(t) {
     name: String(i.name || ''), price: Number(i.price || 0),
     quantity: Number(i.quantity || i.qty || 1), qty: Number(i.qty || i.quantity || 1)
   }));
-  const total = cleanItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  
+  const subtotal = cleanItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  const scEnabled = Boolean(t.service_charge_enabled === 1 || t.service_charge_enabled === true);
+  const scRate = Number(t.service_charge_rate || 5);
+  const scAmount = scEnabled ? Math.floor(subtotal * scRate / 100) : 0;
+  
+  const taxable = subtotal + scAmount;
+  const gstEnabled = Boolean(t.gst_enabled === 1 || t.gst_enabled === true);
+  const gstRate = Number(t.gst_rate || 5);
+  const gstAmount = gstEnabled ? Math.floor(taxable * gstRate / 100) : 0;
+  const grandTotal = Math.round(taxable + gstAmount);
+
   const rawStatus = String(t.status || '').toUpperCase();
   const hasItems = cleanItems.length > 0;
   const isActive = ['DRAFT', 'KOT_PENDING', 'KOT_PRINTED', 'BILLING', 'OCCUPIED', 'SAVED', 'PRINTED', 'RUNNING'].includes(rawStatus);
@@ -172,16 +200,27 @@ function normalizeTableRow(t) {
     else finalStatus = 'kot_pending'; 
   }
 
+  let createdAtTs = null;
+  if (t.created_at) { const d = new Date(t.created_at); if (!isNaN(d.getTime())) createdAtTs = d.getTime(); }
+
   return {
     ...t,
-    id: String(t.id), tableId: String(t.id),
+    id: String(t.id),
+    tableId: String(t.id),
     table_number: String(t.table_number || t.id),
     name: String(t.name || t.table_number || `Table ${t.id}`),
     status: finalStatus,
     dbStatus: rawStatus,
     items: cleanItems, orders: cleanItems, order_items: cleanItems,
     pos: { x: t.x ?? 50, y: t.y ?? 50 },
-    total, orderValue: total
+    total: grandTotal, 
+    orderValue: grandTotal, 
+    subtotal: subtotal,
+    createdAt: createdAtTs,
+    gst_enabled: gstEnabled,
+    gst_rate: gstRate,
+    service_charge_enabled: scEnabled,
+    service_charge_rate: scRate
   };
 }
 // ─────────────────────────────────────────────────────────────
@@ -192,75 +231,86 @@ router.put('/:tableId', (req, res) => {
     const { tableId } = req.params;
     const { items, status } = req.body;
     
+    console.log(`[PUT /orders/${tableId}] Received payload:`, { 
+      status: status, 
+      gst_enabled: req.body.gst_enabled,
+      items_count: items?.length 
+    });
+
     if (!items || !Array.isArray(items)) {
       return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'items must be an array' });
     }
 
+    const isVirtual = String(tableId).toUpperCase().startsWith('TA-') || String(tableId).toUpperCase().startsWith('DEL-') || String(tableId).toUpperCase().startsWith('ONL-');
+
     const allTables = statements.getAllTables();
     let targetTable = allTables.find(t => String(t.id) === String(tableId) || String(t.table_number).toUpperCase() === String(tableId).toUpperCase());
     
-    if (!targetTable) {
+    if (!targetTable && !isVirtual) {
       return res.status(404).json({ error: 'Table not found' });
     }
 
-    // Merge incoming items into existing table items — deduplicate by name
-    const existingItems = (() => {
-      try { return JSON.parse(targetTable.order_items || '[]'); } catch(e) { return []; }
-    })();
-
-    const mergedMap = new Map();
-    existingItems.forEach(item => {
-      const qty = Number(item.quantity || item.qty || 1);
-      mergedMap.set(item.name, { ...item, quantity: qty, qty });
-    });
-    items.forEach(item => {
-      const qty = Number(item.quantity || item.qty || 1);
-      if (mergedMap.has(item.name)) {
-        const current = mergedMap.get(item.name);
-        mergedMap.set(item.name, { ...current, quantity: current.quantity + qty, qty: current.quantity + qty });
-      } else {
-        mergedMap.set(item.name, { ...item, quantity: qty, qty });
-      }
-    });
+    // Insert as a new order record even if no physical table exists
+    const resolvedTableNum = targetTable ? String(targetTable.table_number) : String(tableId);
     
-    const finalItems = Array.from(mergedMap.values());
-    const total = finalItems.reduce((sum, i) => sum + (Number(i.price || 0) * Number(i.quantity || 1)), 0);
-    const dbStatus = status ? status.toUpperCase() : 'OCCUPIED';
-    const isStarting = (['AVAILABLE', 'VACANT', 'FREE', ''].includes(String(targetTable.status || '').toUpperCase())) && (dbStatus && !['AVAILABLE', 'VACANT', 'FREE', ''].includes(dbStatus.toUpperCase()));
-
-    statements.updateTable({
-      id: targetTable.id,
-      status: dbStatus,
-      order_items: JSON.stringify(finalItems),
-      created_at: isStarting ? new Date().toISOString() : undefined
+    const orderResult = statements.insertOrder({
+      table_number: resolvedTableNum,
+      items: JSON.stringify(items),
+      notes: req.body.note || '',
+      status: (status || 'OCCUPIED').toUpperCase(),
+      gst_enabled: req.body.gst_enabled,
+      gst_rate: req.body.gst_rate,
+      service_charge_enabled: req.body.service_charge_enabled,
+      service_charge_rate: req.body.service_charge_rate
     });
+
+    const dbStatus = (status || 'OCCUPIED').toUpperCase();
+    const total = items.reduce((sum, i) => sum + (Number(i.price || 0) * Number(i.quantity || i.qty || 1)), 0);
+
+    if (targetTable) {
+      // Physical table update logic
+      statements.updateTable({
+        id: targetTable.id,
+        status: dbStatus,
+        order_items: JSON.stringify(items),
+        created_at: new Date().toISOString(),
+        gst_enabled: req.body.gst_enabled,
+        gst_rate: req.body.gst_rate,
+        service_charge_enabled: req.body.service_charge_enabled,
+        service_charge_rate: req.body.service_charge_rate
+      });
+    }
 
     const io = req.app.get('io');
     if (io) {
       const updatedTables = statements.getAllTables().map(normalizeTableRow);
       io.emit('table_updated', updatedTables);
       
-      let canonicalStatus = 'vacant';
-      if (['DRAFT', 'KOT_PENDING', 'KOT_PRINTED', 'BILLING', 'OCCUPIED', 'SAVED', 'PRINTED', 'RUNNING'].includes(dbStatus)) {
-        if (dbStatus === 'DRAFT') canonicalStatus = 'draft';
-        else if (dbStatus === 'KOT_PENDING') canonicalStatus = 'kot_pending';
-        else if (dbStatus === 'KOT_PRINTED') canonicalStatus = 'kot_printed';
-        else if (dbStatus === 'BILLING' || dbStatus === 'PRINTED') canonicalStatus = 'billing';
-        else canonicalStatus = 'kot_pending';
-      }
+      let canonicalStatus = 'kot_pending';
+      if (dbStatus === 'DRAFT') canonicalStatus = 'draft';
+      else if (dbStatus === 'BILLING' || dbStatus === 'PRINTED') canonicalStatus = 'billing';
+
+      const finalGstEnabled = req.body.gst_enabled !== undefined ? req.body.gst_enabled : (targetTable ? targetTable.gst_enabled : false);
+      const finalGstRate = req.body.gst_rate !== undefined ? req.body.gst_rate : (targetTable ? targetTable.gst_rate : 5);
+      const finalScEnabled = req.body.service_charge_enabled !== undefined ? req.body.service_charge_enabled : (targetTable ? targetTable.service_charge_enabled : false);
+      const finalScRate = req.body.service_charge_rate !== undefined ? req.body.service_charge_rate : (targetTable ? targetTable.service_charge_rate : 5);
 
       io.emit('order_updated', {
-        id: String(targetTable.id),
-        table_id: String(targetTable.id),
-        table_number: String(targetTable.table_number),
-        items: finalItems,
+        id: targetTable ? String(targetTable.id) : String(tableId),
+        table_id: targetTable ? String(targetTable.id) : String(tableId),
+        table_number: resolvedTableNum,
+        items: items,
         total,
         status: canonicalStatus,
-        startedAt: new Date().toISOString()
+        startedAt: new Date().toISOString(),
+        gst_enabled: finalGstEnabled,
+        gst_rate: finalGstRate,
+        service_charge_enabled: finalScEnabled,
+        service_charge_rate: finalScRate
       });
     }
 
-    res.json({ success: true, message: 'Order updated successfully', items: finalItems });
+    res.json({ success: true, message: 'Order updated successfully', items });
   } catch (err) {
     console.error(`[PUT /api/orders/${req.params.tableId}] Error:`, err);
     res.status(500).json({ error: 'SERVER_ERROR', message: 'Failed to update order' });
