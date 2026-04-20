@@ -11,6 +11,8 @@ const BUILT_IN_TEMPLATES = [
     type: 'bill',
     isBuiltIn: true,
     paperWidth: 80, // mm
+    global: { marginTop: 0, marginBottom: 4, marginLeft: 0, marginRight: 0, sectionSpacing: 1, fontFamily: 'monospace' },
+    printBehavior: { autoPrint: false, copies: 1 },
     sections: [
       { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 14, fontWeight: 'bold', textAlign: 'center', marginBottom: 5, layout: 'full' }, data: { showLogo: false, text: 'TYDE CAFE', address: 'Nerul Ferry Terminal\nContact: +91 9999999999', showGst: false, gstNumber: '' } },
       { id: 's2', type: 'orderInfo', visible: true, order: 2, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'half-left' }, data: { showBillNo: true, showTableNo: true, showOrderType: true, showDateTime: true } },
@@ -27,6 +29,8 @@ const BUILT_IN_TEMPLATES = [
     type: 'bill',
     isBuiltIn: true,
     paperWidth: 58, // mm
+    global: { marginTop: 0, marginBottom: 4, marginLeft: 0, marginRight: 0, sectionSpacing: 1, fontFamily: 'monospace' },
+    printBehavior: { autoPrint: false, copies: 1 },
     sections: [
       { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 12, fontWeight: 'bold', textAlign: 'center', marginBottom: 2 }, data: { showLogo: false, text: 'TYDE CAFE', address: 'Nerul', showGst: false, gstNumber: '' } },
       { id: 's2', type: 'orderInfo', visible: true, order: 2, style: { fontSize: 10, fontWeight: 'normal', textAlign: 'left', marginBottom: 2 }, data: { showBillNo: true, showTableNo: true, showOrderType: false, showDateTime: true } },
@@ -43,6 +47,8 @@ const BUILT_IN_TEMPLATES = [
     type: 'bill',
     isBuiltIn: true,
     paperWidth: 80,
+    global: { marginTop: 0, marginBottom: 4, marginLeft: 0, marginRight: 0, sectionSpacing: 1, fontFamily: 'monospace' },
+    printBehavior: { autoPrint: false, copies: 1 },
     sections: [
       { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 16, fontWeight: 'bold', textAlign: 'center', marginBottom: 5, layout: 'full' }, data: { showLogo: false, text: 'Tyde Cafe', address: 'Nerul Ferry Terminal', showGst: false, gstNumber: '' } },
       { id: 's3', type: 'customerInfo', visible: true, order: 2, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'full' }, data: { showName: true, showMobile: false } },
@@ -60,6 +66,8 @@ const BUILT_IN_TEMPLATES = [
     type: 'kot',
     isBuiltIn: true,
     paperWidth: 80,
+    global: { marginTop: 0, marginBottom: 4, marginLeft: 0, marginRight: 0, sectionSpacing: 1, fontFamily: 'monospace' },
+    printBehavior: { autoPrint: false, copies: 1 },
     sections: [
       { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 16, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 }, data: { text: 'KOT' } },
       { id: 's2', type: 'orderInfo', visible: true, order: 2, style: { fontSize: 14, fontWeight: 'bold', textAlign: 'left', marginBottom: 10 }, data: { showBillNo: false, showTableNo: true, showOrderType: true, showDateTime: true } },
@@ -73,6 +81,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
   const [activeType, setActiveType] = useState('bill'); // 'bill', 'kot'
   const [activeTemplateId, setActiveTemplateId] = useState(null);
   const [editingTemplate, setEditingTemplate] = useState(null);
+  const [activeTab, setActiveTab] = useState('sections'); // 'sections', 'global'
 
   // Initialize templates from settings or use built-in
   useEffect(() => {
@@ -294,11 +303,25 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
             )}
 
             {section.type === 'itemList' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showQty} onChange={(e) => updateSectionData(index, 'showQty', e.target.checked)} /> Show Quantity</label>
-                <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showPrice} onChange={(e) => updateSectionData(index, 'showPrice', e.target.checked)} /> Show Price/Unit</label>
-                <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showTotal} onChange={(e) => updateSectionData(index, 'showTotal', e.target.checked)} /> Show Item Total</label>
-              </div>
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+                  <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showQty} onChange={(e) => updateSectionData(index, 'showQty', e.target.checked)} /> Show Quantity</label>
+                  <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showPrice} onChange={(e) => updateSectionData(index, 'showPrice', e.target.checked)} /> Show Price/Unit</label>
+                  <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showTotal} onChange={(e) => updateSectionData(index, 'showTotal', e.target.checked)} /> Show Item Total</label>
+                  <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.qtyBeforeName} onChange={(e) => updateSectionData(index, 'qtyBeforeName', e.target.checked)} /> Qty Before Name</label>
+                  <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showNotes !== false} onChange={(e) => updateSectionData(index, 'showNotes', e.target.checked)} /> Show Notes</label>
+                  <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.mergeDuplicates} onChange={(e) => updateSectionData(index, 'mergeDuplicates', e.target.checked)} /> Merge Duplicates</label>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px' }}>Column Widths (chars)</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                    <div><span style={{ fontSize: '10px', color: '#94a3b8' }}>Qty Width</span><input type="number" value={section.data.colQty || 4} onChange={(e) => updateSectionData(index, 'colQty', parseInt(e.target.value))} style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                    <div><span style={{ fontSize: '10px', color: '#94a3b8' }}>Price Width</span><input type="number" value={section.data.colPrice || 8} onChange={(e) => updateSectionData(index, 'colPrice', parseInt(e.target.value))} style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                    <div><span style={{ fontSize: '10px', color: '#94a3b8' }}>Total Width</span><input type="number" value={section.data.colTotal || 8} onChange={(e) => updateSectionData(index, 'colTotal', parseInt(e.target.value))} style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Item Name will take remaining width.</div>
+                </div>
+              </>
             )}
 
             {section.type === 'charges' && (
@@ -337,14 +360,13 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
     };
 
     return (
-      <div style={{ 
         width: `${editingTemplate.paperWidth * 4}px`, // scaled for preview
         background: 'white', 
-        padding: '20px', 
+        padding: `${(editingTemplate.global?.marginTop || 0) * 15 + 20}px ${(editingTemplate.global?.marginRight || 0) * 15 + 20}px ${(editingTemplate.global?.marginBottom || 0) * 15 + 20}px ${(editingTemplate.global?.marginLeft || 0) * 15 + 20}px`, 
         boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)', 
         border: '1px solid #e2e8f0', 
         color: '#000', 
-        fontFamily: 'monospace',
+        fontFamily: editingTemplate.global?.fontFamily || 'monospace',
         margin: '0 auto',
         minHeight: '400px'
       }}>
@@ -359,8 +381,8 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
             paddingRight: section.style.layout === 'half-left' ? '5px' : '0',
             paddingLeft: section.style.layout === 'half-right' ? '5px' : '0',
             borderBottom: section.style.layout === 'half-left' || section.style.layout === 'half-right' ? 'none' : '1px dashed #ccc',
-            marginBottom: section.style.layout === 'half-left' || section.style.layout === 'half-right' ? '0' : '10px',
-            paddingBottom: section.style.layout === 'half-left' || section.style.layout === 'half-right' ? '0' : '10px'
+            marginBottom: section.style.layout === 'half-left' || section.style.layout === 'half-right' ? '0' : `${(editingTemplate.global?.sectionSpacing || 1) * 10}px`,
+            paddingBottom: section.style.layout === 'half-left' || section.style.layout === 'half-right' ? '0' : '5px'
           };
 
           // Wrap content logic
@@ -396,21 +418,28 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                 </div>
               );
               break;
-            case 'itemList':
+              let headW = (editingTemplate.paperWidth === 58 ? 32 : 48) - (section.data.showQty?(section.data.colQty || 4):0) - (section.data.showPrice?(section.data.colPrice || 8):0) - (section.data.showTotal?(section.data.colTotal || 8):0) - 1;
+              if (section.style.layout === 'half-left' || section.style.layout === 'half-right') headW = Math.floor(headW / 2);
+
               content = (
                 <div style={{ paddingBottom: '5px' }}>
                   <div style={{ display: 'flex', borderBottom: '1px solid #000', paddingBottom: '4px', marginBottom: '4px', fontWeight: 'bold' }}>
+                    {section.data.qtyBeforeName && section.data.showQty && <div style={{ width: `${(section.data.colQty || 4)*8}px`, textAlign: 'center' }}>QTY</div>}
                     <div style={{ flex: 1 }}>ITEM</div>
-                    {section.data.showQty && <div style={{ width: '40px', textAlign: 'center' }}>QTY</div>}
-                    {section.data.showPrice && <div style={{ width: '60px', textAlign: 'right' }}>PRICE</div>}
-                    {section.data.showTotal && <div style={{ width: '60px', textAlign: 'right' }}>AMT</div>}
+                    {!section.data.qtyBeforeName && section.data.showQty && <div style={{ width: `${(section.data.colQty || 4)*8}px`, textAlign: 'center' }}>QTY</div>}
+                    {section.data.showPrice && <div style={{ width: `${(section.data.colPrice || 8)*8}px`, textAlign: 'right' }}>PRICE</div>}
+                    {section.data.showTotal && <div style={{ width: `${(section.data.colTotal || 8)*8}px`, textAlign: 'right' }}>AMT</div>}
                   </div>
                   {mockOrder.items.map((item, i) => (
-                    <div key={i} style={{ display: 'flex', marginBottom: '4px' }}>
-                      <div style={{ flex: 1 }}>{item.name}</div>
-                      {section.data.showQty && <div style={{ width: '40px', textAlign: 'center' }}>{item.qty}</div>}
-                      {section.data.showPrice && <div style={{ width: '60px', textAlign: 'right' }}>{item.price}</div>}
-                      {section.data.showTotal && <div style={{ width: '60px', textAlign: 'right' }}>{item.total}</div>}
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex' }}>
+                        {section.data.qtyBeforeName && section.data.showQty && <div style={{ width: `${(section.data.colQty || 4)*8}px`, textAlign: 'center' }}>{item.qty}</div>}
+                        <div style={{ flex: 1 }}>{item.name}</div>
+                        {!section.data.qtyBeforeName && section.data.showQty && <div style={{ width: `${(section.data.colQty || 4)*8}px`, textAlign: 'center' }}>{item.qty}</div>}
+                        {section.data.showPrice && <div style={{ width: `${(section.data.colPrice || 8)*8}px`, textAlign: 'right' }}>{item.price}</div>}
+                        {section.data.showTotal && <div style={{ width: `${(section.data.colTotal || 8)*8}px`, textAlign: 'right' }}>{item.total}</div>}
+                      </div>
+                      {section.data.showNotes !== false && i === 0 && <div style={{ fontSize: '0.9em', paddingLeft: '8px' }}>Note: Extra spicy</div>}
                     </div>
                   ))}
                 </div>
@@ -524,20 +553,76 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
               </div>
             </div>
 
+            {/* Settings Tabs */}
+            <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+              <button onClick={() => setActiveTab('sections')} style={{ flex: 1, padding: '16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'sections' ? '2px solid #94161c' : '2px solid transparent', color: activeTab === 'sections' ? '#94161c' : '#64748b', fontWeight: 'bold', cursor: 'pointer' }}>Sections</button>
+              <button onClick={() => setActiveTab('global')} style={{ flex: 1, padding: '16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'global' ? '2px solid #94161c' : '2px solid transparent', color: activeTab === 'global' ? '#94161c' : '#64748b', fontWeight: 'bold', cursor: 'pointer' }}>Global Layout</button>
+            </div>
+
+            {activeTab === 'global' && (
+              <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }} className="no-scrollbar">
+                <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Settings2 size={16}/> Global Spacing & Layout</h3>
+                
+                <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#475569', marginBottom: '12px' }}>Outer Margins (Print lines)</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '11px', color: '#64748b' }}>Top Margin</label>
+                      <input type="number" value={editingTemplate.global?.marginTop || 0} onChange={e => setEditingTemplate({...editingTemplate, global: {...editingTemplate.global, marginTop: parseInt(e.target.value)}})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: '#64748b' }}>Bottom Margin</label>
+                      <input type="number" value={editingTemplate.global?.marginBottom || 0} onChange={e => setEditingTemplate({...editingTemplate, global: {...editingTemplate.global, marginBottom: parseInt(e.target.value)}})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: '#64748b' }}>Left Margin (Spaces)</label>
+                      <input type="number" value={editingTemplate.global?.marginLeft || 0} onChange={e => setEditingTemplate({...editingTemplate, global: {...editingTemplate.global, marginLeft: parseInt(e.target.value)}})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: '#64748b' }}>Right Margin (Spaces)</label>
+                      <input type="number" value={editingTemplate.global?.marginRight || 0} onChange={e => setEditingTemplate({...editingTemplate, global: {...editingTemplate.global, marginRight: parseInt(e.target.value)}})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#475569', marginBottom: '12px' }}>Typography & Spacing</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '11px', color: '#64748b' }}>Section Spacing (Lines)</label>
+                      <input type="number" value={editingTemplate.global?.sectionSpacing || 1} onChange={e => setEditingTemplate({...editingTemplate, global: {...editingTemplate.global, sectionSpacing: parseInt(e.target.value)}})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: '#64748b' }}>Font Family (Preview / Raster Printing)</label>
+                      <select value={editingTemplate.global?.fontFamily || 'monospace'} onChange={e => setEditingTemplate({...editingTemplate, global: {...editingTemplate.global, fontFamily: e.target.value}})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white' }}>
+                        <option value="monospace">Monospace (ESC/POS Default)</option>
+                        <option value="sans-serif">Sans Serif</option>
+                        <option value="serif">Serif</option>
+                      </select>
+                      <span style={{ fontSize: '10px', color: '#ef4444', display: 'block', marginTop: '4px' }}>*Only visible if printer supports graphical printing</span>
+                    </div>
+                  </div>
+                </div>
+
             {/* Layout Options */}
-            <div style={{ padding: '24px', borderBottom: '1px solid #e2e8f0' }}>
-               <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Paper Width</label>
+            <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
+               <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#475569', marginBottom: '12px' }}>Paper Width</label>
                <div style={{ display: 'flex', gap: '12px' }}>
                  <button onClick={() => setEditingTemplate({...editingTemplate, paperWidth: 80})} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '2px solid', borderColor: editingTemplate.paperWidth === 80 ? '#94161c' : '#e2e8f0', background: editingTemplate.paperWidth === 80 ? '#fdf2f2' : 'white', color: editingTemplate.paperWidth === 80 ? '#94161c' : '#64748b', fontWeight: 'bold', cursor: 'pointer' }}>80 mm</button>
                  <button onClick={() => setEditingTemplate({...editingTemplate, paperWidth: 58})} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '2px solid', borderColor: editingTemplate.paperWidth === 58 ? '#94161c' : '#e2e8f0', background: editingTemplate.paperWidth === 58 ? '#fdf2f2' : 'white', color: editingTemplate.paperWidth === 58 ? '#94161c' : '#64748b', fontWeight: 'bold', cursor: 'pointer' }}>58 mm</button>
                </div>
             </div>
 
+              </div>
+            )}
+
             {/* Section Controls */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }} className="no-scrollbar">
-              <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Layout size={16}/> Section Blocks</h3>
-              {editingTemplate.sections.sort((a,b) => a.order - b.order).map((section, index) => renderSectionControls(section, index))}
-            </div>
+            {activeTab === 'sections' && (
+              <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }} className="no-scrollbar">
+                <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Layout size={16}/> Section Blocks</h3>
+                {editingTemplate.sections.sort((a,b) => a.order - b.order).map((section, index) => renderSectionControls(section, index))}
+              </div>
+            )}
           </div>
 
           {/* Right Column: Live Preview */}

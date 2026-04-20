@@ -188,10 +188,19 @@ function generateCommandsFromTemplate(order, template, settings) {
   const sizeLarge = gs+'!\x11'; // Double Width & Height
   const sizeMedium = gs+'!\x01'; // Double Width
 
+  const global = template.global || {};
+  const marginTop = global.marginTop || 0;
+  const marginBottom = global.marginBottom || 4;
+  const marginLeft = global.marginLeft || 0;
+  const sectionSpacing = global.sectionSpacing || 1;
+  const leftPad = ' '.repeat(marginLeft);
+
   const charWidth = template.paperWidth === 58 ? 32 : 48;
-  const line = '-'.repeat(charWidth) + '\n';
+  const availableCharWidth = charWidth - marginLeft;
+  const line = leftPad + '-'.repeat(availableCharWidth) + '\n';
 
   let data = [];
+  if (marginTop > 0) data.push('\n'.repeat(marginTop));
 
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
@@ -236,22 +245,43 @@ function generateCommandsFromTemplate(order, template, settings) {
         break;
 
       case 'itemList':
-        let headW = availableWidth - (sec.data.showQty?4:0) - (sec.data.showPrice?8:0) - (sec.data.showTotal?8:0) - 1;
-        let headStr = 'ITEM'.padEnd(headW + 1);
-        if (sec.data.showQty) headStr += 'QTY '.padStart(4);
-        if (sec.data.showPrice) headStr += 'PRICE   '.padStart(8);
-        if (sec.data.showTotal) headStr += 'AMT     '.padStart(8);
+        const wQty = sec.data.colQty || 4;
+        const wPrice = sec.data.colPrice || 8;
+        const wTotal = sec.data.colTotal || 8;
+        let headW = availableWidth - (sec.data.showQty?wQty:0) - (sec.data.showPrice?wPrice:0) - (sec.data.showTotal?wTotal:0) - 1;
+        
+        let headStr = '';
+        if (sec.data.qtyBeforeName && sec.data.showQty) headStr += 'QTY'.padStart(wQty);
+        headStr += 'ITEM'.padEnd(headW + 1);
+        if (!sec.data.qtyBeforeName && sec.data.showQty) headStr += 'QTY'.padStart(wQty);
+        if (sec.data.showPrice) headStr += 'PRICE'.padStart(wPrice);
+        if (sec.data.showTotal) headStr += 'AMT'.padStart(wTotal);
         lines.push(headStr.trimEnd());
 
-        for (const item of order.items) {
+        let processedItems = order.items;
+        if (sec.data.mergeDuplicates) {
+           const merged = {};
+           for (const it of order.items) {
+             const key = it.name + (it.price||0);
+             if (merged[key]) merged[key].qty += (it.qty||1);
+             else merged[key] = {...it};
+           }
+           processedItems = Object.values(merged);
+        }
+
+        for (const item of processedItems) {
           const amt = (item.qty * item.price).toFixed(0);
           const namePart = (item.name.substring(0, headW)).padEnd(headW + 1);
-          let rowStr = namePart;
-          if (sec.data.showQty) rowStr += item.qty.toString().padStart(3) + ' ';
-          if (sec.data.showPrice) rowStr += item.price.toFixed(0).padStart(7) + ' ';
-          if (sec.data.showTotal) rowStr += amt.padStart(7);
+          let rowStr = '';
+          
+          if (sec.data.qtyBeforeName && sec.data.showQty) rowStr += item.qty.toString().padStart(wQty - 1) + ' ';
+          rowStr += namePart;
+          if (!sec.data.qtyBeforeName && sec.data.showQty) rowStr += item.qty.toString().padStart(wQty - 1) + ' ';
+          if (sec.data.showPrice) rowStr += item.price.toFixed(0).padStart(wPrice - 1) + ' ';
+          if (sec.data.showTotal) rowStr += amt.padStart(wTotal - 1);
+          
           lines.push(rowStr.trimEnd());
-          if (item.note) lines.push('  Note: ' + item.note);
+          if (sec.data.showNotes !== false && item.note) lines.push('  Note: ' + item.note);
         }
         break;
 
@@ -298,9 +328,10 @@ function generateCommandsFromTemplate(order, template, settings) {
       for (let j = 0; j < maxLen; j++) {
         const l = (leftLines[j] || '').padEnd(colWidth);
         const r = (rightLines[j] || '');
-        data.push(l + r + '\n');
+        data.push(leftPad + l + r + '\n');
       }
       data.push(line);
+      if (sectionSpacing > 0 && i < sections.length - 1) data.push('\n'.repeat(sectionSpacing));
       i += 2;
       continue;
     }
@@ -315,18 +346,28 @@ function generateCommandsFromTemplate(order, template, settings) {
     if (isBold) data.push(boldOn);
     data.push(sSize);
 
-    const lines = generateSectionStrings(sec, charWidth);
+    const lines = generateSectionStrings(sec, availableCharWidth);
     for (const l of lines) {
-      data.push(l + '\n');
+      // apply left margin padding if not center or right aligned
+      if (sec.style.textAlign === 'center' || sec.style.textAlign === 'right') {
+         data.push(l + '\n');
+      } else {
+         data.push(leftPad + l + '\n');
+      }
     }
 
     if (isBold) data.push(boldOff);
-    if (lines.length > 0) data.push(sizeNormal, line);
+    if (lines.length > 0) {
+       data.push(sizeNormal, line);
+       if (sectionSpacing > 0 && i < sections.length - 1) data.push('\n'.repeat(sectionSpacing));
+    }
     
     i++;
   }
 
-  data.push('\n\n\n\n', esc + 'm'); // Cut
+  if (marginBottom > 0) data.push('\n'.repeat(marginBottom));
+  else data.push('\n\n\n\n');
+  data.push(esc + 'm'); // Cut
   return data;
 }
 
