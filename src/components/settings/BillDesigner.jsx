@@ -499,7 +499,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f8fafc' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 160px)', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden' }}>
       {/* Top Nav */}
       <div style={{ background: 'white', padding: '16px 32px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: '12px' }}>
@@ -531,7 +531,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
       {editingTemplate && (
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
           {/* Left Column: Template Manager & Settings */}
-          <div style={{ width: '450px', background: 'white', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ width: '450px', background: 'white', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', overflowY: 'auto' }} className="no-scrollbar">
             
             {/* Template Selector */}
             <div style={{ padding: '24px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
@@ -555,7 +555,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
             </div>
 
             {/* Settings Tabs */}
-            <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+            <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', flexShrink: 0 }}>
               <button onClick={() => setActiveTab('sections')} style={{ flex: 1, padding: '16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'sections' ? '2px solid #94161c' : '2px solid transparent', color: activeTab === 'sections' ? '#94161c' : '#64748b', fontWeight: 'bold', cursor: 'pointer' }}>Sections</button>
               <button onClick={() => setActiveTab('global')} style={{ flex: 1, padding: '16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'global' ? '2px solid #94161c' : '2px solid transparent', color: activeTab === 'global' ? '#94161c' : '#64748b', fontWeight: 'bold', cursor: 'pointer' }}>Global Layout</button>
             </div>
@@ -627,13 +627,11 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
           </div>
 
           {/* Right Column: Live Preview */}
-          <div style={{ flex: 1, background: '#f1f5f9', padding: '40px 0' }}>
-             <div style={{ position: 'sticky', top: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', maxHeight: 'calc(100vh - 80px)', overflowY: 'auto' }} className="no-scrollbar">
-               <div style={{ background: '#1e293b', color: 'white', padding: '6px 16px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                  <Eye size={14}/> LIVE PREVIEW
-               </div>
-               {renderLivePreview()}
+          <div style={{ flex: 1, background: '#f1f5f9', display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto', padding: '40px 0' }} className="no-scrollbar">
+             <div style={{ background: '#1e293b', color: 'white', padding: '6px 16px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                <Eye size={14}/> LIVE PREVIEW
              </div>
+             {renderLivePreview()}
           </div>
         </div>
       )}
