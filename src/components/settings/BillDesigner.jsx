@@ -12,13 +12,13 @@ const BUILT_IN_TEMPLATES = [
     isBuiltIn: true,
     paperWidth: 80, // mm
     sections: [
-      { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 14, fontWeight: 'bold', textAlign: 'center', marginBottom: 5 }, data: { showLogo: false, text: 'TYDE CAFE', address: 'Nerul Ferry Terminal\nContact: +91 9999999999', showGst: false, gstNumber: '' } },
-      { id: 's2', type: 'orderInfo', visible: true, order: 2, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'left', marginBottom: 5 }, data: { showBillNo: true, showTableNo: true, showOrderType: true, showDateTime: true } },
-      { id: 's3', type: 'customerInfo', visible: true, order: 3, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'left', marginBottom: 5 }, data: { showName: true, showMobile: true } },
-      { id: 's4', type: 'itemList', visible: true, order: 4, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'left', marginBottom: 5 }, data: { showQty: true, showPrice: true, showTotal: true } },
-      { id: 's5', type: 'charges', visible: true, order: 5, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'right', marginBottom: 5 }, data: { showGst: true, showServiceCharge: true } },
-      { id: 's6', type: 'totalSummary', visible: true, order: 6, style: { fontSize: 14, fontWeight: 'bold', textAlign: 'right', marginBottom: 10 }, data: {} },
-      { id: 's7', type: 'footer', visible: true, order: 7, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'center', marginBottom: 0 }, data: { text: 'Thank you for visiting!\nSee you soon.' } }
+      { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 14, fontWeight: 'bold', textAlign: 'center', marginBottom: 5, layout: 'full' }, data: { showLogo: false, text: 'TYDE CAFE', address: 'Nerul Ferry Terminal\nContact: +91 9999999999', showGst: false, gstNumber: '' } },
+      { id: 's2', type: 'orderInfo', visible: true, order: 2, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'half-left' }, data: { showBillNo: true, showTableNo: true, showOrderType: true, showDateTime: true } },
+      { id: 's3', type: 'customerInfo', visible: true, order: 3, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'half-right' }, data: { showName: true, showMobile: true } },
+      { id: 's4', type: 'itemList', visible: true, order: 4, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'full' }, data: { showQty: true, showPrice: true, showTotal: true } },
+      { id: 's5', type: 'charges', visible: true, order: 5, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'right', marginBottom: 5, layout: 'full' }, data: { showGst: true, showServiceCharge: true } },
+      { id: 's6', type: 'totalSummary', visible: true, order: 6, style: { fontSize: 14, fontWeight: 'bold', textAlign: 'right', marginBottom: 10, layout: 'full' }, data: {} },
+      { id: 's7', type: 'footer', visible: true, order: 7, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'center', marginBottom: 0, layout: 'full' }, data: { text: 'Thank you for visiting!\nSee you soon.' } }
     ]
   },
   {
@@ -35,6 +35,23 @@ const BUILT_IN_TEMPLATES = [
       { id: 's5', type: 'charges', visible: true, order: 5, style: { fontSize: 10, fontWeight: 'normal', textAlign: 'right', marginBottom: 2 }, data: { showGst: true, showServiceCharge: true } },
       { id: 's6', type: 'totalSummary', visible: true, order: 6, style: { fontSize: 12, fontWeight: 'bold', textAlign: 'right', marginBottom: 5 }, data: {} },
       { id: 's7', type: 'footer', visible: true, order: 7, style: { fontSize: 10, fontWeight: 'normal', textAlign: 'center', marginBottom: 0 }, data: { text: 'Thank you!' } }
+    ]
+  },
+  {
+    id: 'builtin-legacy-match',
+    name: 'Classic Legacy (Screenshot Match)',
+    type: 'bill',
+    isBuiltIn: true,
+    paperWidth: 80,
+    sections: [
+      { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 16, fontWeight: 'bold', textAlign: 'center', marginBottom: 5, layout: 'full' }, data: { showLogo: false, text: 'Tyde Cafe', address: 'Nerul Ferry Terminal', showGst: false, gstNumber: '' } },
+      { id: 's3', type: 'customerInfo', visible: true, order: 2, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'full' }, data: { showName: true, showMobile: false } },
+      { id: 's2', type: 'orderInfo', visible: true, order: 3, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'half-left' }, data: { showBillNo: false, showTableNo: false, showOrderType: false, showDateTime: true } },
+      { id: 's2_right', type: 'orderInfo', visible: true, order: 4, style: { fontSize: 12, fontWeight: 'bold', textAlign: 'left', marginBottom: 5, layout: 'half-right' }, data: { showBillNo: true, showTableNo: true, showOrderType: true, showDateTime: false } },
+      { id: 's4', type: 'itemList', visible: true, order: 5, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'full' }, data: { showQty: true, showPrice: true, showTotal: true } },
+      { id: 's5', type: 'charges', visible: true, order: 6, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'right', marginBottom: 5, layout: 'full' }, data: { showGst: false, showServiceCharge: true } },
+      { id: 's6', type: 'totalSummary', visible: true, order: 7, style: { fontSize: 14, fontWeight: 'bold', textAlign: 'right', marginBottom: 10, layout: 'full' }, data: {} },
+      { id: 's7', type: 'footer', visible: true, order: 8, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'center', marginBottom: 0, layout: 'full' }, data: { text: 'Sea you soon — under the moon' } }
     ]
   },
   {
@@ -206,7 +223,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
             
             {/* Style Controls */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Font Size</label>
                 <input type="number" value={section.style.fontSize} onChange={(e) => updateSectionStyle(index, 'fontSize', parseInt(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
@@ -224,6 +241,14 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                   <option value="left">Left</option>
                   <option value="center">Center</option>
                   <option value="right">Right</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Layout</label>
+                <select value={section.style.layout || 'full'} onChange={(e) => updateSectionStyle(index, 'layout', e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: 'white' }}>
+                  <option value="full">1 Col</option>
+                  <option value="half-left">Left</option>
+                  <option value="half-right">Right</option>
                 </select>
               </div>
             </div>
@@ -324,22 +349,37 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
         minHeight: '400px'
       }}>
         {editingTemplate.sections.filter(s => s.visible).sort((a,b) => a.order - b.order).map((section) => {
-          const sStyle = { ...section.style, fontSize: `${section.style.fontSize}px` };
+          const sStyle = { 
+            ...section.style, 
+            fontSize: `${section.style.fontSize}px`,
+            display: 'inline-block',
+            width: section.style.layout === 'half-left' || section.style.layout === 'half-right' ? '50%' : '100%',
+            verticalAlign: 'top',
+            boxSizing: 'border-box',
+            paddingRight: section.style.layout === 'half-left' ? '5px' : '0',
+            paddingLeft: section.style.layout === 'half-right' ? '5px' : '0',
+            borderBottom: section.style.layout === 'half-left' || section.style.layout === 'half-right' ? 'none' : '1px dashed #ccc',
+            marginBottom: section.style.layout === 'half-left' || section.style.layout === 'half-right' ? '0' : '10px',
+            paddingBottom: section.style.layout === 'half-left' || section.style.layout === 'half-right' ? '0' : '10px'
+          };
 
+          // Wrap content logic
+          let content = null;
           switch (section.type) {
             case 'header':
-              return (
-                <div key={section.id} style={{ ...sStyle, paddingBottom: '10px', borderBottom: '1px dashed #ccc', marginBottom: '10px' }}>
+              content = (
+                <div style={{ paddingBottom: '5px' }}>
                   {section.data.showLogo && <div style={{ border: '1px solid #ccc', padding: '10px', display: 'inline-block', marginBottom: '5px' }}>[LOGO]</div>}
                   <div style={{ whiteSpace: 'pre-wrap' }}>{section.data.text}</div>
                   {section.data.address && <div style={{ fontSize: '0.85em', whiteSpace: 'pre-wrap', marginTop: '4px' }}>{section.data.address}</div>}
                   {section.data.showGst && section.data.gstNumber && <div style={{ fontSize: '0.85em', marginTop: '4px' }}>GSTIN: {section.data.gstNumber}</div>}
                 </div>
               );
+              break;
             case 'orderInfo':
-              return (
-                <div key={section.id} style={{ ...sStyle, paddingBottom: '10px', borderBottom: '1px dashed #ccc', marginBottom: '10px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+              content = (
+                <div style={{ paddingBottom: '5px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: section.style.layout === 'full' ? '1fr 1fr' : '1fr', gap: '4px' }}>
                     {section.data.showBillNo && <div>Bill No: {mockOrder.billNo}</div>}
                     {section.data.showTableNo && <div>Table: {mockOrder.table}</div>}
                     {section.data.showOrderType && <div>Type: {mockOrder.type}</div>}
@@ -347,16 +387,18 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                   </div>
                 </div>
               );
+              break;
             case 'customerInfo':
-              return (
-                <div key={section.id} style={{ ...sStyle, paddingBottom: '10px', borderBottom: '1px dashed #ccc', marginBottom: '10px' }}>
+              content = (
+                <div style={{ paddingBottom: '5px' }}>
                   {section.data.showName && <div>Customer: {mockOrder.customer}</div>}
                   {section.data.showMobile && <div>Mobile: {mockOrder.mobile}</div>}
                 </div>
               );
+              break;
             case 'itemList':
-              return (
-                <div key={section.id} style={{ ...sStyle, paddingBottom: '10px', borderBottom: '1px dashed #ccc', marginBottom: '10px' }}>
+              content = (
+                <div style={{ paddingBottom: '5px' }}>
                   <div style={{ display: 'flex', borderBottom: '1px solid #000', paddingBottom: '4px', marginBottom: '4px', fontWeight: 'bold' }}>
                     <div style={{ flex: 1 }}>ITEM</div>
                     {section.data.showQty && <div style={{ width: '40px', textAlign: 'center' }}>QTY</div>}
@@ -373,9 +415,10 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                   ))}
                 </div>
               );
+              break;
             case 'charges':
-              return (
-                <div key={section.id} style={{ ...sStyle, paddingBottom: '10px', borderBottom: '1px dashed #ccc', marginBottom: '10px' }}>
+              content = (
+                <div style={{ paddingBottom: '5px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                     <span>Subtotal</span>
                     <span>{mockOrder.subtotal.toFixed(2)}</span>
@@ -394,24 +437,32 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                   )}
                 </div>
               );
+              break;
             case 'totalSummary':
-              return (
-                <div key={section.id} style={{ ...sStyle, paddingBottom: '10px', borderBottom: '1px dashed #ccc', marginBottom: '10px' }}>
+              content = (
+                <div style={{ paddingBottom: '5px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '2px solid #000', paddingTop: '5px' }}>
                     <span>GRAND TOTAL</span>
                     <span>₹{mockOrder.total.toFixed(2)}</span>
                   </div>
                 </div>
               );
+              break;
             case 'footer':
-              return (
-                <div key={section.id} style={{ ...sStyle, whiteSpace: 'pre-wrap' }}>
+              content = (
+                <div style={{ whiteSpace: 'pre-wrap' }}>
                   {section.data.text}
                 </div>
               );
-            default:
+              break;
               return null;
           }
+
+          return (
+            <div key={section.id} style={sStyle}>
+              {content}
+            </div>
+          );
         })}
       </div>
     );

@@ -70,15 +70,12 @@ export const printPosToSerial = async (orderData, type = 'BILL', customSettings 
     console.warn('[Print] Settings load failed, using defaults');
   }
 
-  // Map settings to qzTrayPrinter format
+  // Map settings to qzTrayPrinter format (preserve all settings including printTemplates)
   const qzSettings = {
+    ...settings,
     billHeader: settings.resName || settings.billHeader || 'Tyde Cafe',
     billFooter: settings.footerText || settings.billFooter || 'Thank You!',
     address: settings.headerText || settings.address || '',
-    showGst: settings.showGst || false,
-    gstin: settings.gstin || '',
-    showFssai: settings.showFssai || false,
-    fssai: settings.fssai || '',
   };
 
   // Normalize order data for the QZ formatter
