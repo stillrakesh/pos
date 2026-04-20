@@ -53,7 +53,7 @@ const BUILT_IN_TEMPLATES = [
 
 const BillDesigner = ({ settings, onSaveSettings }) => {
   const [templates, setTemplates] = useState([]);
-  const [activeType, setActiveType] = useState('bill'); // 'bill', 'takeaway', 'kot'
+  const [activeType, setActiveType] = useState('bill'); // 'bill', 'kot'
   const [activeTemplateId, setActiveTemplateId] = useState(null);
   const [editingTemplate, setEditingTemplate] = useState(null);
 
@@ -422,7 +422,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
       {/* Top Nav */}
       <div style={{ background: 'white', padding: '16px 32px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: '12px' }}>
-          {['bill', 'takeaway', 'kot'].map(type => (
+          {['bill', 'kot'].map(type => (
             <button 
               key={type}
               onClick={() => handleTypeChange(type)}
@@ -433,7 +433,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                 textTransform: 'uppercase'
               }}
             >
-              {type === 'kot' ? 'KOT Designer' : `${type} Designer`}
+              {type === 'kot' ? 'KOT Designer' : `Bill Designer`}
             </button>
           ))}
         </div>
@@ -462,7 +462,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
               </select>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={createNewTemplate} style={{ flex: 1, padding: '8px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                  <Copy size={14} /> Duplicate
+                  <Copy size={14} /> Save As New
                 </button>
                 <button onClick={setAsDefault} disabled={editingTemplate.isDefault} style={{ flex: 1, padding: '8px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: editingTemplate.isDefault ? 'not-allowed' : 'pointer', opacity: editingTemplate.isDefault ? 0.5 : 1 }}>
                   Set Default
