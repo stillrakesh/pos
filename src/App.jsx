@@ -1900,8 +1900,24 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
                   </div>
                 </div>
                 {appVersion?.notes && (
-                  <div style={{ marginTop: '12px', fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>
+                  <div style={{ marginTop: '12px', fontSize: '12px', color: '#64748b', fontStyle: 'italic', paddingBottom: appVersion?.history ? '12px' : '0', borderBottom: appVersion?.history ? '1px solid #e2e8f0' : 'none' }}>
                     Note: {appVersion.notes}
+                  </div>
+                )}
+                {appVersion?.history && appVersion.history.length > 0 && (
+                  <div style={{ marginTop: '16px' }}>
+                    <div style={{ fontSize: '13px', color: '#334155', fontWeight: 'bold', marginBottom: '8px' }}>Version History</div>
+                    <div style={{ maxHeight: '200px', overflowY: 'auto', paddingRight: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {appVersion.history.map((hist, idx) => (
+                        <div key={idx} style={{ padding: '8px', background: 'white', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b' }}>{hist.version}</span>
+                            <span style={{ fontSize: '10px', color: '#64748b' }}>{hist.date}</span>
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#475569' }}>{hist.changes}</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

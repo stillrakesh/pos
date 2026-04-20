@@ -1,5 +1,27 @@
 {
-  "version": "v1.2-KOT-Stations",
+  "version": "v1.3-GST-Stability",
   "lastUpdated": "2026-04-20",
-  "notes": "Implemented Station-Based KOT Routing with cross-app category enrichment. Fixed stale closure in socket listeners. Optimized Captain App print flow."
+  "notes": "Stable POS GST Persistence, Offline-First Database Normalization, and optimized synchronization.",
+  "history": [
+    {
+      "version": "v1.3-GST-Stability",
+      "date": "2026-04-20",
+      "changes": "Stable POS GST Persistence, Offline-First Database Normalization, and optimized synchronization."
+    },
+    {
+      "version": "v1.2-KOT-Stations",
+      "date": "2026-04-20",
+      "changes": "Implemented Station-Based KOT Routing with cross-app category enrichment. Fixed stale closure in socket listeners. Optimized Captain App print flow."
+    },
+    {
+      "version": "v1.1-LocalFirst",
+      "date": "2026-04-18",
+      "changes": "Refactored backend architecture to a local SQLite-first model. Rebuilt offline capabilities and removed strict cloud-only constraints."
+    },
+    {
+      "version": "v1.0-stable",
+      "date": "2026-04-17",
+      "changes": "Baseline stable version before migration to local-first architecture."
+    }
+  ]
 }
