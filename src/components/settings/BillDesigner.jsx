@@ -627,11 +627,13 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
           </div>
 
           {/* Right Column: Live Preview */}
-          <div style={{ flex: 1, background: '#f1f5f9', display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto', padding: '40px 0' }} className="no-scrollbar">
-             <div style={{ background: '#1e293b', color: 'white', padding: '6px 16px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Eye size={14}/> LIVE PREVIEW
+          <div style={{ flex: 1, background: '#f1f5f9', padding: '40px 0' }}>
+             <div style={{ position: 'sticky', top: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', maxHeight: 'calc(100vh - 80px)', overflowY: 'auto' }} className="no-scrollbar">
+               <div style={{ background: '#1e293b', color: 'white', padding: '6px 16px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                  <Eye size={14}/> LIVE PREVIEW
+               </div>
+               {renderLivePreview()}
              </div>
-             {renderLivePreview()}
           </div>
         </div>
       )}
