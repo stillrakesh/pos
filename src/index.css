@@ -44,10 +44,10 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Outfit', sans-serif;
 }
 
 body {
+  font-family: 'Outfit', sans-serif;
   background-color: #1e293b; /* Dark backdrop for the centered app */
   color: var(--text-main);
   overflow: hidden;

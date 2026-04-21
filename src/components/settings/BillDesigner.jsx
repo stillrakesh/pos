@@ -11,16 +11,16 @@ const BUILT_IN_TEMPLATES = [
     type: 'bill',
     isBuiltIn: true,
     paperWidth: 80, // mm
-    global: { marginTop: 0, marginBottom: 4, marginLeft: 0, marginRight: 0, sectionSpacing: 1, fontFamily: 'monospace' },
+    global: { marginTop: 0, marginBottom: 0, marginLeft: 5, marginRight: 5, sectionSpacing: 1, fontFamily: 'Verdana' },
     printBehavior: { autoPrint: false, copies: 1 },
     sections: [
-      { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 14, fontWeight: 'bold', textAlign: 'center', marginBottom: 5, layout: 'full' }, data: { showLogo: false, text: 'TYDE CAFE', address: 'Nerul Ferry Terminal\nContact: +91 9999999999', showGst: false, gstNumber: '' } },
-      { id: 's2', type: 'orderInfo', visible: true, order: 2, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'half-left' }, data: { showBillNo: true, showTableNo: true, showOrderType: true, showDateTime: true } },
-      { id: 's3', type: 'customerInfo', visible: true, order: 3, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'half-right' }, data: { showName: true, showMobile: true } },
-      { id: 's4', type: 'itemList', visible: true, order: 4, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'full' }, data: { showQty: true, showPrice: true, showTotal: true } },
-      { id: 's5', type: 'charges', visible: true, order: 5, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'right', marginBottom: 5, layout: 'full' }, data: { showGst: true, showServiceCharge: true } },
-      { id: 's6', type: 'totalSummary', visible: true, order: 6, style: { fontSize: 14, fontWeight: 'bold', textAlign: 'right', marginBottom: 10, layout: 'full' }, data: {} },
-      { id: 's7', type: 'footer', visible: true, order: 7, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'center', marginBottom: 0, layout: 'full' }, data: { text: 'Thank you for visiting!\nSee you soon.' } }
+      { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 14, fontWeight: 'bold', textAlign: 'center', marginBottom: 5, layout: 'full' }, data: { showLogo: false, text: 'Tyde Cafe', address: 'Nerul Ferry Terminal', showGst: false, gstNumber: '' } },
+      { id: 's3', type: 'customerInfo', visible: true, order: 2, style: { fontSize: 13, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'full' }, data: { showName: true, showMobile: false } },
+      { id: 's2', type: 'orderInfo', visible: true, order: 3, style: { fontSize: 13, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'full' }, data: { showBillNo: true, showTableNo: true, showOrderType: true, showDateTime: true } },
+      { id: 's4', type: 'itemList', visible: true, order: 4, style: { fontSize: 13, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'full' }, data: { showQty: true, showPrice: true, showTotal: true, colQty: 4, colPrice: 8, colTotal: 8, qtyBeforeName: false, showNotes: true, mergeDuplicates: false, headerFontSize: 13 } },
+      { id: 's5', type: 'charges', visible: true, order: 5, style: { fontSize: 13, fontWeight: 'normal', textAlign: 'right', marginBottom: 5, layout: 'full' }, data: { showGst: false, showServiceCharge: true, totalQtyFontSize: 13, serviceChargeFontSize: 13 } },
+      { id: 's6', type: 'totalSummary', visible: true, order: 6, style: { fontSize: 14, fontWeight: '900', textAlign: 'right', marginBottom: 10, layout: 'full' }, data: { roundOffFontSize: 11 } },
+      { id: 's7', type: 'footer', visible: true, order: 7, style: { fontSize: 13, fontWeight: 'normal', textAlign: 'center', marginBottom: 0, layout: 'full' }, data: { text: 'Sea you soon — under the moon' } }
     ]
   },
   {
@@ -29,7 +29,7 @@ const BUILT_IN_TEMPLATES = [
     type: 'bill',
     isBuiltIn: true,
     paperWidth: 58, // mm
-    global: { marginTop: 0, marginBottom: 4, marginLeft: 0, marginRight: 0, sectionSpacing: 1, fontFamily: 'monospace' },
+    global: { marginTop: 0, marginBottom: 4, marginLeft: 0, marginRight: 0, sectionSpacing: 1, fontFamily: 'Verdana' },
     printBehavior: { autoPrint: false, copies: 1 },
     sections: [
       { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 12, fontWeight: 'bold', textAlign: 'center', marginBottom: 2 }, data: { showLogo: false, text: 'TYDE CAFE', address: 'Nerul', showGst: false, gstNumber: '' } },
@@ -47,7 +47,7 @@ const BUILT_IN_TEMPLATES = [
     type: 'bill',
     isBuiltIn: true,
     paperWidth: 80,
-    global: { marginTop: 0, marginBottom: 4, marginLeft: 0, marginRight: 0, sectionSpacing: 1, fontFamily: 'monospace' },
+    global: { marginTop: 0, marginBottom: 4, marginLeft: 0, marginRight: 0, sectionSpacing: 1, fontFamily: 'Verdana' },
     printBehavior: { autoPrint: false, copies: 1 },
     sections: [
       { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 16, fontWeight: 'bold', textAlign: 'center', marginBottom: 5, layout: 'full' }, data: { showLogo: false, text: 'Tyde Cafe', address: 'Nerul Ferry Terminal', showGst: false, gstNumber: '' } },
@@ -66,12 +66,12 @@ const BUILT_IN_TEMPLATES = [
     type: 'kot',
     isBuiltIn: true,
     paperWidth: 80,
-    global: { marginTop: 0, marginBottom: 4, marginLeft: 0, marginRight: 0, sectionSpacing: 1, fontFamily: 'monospace' },
+    global: { marginTop: 0, marginBottom: 4, marginLeft: 0, marginRight: 0, sectionSpacing: 1, fontFamily: 'Verdana', separatorChar: '.' },
     printBehavior: { autoPrint: false, copies: 1 },
     sections: [
-      { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 16, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 }, data: { text: 'KOT' } },
-      { id: 's2', type: 'orderInfo', visible: true, order: 2, style: { fontSize: 14, fontWeight: 'bold', textAlign: 'left', marginBottom: 10 }, data: { showBillNo: false, showTableNo: true, showOrderType: true, showDateTime: true } },
-      { id: 's4', type: 'itemList', visible: true, order: 3, style: { fontSize: 14, fontWeight: 'bold', textAlign: 'left', marginBottom: 5 }, data: { showQty: true, showPrice: false, showTotal: false } },
+      { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 14, fontWeight: 'normal', textAlign: 'center', marginBottom: 2 }, data: { text: 'Running Table' } },
+      { id: 's2', type: 'orderInfo', visible: true, order: 2, style: { fontSize: 14, fontWeight: 'bold', textAlign: 'center', marginBottom: 5 }, data: { showBillNo: true, showTableNo: true, showOrderType: true, showDateTime: true } },
+      { id: 's4', type: 'itemList', visible: true, order: 3, style: { fontSize: 13, fontWeight: 'normal', textAlign: 'left', marginBottom: 5 }, data: { showQty: true, showPrice: false, showTotal: false, showNoteCol: true, colNote: 15, showNotes: true } },
     ]
   }
 ];
@@ -82,6 +82,12 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
   const [activeTemplateId, setActiveTemplateId] = useState(null);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [activeTab, setActiveTab] = useState('sections'); // 'sections', 'global'
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
 
   // Initialize templates from settings or use built-in
   useEffect(() => {
@@ -120,7 +126,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
     }
     setTemplates(newTemplates);
     onSaveSettings({ ...settings, printTemplates: newTemplates });
-    alert("Template saved successfully!");
+    showNotification("Template saved successfully!");
   };
 
   const createNewTemplate = () => {
@@ -142,7 +148,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
   };
 
   const deleteTemplate = () => {
-    if (editingTemplate.isBuiltIn) return alert("Cannot delete built-in templates.");
+    if (editingTemplate.isBuiltIn) return showNotification("Cannot delete built-in templates.", "error");
     if (!window.confirm("Are you sure you want to delete this template?")) return;
     
     const newTemplates = templates.filter(t => t.id !== editingTemplate.id);
@@ -165,7 +171,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
     });
     setTemplates(newTemplates);
     onSaveSettings({ ...settings, printTemplates: newTemplates });
-    alert(`${editingTemplate.name} is now the default template for ${activeType.toUpperCase()}.`);
+    showNotification(`${editingTemplate.name} is now the default template for ${activeType.toUpperCase()}.`);
   };
 
   const moveSection = (index, direction) => {
@@ -286,12 +292,55 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
               </>
             )}
 
-            {section.type === 'orderInfo' && (
+            {section.type === 'orderInfo' && activeType !== 'kot' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showBillNo} onChange={(e) => updateSectionData(index, 'showBillNo', e.target.checked)} /> Show Bill No</label>
                 <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showTableNo} onChange={(e) => updateSectionData(index, 'showTableNo', e.target.checked)} /> Show Table No</label>
                 <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showOrderType} onChange={(e) => updateSectionData(index, 'showOrderType', e.target.checked)} /> Show Order Type</label>
                 <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showDateTime} onChange={(e) => updateSectionData(index, 'showDateTime', e.target.checked)} /> Show Date/Time</label>
+              </div>
+            )}
+            {section.type === 'orderInfo' && activeType === 'kot' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Order Type Font Size</label>
+                    <input type="number" value={section.data.typeFontSize || 16} onChange={(e) => updateSectionData(index, 'typeFontSize', parseInt(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Order Type Weight</label>
+                    <select value={section.data.typeFontWeight || 'bold'} onChange={(e) => updateSectionData(index, 'typeFontWeight', e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: 'white' }}>
+                      <option value="normal">Normal</option>
+                      <option value="bold">Bold</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Table/Token Font Size</label>
+                    <input type="number" value={section.data.tableFontSize || 14} onChange={(e) => updateSectionData(index, 'tableFontSize', parseInt(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Table/Token Weight</label>
+                    <select value={section.data.tableFontWeight || 'bold'} onChange={(e) => updateSectionData(index, 'tableFontWeight', e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: 'white' }}>
+                      <option value="normal">Normal</option>
+                      <option value="bold">Bold</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Time Font Size</label>
+                    <input type="number" value={section.data.timeFontSize || 12} onChange={(e) => updateSectionData(index, 'timeFontSize', parseInt(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Time Weight</label>
+                    <select value={section.data.timeFontWeight || 'normal'} onChange={(e) => updateSectionData(index, 'timeFontWeight', e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: 'white' }}>
+                      <option value="normal">Normal</option>
+                      <option value="bold">Bold</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -306,31 +355,63 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
                   <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showQty} onChange={(e) => updateSectionData(index, 'showQty', e.target.checked)} /> Show Quantity</label>
+                  <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showNoteCol} onChange={(e) => updateSectionData(index, 'showNoteCol', e.target.checked)} /> Show Special Note Col</label>
                   <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showPrice} onChange={(e) => updateSectionData(index, 'showPrice', e.target.checked)} /> Show Price/Unit</label>
                   <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showTotal} onChange={(e) => updateSectionData(index, 'showTotal', e.target.checked)} /> Show Item Total</label>
                   <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.qtyBeforeName} onChange={(e) => updateSectionData(index, 'qtyBeforeName', e.target.checked)} /> Qty Before Name</label>
-                  <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showNotes !== false} onChange={(e) => updateSectionData(index, 'showNotes', e.target.checked)} /> Show Notes</label>
+                  <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showNotes !== false} onChange={(e) => updateSectionData(index, 'showNotes', e.target.checked)} /> Show Notes (List)</label>
                   <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.mergeDuplicates} onChange={(e) => updateSectionData(index, 'mergeDuplicates', e.target.checked)} /> Merge Duplicates</label>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Header Font Size</label>
+                    <input type="number" value={section.data.headerFontSize || 13} onChange={(e) => updateSectionData(index, 'headerFontSize', parseInt(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Header Weight</label>
+                    <select value={section.data.headerFontWeight || 'bold'} onChange={(e) => updateSectionData(index, 'headerFontWeight', e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: 'white' }}>
+                      <option value="normal">Normal</option>
+                      <option value="bold">Bold</option>
+                      <option value="900">Black (900)</option>
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px' }}>Column Widths (chars)</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px' }}>
                     <div><span style={{ fontSize: '10px', color: '#94a3b8' }}>Qty Width</span><input type="number" value={section.data.colQty || 4} onChange={(e) => updateSectionData(index, 'colQty', parseInt(e.target.value))} style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                    <div><span style={{ fontSize: '10px', color: '#94a3b8' }}>Note Width</span><input type="number" value={section.data.colNote || 15} onChange={(e) => updateSectionData(index, 'colNote', parseInt(e.target.value))} style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
                     <div><span style={{ fontSize: '10px', color: '#94a3b8' }}>Price Width</span><input type="number" value={section.data.colPrice || 8} onChange={(e) => updateSectionData(index, 'colPrice', parseInt(e.target.value))} style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
                     <div><span style={{ fontSize: '10px', color: '#94a3b8' }}>Total Width</span><input type="number" value={section.data.colTotal || 8} onChange={(e) => updateSectionData(index, 'colTotal', parseInt(e.target.value))} style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Item Name will take remaining width.</div>
                 </div>
               </>
             )}
 
             {section.type === 'charges' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showGst} onChange={(e) => updateSectionData(index, 'showGst', e.target.checked)} /> Show GST Breakdown</label>
-                <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showServiceCharge} onChange={(e) => updateSectionData(index, 'showServiceCharge', e.target.checked)} /> Show Service Charge</label>
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+                  <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showGst} onChange={(e) => updateSectionData(index, 'showGst', e.target.checked)} /> Show GST Breakdown</label>
+                  <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={section.data.showServiceCharge} onChange={(e) => updateSectionData(index, 'showServiceCharge', e.target.checked)} /> Show Service Charge</label>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Total Qty Font Size</label>
+                    <input type="number" value={section.data.totalQtyFontSize || 13} onChange={(e) => updateSectionData(index, 'totalQtyFontSize', parseInt(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Service Charge Font Size</label>
+                    <input type="number" value={section.data.serviceChargeFontSize || 13} onChange={(e) => updateSectionData(index, 'serviceChargeFontSize', parseInt(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                  </div>
+                </div>
+              </>
+            )}
+            {section.type === 'totalSummary' && (
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Round Off Font Size</label>
+                <input type="number" value={section.data.roundOffFontSize || 11} onChange={(e) => updateSectionData(index, 'roundOffFontSize', parseInt(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
               </div>
             )}
-
             {section.type === 'footer' && (
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Footer Message</label>
@@ -352,7 +433,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
       billNo: 'INV-4021', table: 'T-12', type: 'Dine In', date: '21/04/24 19:30',
       customer: 'John Doe', mobile: '+91 9876543210',
       items: [
-        { name: 'Paneer Tikka Masala', qty: 1, price: 320, total: 320 },
+        { name: 'Paneer Tikka Masala', qty: 1, price: 320, total: 320, note: 'Less spicy' },
         { name: 'Garlic Naan', qty: 3, price: 50, total: 150 },
         { name: 'Fresh Lime Soda', qty: 2, price: 90, total: 180 }
       ],
@@ -367,22 +448,25 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
         boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)', 
         border: '1px solid #e2e8f0', 
         color: '#000', 
-        fontFamily: editingTemplate.global?.fontFamily || 'monospace',
+        fontFamily: (editingTemplate.global?.fontFamily === 'Verdana' ? 'Verdana, Geneva, sans-serif' : (editingTemplate.global?.fontFamily || 'monospace')),
+        lineHeight: `${(editingTemplate.global?.lineSpacing || 30) / 24}`, // approximate mapping from dots to relative height
         margin: '0 auto',
         minHeight: '400px'
       }}>
         {editingTemplate.sections.filter(s => s.visible).sort((a,b) => a.order - b.order).map((section) => {
           const sStyle = { 
             ...section.style, 
-            fontSize: `${section.style.fontSize}px`,
+            fontFamily: 'inherit',
+            fontSize: `${section.style.fontSize || 12}px`,
+            fontWeight: section.style.fontWeight || 'normal',
             display: 'inline-block',
             width: section.style.layout === 'half-left' || section.style.layout === 'half-right' ? '50%' : '100%',
             verticalAlign: 'top',
             boxSizing: 'border-box',
             paddingRight: section.style.layout === 'half-left' ? '5px' : '0',
             paddingLeft: section.style.layout === 'half-right' ? '5px' : '0',
-            borderBottom: section.style.layout === 'half-left' || section.style.layout === 'half-right' ? 'none' : '1px dashed #ccc',
-            marginBottom: section.style.layout === 'half-left' || section.style.layout === 'half-right' ? '0' : `${(editingTemplate.global?.sectionSpacing || 1) * 10}px`,
+            borderBottom: 'none',
+            marginBottom: '0',
             paddingBottom: section.style.layout === 'half-left' || section.style.layout === 'half-right' ? '0' : '5px'
           };
 
@@ -391,94 +475,183 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
           switch (section.type) {
             case 'header':
               content = (
-                <div style={{ paddingBottom: '5px' }}>
+                <div style={{ 
+                  paddingTop: `${editingTemplate.global?.separatorSpacing || 5}px`, 
+                  paddingBottom: `${editingTemplate.global?.separatorSpacing || 5}px`, 
+                  borderBottom: editingTemplate.global?.separatorChar === '.' ? '2px dotted #000' : '2px solid #000'
+                }}>
                   {section.data.showLogo && <div style={{ border: '1px solid #ccc', padding: '10px', display: 'inline-block', marginBottom: '5px' }}>[LOGO]</div>}
-                  <div style={{ whiteSpace: 'pre-wrap' }}>{section.data.text}</div>
-                  {section.data.address && <div style={{ fontSize: '0.85em', whiteSpace: 'pre-wrap', marginTop: '4px' }}>{section.data.address}</div>}
-                  {section.data.showGst && section.data.gstNumber && <div style={{ fontSize: '0.85em', marginTop: '4px' }}>GSTIN: {section.data.gstNumber}</div>}
+                  <div style={{ whiteSpace: 'pre-wrap', fontSize: '14px', fontWeight: 'bold' }}>{section.data.text}</div>
+                  {section.data.address && <div style={{ fontSize: '13px', fontWeight: 'normal', whiteSpace: 'pre-wrap', marginTop: '4px' }}>{section.data.address}</div>}
+                  {section.data.showGst && section.data.gstNumber && <div style={{ fontSize: '12px', marginTop: '4px' }}>GSTIN: {section.data.gstNumber}</div>}
                 </div>
               );
               break;
             case 'orderInfo':
               content = (
-                <div style={{ paddingBottom: '5px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: section.style.layout === 'full' ? '1fr 1fr' : '1fr', gap: '4px' }}>
-                    {section.data.showBillNo && <div>Bill No: {mockOrder.billNo}</div>}
-                    {section.data.showTableNo && <div>Table: {mockOrder.table}</div>}
-                    {section.data.showOrderType && <div>Type: {mockOrder.type}</div>}
-                    {section.data.showDateTime && <div>Date: {mockOrder.date}</div>}
-                  </div>
+                <div style={{ 
+                  paddingTop: `${editingTemplate.global?.separatorSpacing || 5}px`, 
+                  paddingBottom: `${editingTemplate.global?.separatorSpacing || 5}px`, 
+                  borderBottom: editingTemplate.global?.separatorChar === '.' ? '2px dotted #000' : '2px solid #000'
+                }}>
+                  {activeType === 'kot' ? (
+                     <div style={{ textAlign: section.style.textAlign }}>
+                       <div style={{ fontWeight: section.data.typeFontWeight || section.style.fontWeight || 'bold', fontSize: `${section.data.typeFontSize || section.style.fontSize || 16}px` }}>{mockOrder.type === 'Takeaway' || mockOrder.type === 'Delivery' ? 'Takeaway' : 'Dine In'}</div>
+                       {mockOrder.type === 'Takeaway' || mockOrder.type === 'Delivery' ? (
+                         <div style={{ fontWeight: section.data.tableFontWeight || section.style.fontWeight || 'bold', fontSize: `${section.data.tableFontSize || section.style.fontSize || 14}px` }}>Token No: T-001 {mockOrder.customer ? `| ${mockOrder.customer}` : ''}</div>
+                       ) : (
+                         <div style={{ fontWeight: section.data.tableFontWeight || section.style.fontWeight || 'bold', fontSize: `${section.data.tableFontSize || section.style.fontSize || 14}px` }}>Table No: {mockOrder.table.replace('T-', '')}</div>
+                       )}
+                       <div style={{ fontWeight: section.data.timeFontWeight || 'normal', fontSize: `${section.data.timeFontSize || 12}px`, marginTop: '2px' }}>{mockOrder.time || '19:30'}</div>
+                     </div>
+                  ) : section.style.textAlign === 'center' ? (
+                    <div style={{ textAlign: 'center' }}>
+                      {section.data.showDateTime && (
+                        <>
+                          <div>{mockOrder.date}</div>
+                          <div style={{ marginBottom: '2px' }}>{mockOrder.time}</div>
+                        </>
+                      )}
+                      {section.data.showBillNo && <div style={{ fontWeight: 'bold' }}>KOT - 4021</div>}
+                      <div style={{ fontWeight: '900', marginTop: '2px' }}>Dine In</div>
+                      <div style={{ fontWeight: '900' }}>Table No: T-12</div>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                        {section.data.showDateTime ? <span>Date: {mockOrder.date}</span> : <span />}
+                        {(section.data.showTableNo || section.data.showOrderType) && <span style={{ fontWeight: '900' }}>{mockOrder.type}: {mockOrder.table}</span>}
+                      </div>
+                      {section.data.showDateTime && <div style={{ marginBottom: '2px' }}>{mockOrder.time}</div>}
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Cashier: biller</span>
+                        {section.data.showBillNo && <span>Bill No.: {mockOrder.billNo}</span>}
+                      </div>
+                    </>
+                  )}
                 </div>
               );
               break;
             case 'customerInfo':
               content = (
-                <div style={{ paddingBottom: '5px' }}>
+                <div style={{ 
+                  paddingTop: `${editingTemplate.global?.separatorSpacing || 5}px`, 
+                  paddingBottom: `${editingTemplate.global?.separatorSpacing || 5}px`, 
+                  borderBottom: editingTemplate.global?.separatorChar === '.' ? '2px dotted #000' : '2px solid #000'
+                }}>
                   {section.data.showName && <div>Customer: {mockOrder.customer}</div>}
                   {section.data.showMobile && <div>Mobile: {mockOrder.mobile}</div>}
                 </div>
               );
               break;
             case 'itemList':
-              let headW = (editingTemplate.paperWidth === 58 ? 32 : 48) - (section.data.showQty?(section.data.colQty || 4):0) - (section.data.showPrice?(section.data.colPrice || 8):0) - (section.data.showTotal?(section.data.colTotal || 8):0) - 1;
+              let headW = (editingTemplate.paperWidth === 58 ? 32 : 48) - (section.data.showQty?(section.data.colQty || 4):0) - (section.data.showPrice?(section.data.colPrice || 8):0) - (section.data.showTotal?(section.data.colTotal || 8):0) - (section.data.showNoteCol?(section.data.colNote || 15):0) - 1;
               if (section.style.layout === 'half-left' || section.style.layout === 'half-right') headW = Math.floor(headW / 2);
 
               content = (
-                <div style={{ paddingBottom: '5px' }}>
-                  <div style={{ display: 'flex', borderBottom: '1px solid #000', paddingBottom: '4px', marginBottom: '4px', fontWeight: 'bold' }}>
-                    {section.data.qtyBeforeName && section.data.showQty && <div style={{ width: `${(section.data.colQty || 4)*8}px`, textAlign: 'center' }}>QTY</div>}
-                    <div style={{ flex: 1 }}>ITEM</div>
-                    {!section.data.qtyBeforeName && section.data.showQty && <div style={{ width: `${(section.data.colQty || 4)*8}px`, textAlign: 'center' }}>QTY</div>}
-                    {section.data.showPrice && <div style={{ width: `${(section.data.colPrice || 8)*8}px`, textAlign: 'right' }}>PRICE</div>}
-                    {section.data.showTotal && <div style={{ width: `${(section.data.colTotal || 8)*8}px`, textAlign: 'right' }}>AMT</div>}
+                <div style={{ paddingTop: `${editingTemplate.global?.separatorSpacing || 5}px` }}>
+                  <div style={{ display: 'flex', borderBottom: editingTemplate.global?.separatorChar === '.' ? '2px dotted #000' : '2px solid #000', paddingBottom: `${editingTemplate.global?.separatorSpacing || 5}px`, marginBottom: '0', fontSize: `${section.data.headerFontSize || 13}px`, fontWeight: section.data.headerFontWeight || 'bold' }}>
+                    {section.data.qtyBeforeName && section.data.showQty && <div style={{ width: `${(section.data.colQty || 4)*8}px`, textAlign: 'right' }}>Qty</div>}
+                    <div style={{ flex: 1 }}>Item</div>
+                    {section.data.showNoteCol && <div style={{ width: `${(section.data.colNote || 15)*8}px`, textAlign: 'right' }}>Special Note</div>}
+                    {!section.data.qtyBeforeName && section.data.showQty && <div style={{ width: `${(section.data.colQty || 4)*8}px`, textAlign: 'right' }}>Qty</div>}
+                    {section.data.showPrice && <div style={{ width: `${(section.data.colPrice || 8)*8}px`, textAlign: 'right' }}>Price</div>}
+                    {section.data.showTotal && <div style={{ width: `${(section.data.colTotal || 8)*8}px`, textAlign: 'right' }}>Amount</div>}
                   </div>
                   {mockOrder.items.map((item, i) => (
                     <div key={i} style={{ display: 'flex', flexDirection: 'column', marginBottom: '4px' }}>
-                      <div style={{ display: 'flex' }}>
-                        {section.data.qtyBeforeName && section.data.showQty && <div style={{ width: `${(section.data.colQty || 4)*8}px`, textAlign: 'center' }}>{item.qty}</div>}
+                      <div style={{ display: 'flex', fontWeight: activeType === 'kot' ? 'bold' : 'inherit' }}>
+                        {section.data.qtyBeforeName && section.data.showQty && <div style={{ width: `${(section.data.colQty || 4)*8}px`, textAlign: 'right' }}>{item.qty}</div>}
                         <div style={{ flex: 1 }}>{item.name}</div>
-                        {!section.data.qtyBeforeName && section.data.showQty && <div style={{ width: `${(section.data.colQty || 4)*8}px`, textAlign: 'center' }}>{item.qty}</div>}
-                        {section.data.showPrice && <div style={{ width: `${(section.data.colPrice || 8)*8}px`, textAlign: 'right' }}>{item.price}</div>}
-                        {section.data.showTotal && <div style={{ width: `${(section.data.colTotal || 8)*8}px`, textAlign: 'right' }}>{item.total}</div>}
+                        {section.data.showNoteCol && <div style={{ width: `${(section.data.colNote || 15)*8}px`, textAlign: 'right', color: '#64748b' }}>—</div>}
+                        {!section.data.qtyBeforeName && section.data.showQty && <div style={{ width: `${(section.data.colQty || 4)*8}px`, textAlign: 'right' }}>{item.qty}</div>}
+                        {section.data.showPrice && <div style={{ width: `${(section.data.colPrice || 8)*8}px`, textAlign: 'right' }}>{item.price.toFixed(2)}</div>}
+                        {section.data.showTotal && <div style={{ width: `${(section.data.colTotal || 8)*8}px`, textAlign: 'right' }}>{item.total.toFixed(2)}</div>}
                       </div>
-                      {section.data.showNotes !== false && i === 0 && <div style={{ fontSize: '0.9em', paddingLeft: '8px' }}>Note: Extra spicy</div>}
+                      {section.data.showNotes !== false && item.note && <div style={{ fontSize: '0.85em', color: '#4b5563', paddingLeft: '8px' }}>Note: {item.note}</div>}
                     </div>
                   ))}
                 </div>
               );
               break;
-            case 'charges':
+            case 'charges': {
+              const itemSec = editingTemplate.sections.find(s => s.type === 'itemList') || { data: {} };
+              const colQtyW = (itemSec.data.colQty || 4) * 8;
+              const colPriceW = (itemSec.data.colPrice || 8) * 8;
+              const colTotalW = (itemSec.data.colTotal || 8) * 8;
+              const qtyBefore = itemSec.data.qtyBeforeName;
+
               content = (
-                <div style={{ paddingBottom: '5px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span>Subtotal</span>
-                    <span>{mockOrder.subtotal.toFixed(2)}</span>
+                <div style={{ paddingBottom: '5px', borderTop: editingTemplate.global?.separatorChar === '.' ? '2px dotted #000' : '2px solid #000', paddingTop: `${editingTemplate.global?.separatorSpacing || 5}px`, marginTop: '0' }}>
+                  {/* Row 1: Total Qty label + Qty Value + "Sub" label in Price Col */}
+                  {/* Row 1: Total Qty label + Qty Value + "Sub" label + Amount */}
+                  <div style={{ display: 'flex', marginBottom: '0', fontSize: `${section.data.totalQtyFontSize || 13}px` }}>
+                    {qtyBefore && <div style={{ width: `${colQtyW}px`, textAlign: 'right' }}>{mockOrder.items.reduce((s,i)=>s+i.qty,0)}</div>}
+                    <div style={{ flex: 1, textAlign: 'right', paddingRight: '4px' }}>Total Qty:</div>
+                    {!qtyBefore && <div style={{ width: `${colQtyW}px`, textAlign: 'right' }}>{mockOrder.items.reduce((s,i)=>s+i.qty,0)}</div>}
+                    <div style={{ width: `${colPriceW}px`, textAlign: 'right' }}>Sub</div>
+                    <div style={{ width: `${colTotalW}px`, textAlign: 'right' }}>{mockOrder.subtotal.toFixed(2)}</div>
                   </div>
+
+                  {/* Row 2: "Total" label only */}
+                  <div style={{ display: 'flex', marginBottom: '4px', fontSize: `${section.data.totalQtyFontSize || 13}px` }}>
+                    <div style={{ flex: 1 }}></div>
+                    {qtyBefore && <div style={{ width: `${colQtyW}px` }}></div>}
+                    {!qtyBefore && <div style={{ width: `${colQtyW}px` }}></div>}
+                    <div style={{ width: `${colPriceW}px`, textAlign: 'right' }}>Total</div>
+                    <div style={{ width: `${colTotalW}px`, textAlign: 'right' }}></div>
+                  </div>
+
                   {section.data.showServiceCharge && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span>Service Charge (5%)</span>
-                      <span>{mockOrder.serviceCharge.toFixed(2)}</span>
-                    </div>
+                    <>
+                      <div style={{ display: 'flex', marginBottom: '0', fontSize: `${section.data.serviceChargeFontSize || 13}px` }}>
+                        {qtyBefore && <div style={{ width: `${colQtyW}px` }}></div>}
+                        <div style={{ flex: 1, textAlign: 'right', paddingRight: '4px' }}>Service Charge</div>
+                        {!qtyBefore && <div style={{ width: `${colQtyW}px` }}></div>}
+                        <div style={{ width: `${colPriceW}px` }}></div>
+                        <div style={{ width: `${colTotalW}px`, textAlign: 'right' }}>{mockOrder.serviceCharge.toFixed(2)}</div>
+                      </div>
+                      <div style={{ display: 'flex', marginBottom: '4px', fontSize: `${section.data.serviceChargeFontSize || 13}px` }}>
+                        <div style={{ flex: 1, textAlign: 'right', paddingRight: '4px' }}>(Optional)</div>
+                        {qtyBefore && <div style={{ width: `${colQtyW}px` }}></div>}
+                        {!qtyBefore && <div style={{ width: `${colQtyW}px` }}></div>}
+                        <div style={{ width: `${colPriceW}px` }}></div>
+                        <div style={{ width: `${colTotalW}px` }}></div>
+                      </div>
+                    </>
                   )}
+
                   {section.data.showGst && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span>GST (5%)</span>
-                      <span>{mockOrder.gst.toFixed(2)}</span>
+                    <div style={{ display: 'flex', marginBottom: '4px', fontSize: `${section.data.serviceChargeFontSize || 13}px` }}>
+                      {qtyBefore && <div style={{ width: `${colQtyW}px` }}></div>}
+                      <div style={{ flex: 1, textAlign: 'right', paddingRight: '4px' }}>GST</div>
+                      {!qtyBefore && <div style={{ width: `${colQtyW}px` }}></div>}
+                      <div style={{ width: `${colPriceW}px` }}></div>
+                      <div style={{ width: `${colTotalW}px`, textAlign: 'right' }}>{mockOrder.gst.toFixed(2)}</div>
                     </div>
                   )}
                 </div>
               );
               break;
-            case 'totalSummary':
+            }
+            case 'totalSummary': {
+              const itemSec = editingTemplate.sections.find(s => s.type === 'itemList') || { data: {} };
+              const colTotalW = (itemSec.data.colTotal || 8) * 8;
+
               content = (
-                <div style={{ paddingBottom: '5px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '2px solid #000', paddingTop: '5px' }}>
-                    <span>GRAND TOTAL</span>
-                    <span>₹{mockOrder.total.toFixed(2)}</span>
+                <div style={{ borderTop: editingTemplate.global?.separatorChar === '.' ? '2px dotted #000' : '2px solid #000', borderBottom: editingTemplate.global?.separatorChar === '.' ? '2px dotted #000' : '2px solid #000', paddingTop: `${editingTemplate.global?.separatorSpacing || 5}px`, paddingBottom: `${editingTemplate.global?.separatorSpacing || 5}px`, marginTop: '0', marginBottom: '0' }}>
+                  <div style={{ display: 'flex', marginBottom: '4px', fontSize: `${section.data.roundOffFontSize || 11}px`, color: '#64748b' }}>
+                    <span style={{ flex: 1, textAlign: 'right', paddingRight: '4px' }}>Round off</span>
+                    <span style={{ width: `${colTotalW}px`, textAlign: 'right' }}>+0.00</span>
+                  </div>
+                  <div style={{ display: 'flex', fontWeight: '900', fontSize: `${section.style.fontSize}px`, whiteSpace: 'nowrap' }}>
+                    <span style={{ flex: 1, textAlign: 'right', paddingRight: '4px' }}>Grand Total</span>
+                    <span style={{ width: `${colTotalW}px`, textAlign: 'right' }}>₹{mockOrder.total.toFixed(2)}</span>
                   </div>
                 </div>
               );
               break;
+            }
             case 'footer':
               content = (
                 <div style={{ whiteSpace: 'pre-wrap' }}>
@@ -523,11 +696,49 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
           <button onClick={saveTemplate} style={{ padding: '10px 20px', borderRadius: '10px', background: '#10b981', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Save size={16} /> Save Template
           </button>
-          <button onClick={() => onSaveSettings(settings)} style={{ padding: '10px 20px', borderRadius: '10px', background: '#1e293b', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button onClick={() => { 
+            const newTemplates = [...templates];
+            const index = newTemplates.findIndex(t => t.id === editingTemplate.id);
+            if (index >= 0) {
+              newTemplates[index] = editingTemplate;
+            } else {
+              newTemplates.push(editingTemplate);
+            }
+            onSaveSettings({ ...settings, printTemplates: newTemplates }); 
+            showNotification("POS Settings Saved Successfully!"); 
+          }} style={{ padding: '10px 20px', borderRadius: '10px', background: '#1e293b', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <CheckCircle size={16} /> Done
           </button>
         </div>
       </div>
+
+      {/* In-App Notification Toast */}
+      {notification && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          background: notification.type === 'error' ? '#ef4444' : '#10b981',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: '12px',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          zIndex: 10000,
+          animation: 'slideUp 0.3s ease-out'
+        }}>
+          <CheckCircle size={18} />
+          <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{notification.message}</span>
+        </div>
+      )}
+      <style>{`
+        @keyframes slideUp {
+          from { transform: translateY(100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+      `}</style>
 
       {editingTemplate && (
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
@@ -595,9 +806,27 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                       <input type="number" value={editingTemplate.global?.sectionSpacing || 1} onChange={e => setEditingTemplate({...editingTemplate, global: {...editingTemplate.global, sectionSpacing: parseInt(e.target.value)}})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
                     </div>
                     <div>
+                      <label style={{ fontSize: '11px', color: '#64748b' }}>Line Spacing (Dots: 0-255, Default 30)</label>
+                      <input type="number" min="0" max="255" value={editingTemplate.global?.lineSpacing !== undefined ? editingTemplate.global?.lineSpacing : 30} onChange={e => setEditingTemplate({...editingTemplate, global: {...editingTemplate.global, lineSpacing: parseInt(e.target.value)}})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: '#64748b' }}>Separator Vertical Gap (Pixels)</label>
+                      <input type="number" value={editingTemplate.global?.separatorSpacing || 5} onChange={e => setEditingTemplate({...editingTemplate, global: {...editingTemplate.global, separatorSpacing: parseInt(e.target.value)}})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: '#64748b' }}>Separator Character (Raw Print)</label>
+                      <select value={editingTemplate.global?.separatorChar || '='} onChange={e => setEditingTemplate({...editingTemplate, global: {...editingTemplate.global, separatorChar: e.target.value}})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white' }}>
+                        <option value="=">Bold (====)</option>
+                        <option value="-">Thin (----)</option>
+                        <option value=".">Dotted (....)</option>
+                        <option value="*">Stars (****)</option>
+                      </select>
+                    </div>
+                    <div>
                       <label style={{ fontSize: '11px', color: '#64748b' }}>Font Family (Preview / Raster Printing)</label>
                       <select value={editingTemplate.global?.fontFamily || 'monospace'} onChange={e => setEditingTemplate({...editingTemplate, global: {...editingTemplate.global, fontFamily: e.target.value}})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white' }}>
                         <option value="monospace">Monospace (ESC/POS Default)</option>
+                        <option value="Verdana">Verdana (Reference Style)</option>
                         <option value="sans-serif">Sans Serif</option>
                         <option value="serif">Serif</option>
                       </select>

@@ -63,6 +63,15 @@ export const printPosToSerial = async (orderData, type = 'BILL', customSettings 
     if (customSettings) {
       settings = { ...settings, ...customSettings };
     } else {
+      // Primary: load from localStorage pos_settings (where printTemplates are saved by BillDesigner)
+      try {
+        const localRaw = localStorage.getItem('pos_settings');
+        if (localRaw) {
+          const localSettings = JSON.parse(localRaw);
+          settings = { ...settings, ...localSettings };
+        }
+      } catch (e) { }
+      // Secondary: also merge idb-keyval prefs if present (legacy / printer name)
       const rawSettings = await get('pos_printer_settings');
       if (rawSettings) settings = { ...settings, ...rawSettings };
     }
@@ -107,10 +116,10 @@ export const printPosToSerial = async (orderData, type = 'BILL', customSettings 
     if (type === 'KOT' && (settings.separateKotByCategory || settings.separateKotStations)) {
       // Load KOT Stations from settings (backend/config source) or legacy groups
       const stations = settings.printerStations || settings.kotGroups || [];
-      
+
       // Group items
       const grouped = {};
-      
+
       normalizedOrder.items.forEach(item => {
         // Find if this item's category belongs to a station
         const station = stations.find(s => (s.categories || []).includes(item.category));
@@ -127,7 +136,7 @@ export const printPosToSerial = async (orderData, type = 'BILL', customSettings 
         const slipOrder = {
           ...normalizedOrder,
           items: grouped[sName],
-          categoryHeader: sName.toUpperCase() 
+          categoryHeader: sName.toUpperCase()
         };
         const res = await printViaQzTray(slipOrder, type, qzSettings);
         if (!res.success) throw new Error(res.message);
@@ -140,23 +149,23 @@ export const printPosToSerial = async (orderData, type = 'BILL', customSettings 
     if (!result.success) {
       throw new Error(result.message);
     }
-    
+
     console.log(`[Print] ✅ ${type} printed silently via QZ Tray`);
     return;
   } catch (qzErr) {
     const msg = qzErr?.message || String(qzErr);
-    
+
     // If QZ Tray is genuinely not running, fall back to browser print
     // If QZ Tray is not running, not configured, or connection failed, fall back to browser print
     if (
-      msg.includes('not running') || 
-      msg.includes('WebSocket') || 
-      msg.includes('ECONNREFUSED') || 
+      msg.includes('not running') ||
+      msg.includes('WebSocket') ||
+      msg.includes('ECONNREFUSED') ||
       msg.includes('No printer selected') ||
       msg.includes('not connected')
     ) {
       console.warn('[Print] QZ Tray not available, falling back to browser print dialog...');
-      
+
       if (type === 'KOT' && (settings.separateKotByCategory || settings.separateKotStations)) {
         const stations = settings.printerStations || settings.kotGroups || [];
         const grouped = {};
@@ -166,13 +175,13 @@ export const printPosToSerial = async (orderData, type = 'BILL', customSettings 
           if (!grouped[stationName]) grouped[stationName] = [];
           grouped[stationName].push(item);
         });
-        
+
         const slips = Object.keys(grouped).map(sName => ({
           ...normalizedOrder,
           items: grouped[sName],
           categoryHeader: sName.toUpperCase()
         }));
-        
+
         fallbackBrowserPrint(slips, type, settings);
       } else {
         fallbackBrowserPrint([normalizedOrder], type, settings);
@@ -187,220 +196,212 @@ export const printPosToSerial = async (orderData, type = 'BILL', customSettings 
 
 /**
  * Fallback: uses window.print() with a styled receipt.
- * This WILL show a browser print dialog but at least works without QZ Tray.
+ * Layout matches the reference thermal bill exactly.
  */
 function fallbackBrowserPrint(orderData, type, settings) {
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
   const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
-  const html = `<html><head>
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Verdana:wght@400;700&display=swap');
-      
-      body { 
-        font-family: 'Verdana', sans-serif; 
-        width: 240px; 
-        margin: 0; 
-        padding: 0 5px; 
-        color: #000;
-        line-height: 1.1;
-      }
-      .center { text-align: center; }
-      .bold { font-weight: 700; }
-      .line { border-top: 1.5px solid #000; margin: 4px 0; }
-      .thick-line { border-top: 2.2px solid #000; margin: 4px 0; }
-      
-      .flex-row { 
-        display: flex; 
-        justify-content: space-between; 
-        align-items: flex-start;
-        font-size: 13px;
-        margin: 3px 0;
-      }
+  const templates = settings.printTemplates || [];
+  const docType = type === 'KOT' ? 'kot' : 'bill';
+  const tmpl = templates.find(t => t.type === docType && t.isDefault) || templates.find(t => t.type === docType);
+  const glob = tmpl?.global || {};
+  const paperMm = tmpl?.paperWidth || 80;
+  const paperPx = paperMm === 58 ? 220 : 300;
+  const padL = Math.max((glob.marginLeft || 0) * 6, 10);
+  const padR = Math.max((glob.marginRight || 0) * 6, 10);
+  const padT = (glob.marginTop || 0) * 4;
+  const padB = (glob.marginBottom || 4) * 4;
+  const sepChar = glob.separatorChar || '=';
+  const isDotted = sepChar === '.' || sepChar === '-';
+  const boldLine = isDotted ? '1.5px dotted #000' : '2px solid #000';
+  const thinLine = '1px solid #000';
 
-      .item-table { 
-        width: 100%; 
-        border-collapse: collapse; 
-        font-size: 13px; 
-        margin: 5px 0;
-      }
-      .item-table th { 
-        border-top: 1.5px solid #000;
-        border-bottom: 1.5px solid #000; 
-        padding: 5px 0;
-        text-align: left; 
-      }
-      .item-table td { 
-        padding: 4px 0;
-        vertical-align: top;
-      }
-      
-      .col-item { width: 115px; }
-      .col-qty { width: 25px; text-align: center; }
-      .col-price { width: 45px; text-align: right; }
-      .col-amt { width: 55px; text-align: right; }
-      
-      .totals-area { 
-        margin-top: 5px; 
-        font-size: 13px; 
-      }
-      
-      .totals-stack {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 4px;
-      }
-      
-      .grand-total-row { 
-        font-size: 14px; 
-        padding: 6px 0; 
-        border-top: 1.8px solid #000; 
-        border-bottom: 1.8px solid #000; 
-        margin-top: 6px;
-        display: flex;
-        justify-content: space-between;
-      }
-      
-      @media print { 
-        @page { margin: 0; size: 80mm auto; } 
-        .page-break { page-break-after: always; }
-      }
-    </style></head><body>
-    ${(Array.isArray(orderData) ? orderData : [orderData]).map((order, idx, arr) => `
-      <div class="${idx < arr.length - 1 ? 'page-break' : ''}">
-        ${type === 'KOT' ? `
-          <div class="center" style="margin-top: 5px;">
-            <div class="bold" style="font-size: 16px;">Table: ${order.tableName}</div>
-            ${order.categoryHeader ? `<div class="bold" style="font-size: 16px; margin: 4px 0;">Category: ${order.categoryHeader}</div>` : ''}
-          </div>
-          <div style="border-top: 1.5px dotted black; margin: 8px 0;"></div>
-          <table class="item-table" style="margin-top: 5px;">
-            <tbody>
-              ${order.items.map(item => `
-                <tr>
-                  <td style="padding: 5px 0;">
-                    <span class="bold" style="font-size: 15px;">${item.name}</span>
-                    ${item.note ? `<br/><span style="font-size: 12px; font-style: italic; color: #333;">* Note: ${item.note}</span>` : ''}
-                  </td>
-                  <td style="text-align: right; font-size: 16px;" class="bold">x${item.qty}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          <div style="border-top: 1.5px dotted black; margin-top: 10px;"></div>
-          <div class="center" style="margin-top: 8px; font-size: 12px; color: #666;">
-            Time: ${dateStr} ${timeStr}
-          </div>
-        ` : `
-          <div class="center" style="margin-top: 5px;">
-            <div class="bold" style="font-size: 14px;">${settings.resName || 'Tyde Cafe'}</div>
-            <div style="font-size: 13px;">${settings.headerText || 'Nerul Ferry Terminal'}</div>
-          </div>
-          
-          <div class="line" style="margin-top: 10px;"></div>
-          <div style="font-size: 13px; margin: 5px 0;">Name: ______________________</div>
-          <div class="line"></div>
-          
-          <div class="flex-row">
-            <span>Date: ${dateStr}</span>
-            <span class="bold">Dine In: ${order.tableName}</span>
-          </div>
-          <div class="flex-row">
-            <span>${timeStr}</span>
-            <span>Bill No.: ${order.billNumber || '---'}</span>
-          </div>
-          <div class="flex-row">
-            <span>Cashier: ${order.cashier || 'biller'}</span>
-            <span></span>
-          </div>
-          
-          <div class="line" style="margin-bottom: 0;"></div>
-          <table class="item-table">
-            <thead>
-              <tr class="bold">
-                <th class="col-item">Item</th>
-                <th class="col-qty">Qty</th>
-                <th class="col-price">Price</th>
-                <th class="col-amt">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${order.items.map(item => `
-                <tr>
-                  <td class="col-item">${item.name}</td>
-                  <td class="col-qty">${item.qty}</td>
-                  <td class="col-price">${item.price.toFixed(0)}</td>
-                  <td class="col-amt">${(item.qty * item.price).toFixed(0)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          <div class="line" style="margin-top: 0;"></div>
-          
-          <div class="totals-area">
-            <div class="totals-stack">
-              <div style="flex: 1; padding-left: 50px; display: flex; justify-content: space-between; align-items: flex-start;">
-                <div style="line-height: 1;">Sub<br/>Total</div>
-                <div class="col-amt">${(order.subtotal || 0).toFixed(2)}</div>
-              </div>
-            </div>
-            
-            <div class="flex-row">
-              <span>Total Qty: ${order.items.reduce((s, i) => s + i.qty, 0)}</span>
-              <span></span>
-            </div>
-            
-            ${order.serviceCharge > 0 ? `
-            <div class="totals-stack">
-              <div style="flex: 1; display: flex; justify-content: space-between; align-items: flex-start;">
-                 <div style="line-height: 1.1;">Service Charge<br/><span style="font-size: 11px;">(Optional)</span></div>
-                 <div class="col-amt">${(order.serviceCharge || 0).toFixed(2)}</div>
-              </div>
-            </div>
-            ` : ''}
+  const orders = Array.isArray(orderData) ? orderData : [orderData];
 
-            ${order.gstAmount > 0 ? `
-            <div class="totals-stack">
-              <div style="flex: 1; display: flex; justify-content: space-between; align-items: flex-start;">
-                 <div style="line-height: 1.1;">GST</div>
-                 <div class="col-amt">${(order.gstAmount || 0).toFixed(2)}</div>
-              </div>
-            </div>
-            ` : ''}
-            
-            <div class="line" style="margin-top: 10px; border-top-width: 1px;"></div>
-            
-            <div class="flex-row" style="justify-content: flex-end; font-size: 11px; margin-top: 4px;">
-              <span style="margin-right: 15px;">Round off</span>
-              <span class="col-amt">${(order.roundOff || 0) >= 0 ? '+' : ''}${parseFloat(order.roundOff || 0).toFixed(2)}</span>
-            </div>
-            
-            <div class="grand-total-row bold">
-              <span>Grand Total</span>
-              <span style="font-size: 16px;">${settings.currencySymbol || '₹'}${ (order.grandTotal || 0).toFixed(2) }</span>
-            </div>
-          </div>
-          
-          <div class="center" style="font-size: 13px; margin-top: 15px; margin-bottom: 10px;">
-            ${settings.footerText || 'Sea you soon — under the moon'}
-          </div>
-        `}
-      </div>
-    `).join('')}
-    <div style="height: 20px;"></div>
-    <script>
-      window.onload = () => {
-        window.print();
-        setTimeout(() => window.close(), 500);
-      };
-    </script>
-    </body></html>`;
-
-  const printWindow = window.open('', '_blank', 'width=350,height=800');
-  if (printWindow) {
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #fff; }
+  body { display: flex; justify-content: center; }
+  .receipt {
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-size: 13px;
+    color: #000;
+    width: 100%;
+    max-width: ${paperPx}px;
+    padding: ${padT}px ${padR}px ${padB}px ${padL}px;
+    line-height: 1.35;
+    -webkit-font-smoothing: none;
+    text-rendering: crispEdges;
   }
+  /* Separators */
+  .sb { border: 0; border-top: ${boldLine}; margin: 4px 0; }
+  .st { border: 0; border-top: ${thinLine};  margin: 3px 0; }
+  /* Header */
+  .hdr { text-align: center; margin-bottom: 3px; }
+  /* Two-col info rows */
+  .ir { display: flex; justify-content: space-between; }
+  .ir .l { }
+  .ir .r { text-align: right; white-space: nowrap; padding-left: 6px; }
+  /* Item table */
+  .t { width: 100%; border-collapse: collapse; }
+  .t th {
+    font-size: 13px; font-weight: normal;
+    text-align: left; padding: 4px 0;
+    border-top: ${boldLine}; border-bottom: ${boldLine};
+  }
+  .t td { font-size: 13px; padding: 3px 0; vertical-align: top; }
+  /* Fixed column widths — shared by header, body AND totals rows */
+  .ci { padding-right: 4px; }
+  .cq { width: 22px; text-align: right; padding-right: 6px; }
+  .cp { width: 52px; text-align: right; padding-right: 12px; }
+  .ca { width: 54px; text-align: right; }
+  /* Grand total row */
+  .gt td {
+    font-size: 14px; font-weight: 700; padding: 5px 0;
+    border-top: ${boldLine}; border-bottom: ${boldLine};
+  }
+  .footer { text-align: center; font-size: 12px; margin-top: 10px; }
+  @media print {
+    @page { margin: 0; size: ${paperMm}mm auto; }
+    body { display: block; }
+    .receipt { margin: 0 auto; width: 100%; max-width: 100%; }
+    .pb { page-break-after: always; }
+  }
+</style></head><body><div class="receipt">
+${orders.map((order, idx) => {
+    const isTakeaway = order.orderType === 'Takeaway' || order.orderType === 'Delivery' ||
+      (order.tableName && /^(TAK|TA|DEL|DL)-/i.test(order.tableName));
+    const totalQty = (order.items || []).reduce((s, i) => s + (i.qty || 0), 0);
+
+    /* ── KOT layout ── */
+    if (type === 'KOT') {
+      return `<div class="${idx < orders.length - 1 ? 'pb' : ''}">
+      <div class="hdr">
+        <div style="font-size:15px;font-weight:700;">${isTakeaway ? 'Takeaway' : 'Dine In'}</div>
+        <div style="font-size:13px;font-weight:700;">
+          ${isTakeaway
+          ? `Token No: ${order.tableName || '--'}${order.customerName ? ' | ' + order.customerName : ''}`
+          : `Table No: ${(order.tableName || '--').replace(/^table\s*/i, '')}`}
+        </div>
+        ${order.categoryHeader ? `<div style="font-size:12px;margin-top:2px;">${order.categoryHeader}</div>` : ''}
+        <div style="font-size:12px;margin-top:2px;">${timeStr}</div>
+      </div>
+      <div style="border-top:1.5px dotted #000; margin: 4px 0;"></div>
+      <table class="t">
+        <thead><tr>
+          <th class="ci" style="font-weight:400; border:none;">Item</th>
+          <th class="ca" style="text-align:right; font-weight:400; border:none;">Qty</th>
+        </tr></thead>
+        <tbody>
+          ${(order.items || []).map(item => `
+          <tr>
+            <td class="ci"><strong>${item.name}</strong>${item.note ? `<br/><span style="font-size:11px;font-style:italic;padding-left:5px;">Note: ${item.note}</span>` : ''}</td>
+            <td class="ca" style="font-size:14px;font-weight:700;text-align:right;">x${item.qty}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+    }
+
+    /* ── BILL layout ── */
+    const tableLabel = (order.tableName || '--').replace(/^table\s*/i, '');
+    return `<div class="${idx < orders.length - 1 ? 'pb' : ''}">
+
+    <div class="hdr">
+      <div style="font-size:15px;font-weight:700;">${settings.resName || 'Tyde Cafe'}</div>
+      ${(settings.headerText || settings.address) ? `<div style="font-size:12px;">${settings.headerText || settings.address}</div>` : ''}
+    </div>
+    <hr class="sb"/>
+
+    <div style="font-size:13px;margin-bottom:2px;">Name: ${order.customerName || ''}</div>
+    <hr class="sb" style="margin-bottom:4px;"/>
+
+    ${isTakeaway ? `
+      <div class="ir"><span class="l">Date: ${dateStr}</span><span class="r" style="font-weight:700;">Takeaway</span></div>
+      <div class="ir"><span class="l">${timeStr}</span><span class="r">Token: ${(order.tableName || '--').replace(/Takeaway/i, 'TK')}${order.customerName ? ' | ' + order.customerName : ''}</span></div>
+      <div class="ir" style="margin-bottom:3px;"><span class="l">Cashier: biller</span><span class="r">Bill No.: ${order.billNumber || '---'}</span></div>
+    ` : `
+      <div class="ir"><span class="l">Date: ${dateStr}</span><span class="r" style="font-weight:700;">Dine In: ${tableLabel}</span></div>
+      <div class="ir"><span class="l">${timeStr}</span><span class="r">Bill No.: ${order.billNumber || '---'}</span></div>
+      <div class="ir" style="margin-bottom:3px;"><span class="l">Cashier: biller</span><span class="r"></span></div>
+    `}
+
+    <table class="t">
+      <thead><tr>
+        <th class="ci">Item</th>
+        <th class="cq" style="text-align:center;">Qty</th>
+        <th class="cp" style="text-align:center;">Price</th>
+        <th class="ca">Amount</th>
+      </tr></thead>
+      <tbody>
+        ${(order.items || []).map(item => `
+        <tr>
+          <td class="ci">${item.name}${item.note ? `<br/><span style="font-size:11px;font-style:italic;">Note: ${item.note}</span>` : ''}</td>
+          <td class="cq">${item.qty}</td>
+          <td class="cp">${(item.price || 0).toFixed(2)}</td>
+          <td class="ca">${((item.qty || 0) * (item.price || 0)).toFixed(2)}</td>
+        </tr>`).join('')}
+
+        <!-- Total Qty row: label in Item col (right), number in Qty col -->
+        <tr>
+          <td class="ci" style="border-top:${boldLine};padding-top:4px;text-align:right;padding-right:6px;">Total Qty:</td>
+          <td class="cq" style="border-top:${boldLine};padding-top:4px;text-align:center;">${totalQty}</td>
+          <td class="cp" style="border-top:${boldLine};padding-top:4px;line-height:1.15;vertical-align:top;text-align:center; padding-left:0;">Sub<br/>Total</td>
+          <td class="ca" style="border-top:${boldLine};padding-top:4px;">${(order.subtotal || 0).toFixed(2)}</td>
+        </tr>
+        ${(order.serviceCharge || 0) > 0 ? `
+        <!-- Service Charge: 13px, right-aligned under Total Qty, (Optional) on new line -->
+        <tr>
+          <td class="ci" style="text-align:right;padding-right:6px;font-size:13px;line-height:1.4;">
+            Service Charge<br/>(Optional)
+          </td>
+          <td class="cq"></td>
+          <td class="cp"></td>
+          <td class="ca">${(order.serviceCharge).toFixed(2)}</td>
+        </tr>` : ''}
+        ${(order.gstAmount || 0) > 0 ? `
+        <tr>
+          <td class="ci" style="text-align:right;padding-right:6px;">GST</td>
+          <td class="cq"></td>
+          <td class="cp"></td>
+          <td class="ca">${(order.gstAmount).toFixed(2)}</td>
+        </tr>` : ''}
+
+        <!-- Bold separator row -->
+        <tr><td colspan="4" style="border-top:${boldLine};padding:0;height:1px;font-size:0;line-height:0;"></td></tr>
+
+        <!-- Round off: extremely small font, sits between bold separator and Grand Total -->
+        <tr style="font-size:6px;color:#555;">
+          <td class="ci" colspan="2"></td>
+          <td class="cp" style="text-align:right;white-space:nowrap;">Round off</td>
+          <td class="ca" style="white-space:nowrap;">${(order.roundOff || 0) >= 0 ? '+' : ''}${parseFloat(order.roundOff || 0).toFixed(2)}</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <!-- Grand Total: border-bottom only (no top border — round off is directly above) -->
+        <tr>
+          <td colspan="4" style="padding:4px 0 5px;font-size:14px;font-weight:700;border-bottom:${boldLine};">
+            <div style="display:flex;justify-content:flex-end;gap:8px;">
+              <span>Grand Total</span>
+              <span>${settings.currencySymbol || '\u20b9'}${(order.grandTotal || 0).toFixed(2)}</span>
+            </div>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="footer">${settings.footerText || settings.billFooter || 'Sea you soon \u2014 under the moon'}</div>
+  </div>`;
+  }).join('')}
+</div>
+<script>window.onload=()=>{window.print();setTimeout(()=>window.close(),800);};</script>
+</body></html>`;
+
+  const win = window.open('', '_blank', 'width=420,height=900');
+  if (win) { win.document.write(html); win.document.close(); win.focus(); }
 }
+
+

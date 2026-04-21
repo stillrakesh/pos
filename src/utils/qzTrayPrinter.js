@@ -176,9 +176,7 @@ export async function testPrint(settings) {
 
 // ─── Command Generators (ESC/POS) ────────────────────────────────
 
-// ─── Command Generators (ESC/POS) ────────────────────────────────
-
-function generateCommandsFromTemplate(order, template, settings) {
+function generateCommandsFromTemplate(order, template, settings, docType = 'BILL') {
   const esc = '\x1B';
   const gs = '\x1D';
   const align = { left: esc+'a\x00', center: esc+'a\x01', right: esc+'a\x02' };
@@ -197,9 +195,15 @@ function generateCommandsFromTemplate(order, template, settings) {
 
   const charWidth = template.paperWidth === 58 ? 32 : 48;
   const availableCharWidth = charWidth - marginLeft;
-  const line = leftPad + '-'.repeat(availableCharWidth) + '\n';
+  const sepChar = global.separatorChar || '=';
+  const line = leftPad + sepChar.repeat(availableCharWidth) + '\n';
 
   let data = [];
+  
+  // Set custom line spacing (ESC 3 n)
+  const lineSpacing = global.lineSpacing !== undefined ? global.lineSpacing : 30;
+  data.push(esc + '3' + String.fromCharCode(lineSpacing));
+
   if (marginTop > 0) data.push('\n'.repeat(marginTop));
 
   const now = new Date();
@@ -209,9 +213,29 @@ function generateCommandsFromTemplate(order, template, settings) {
   // Get active sections sorted by order
   const sections = (template.sections || []).filter(s => s.visible).sort((a,b) => a.order - b.order);
 
+  const itemListSec = sections.find(s => s.type === 'itemList') || { data: {} };
+
+  const wrapSize = (text, fontSize, fontWeight = 'normal') => {
+    let result = '';
+    const isBold = fontWeight === 'bold' || fontWeight === '900';
+    if (isBold) result += boldOn;
+    
+    let sizeCmd = sizeNormal;
+    if (fontSize >= 16) sizeCmd = sizeLarge;
+    else if (fontSize >= 14) sizeCmd = sizeMedium;
+    
+    result += sizeCmd + text + sizeNormal;
+    if (isBold) result += boldOff;
+    return result;
+  };
+
   // Helper to generate an array of raw strings (no ESC codes) for side-by-side printing
   const generateSectionStrings = (sec, availableWidth) => {
     let lines = [];
+    const sepGap = global.separatorSpacing !== undefined ? global.separatorSpacing : 5;
+    const lineSpacing = global.lineSpacing !== undefined ? global.lineSpacing : 30;
+    const sepChar = global.separatorChar || '=';
+    const divider = esc + '3' + String.fromCharCode(sepGap) + '\n' + sepChar.repeat(availableWidth) + '\n' + esc + '3' + String.fromCharCode(lineSpacing);
     
     switch (sec.type) {
       case 'header':
@@ -220,43 +244,104 @@ function generateCommandsFromTemplate(order, template, settings) {
         if (sec.data.showGst && sec.data.gstNumber) lines.push('GSTIN: ' + sec.data.gstNumber);
         break;
 
-      case 'orderInfo':
-        if (sec.data.showBillNo && order.billNumber) lines.push('Bill No: ' + order.billNumber);
-        
-        let typeLine = '';
+      case 'orderInfo': {
+        if (docType === 'KOT') {
+           const isTakeaway = order.orderType === 'Takeaway' || order.orderType === 'Delivery' || (order.tableName && (order.tableName.startsWith('TAK-') || order.tableName.startsWith('DEL-') || order.tableName.startsWith('TA-')));
+           
+           const typeFs = sec.data.typeFontSize || sec.style.fontSize || 16;
+           const typeFw = sec.data.typeFontWeight || sec.style.fontWeight || 'bold';
+           const tableFs = sec.data.tableFontSize || sec.style.fontSize || 14;
+           const tableFw = sec.data.tableFontWeight || sec.style.fontWeight || 'bold';
+           const timeFs = sec.data.timeFontSize || 12;
+           const timeFw = sec.data.timeFontWeight || 'normal';
+
+           if (isTakeaway) {
+             lines.push(wrapSize('Takeaway', typeFs, typeFw));
+             let tokenLine = 'Token No: ' + (order.tokenNo || '--');
+             if (order.customerName) {
+                 tokenLine += ' | ' + order.customerName;
+             }
+             lines.push(wrapSize(tokenLine, tableFs, tableFw));
+           } else {
+             lines.push(wrapSize('Dine In', typeFs, typeFw));
+             const tablePart = (order.tableName || '').replace('Table ', '');
+             lines.push(wrapSize('Table No: ' + (tablePart || '--'), tableFs, tableFw));
+           }
+           
+           lines.push(wrapSize(timeStr, timeFs, timeFw));
+           break;
+        }
+
+        if (sec.style.textAlign === 'center') {
+           if (sec.data.showDateTime) {
+             lines.push(dateStr);
+             lines.push(timeStr);
+           }
+           if (order.billNumber && sec.data.showBillNo) {
+             lines.push('KOT - ' + order.billNumber.split('-').pop());
+           }
+           
+           const isTakeaway = order.orderType === 'Takeaway' || order.orderType === 'Delivery' || (order.tableName && (order.tableName.startsWith('TAK-') || order.tableName.startsWith('DEL-') || order.tableName.startsWith('TA-')));
+           if (isTakeaway) {
+             lines.push(boldOn + 'Takeaway' + boldOff);
+             if (order.tokenNo) lines.push(boldOn + 'Token No: ' + order.tokenNo + boldOff);
+           } else {
+             lines.push(boldOn + 'Dine In' + boldOff);
+             const tablePart = (order.tableName || '').replace('Table ', '');
+             if (tablePart) lines.push(boldOn + 'Table No: ' + tablePart + boldOff);
+           }
+           break;
+        }
+
         const isTakeaway = order.orderType === 'Takeaway' || order.orderType === 'Delivery' || (order.tableName && (order.tableName.startsWith('TAK-') || order.tableName.startsWith('DEL-') || order.tableName.startsWith('TA-')));
+        const typeStr = isTakeaway ? 'Takeaway' : 'Dine In';
+        const tablePart = (order.tableName || '').replace('Table ', '');
         
-        if (sec.data.showTableNo) {
-          typeLine += (isTakeaway ? 'Takeaway: ' : 'Table: ') + (order.tableName || '--');
-        }
-        if (typeLine) lines.push(typeLine);
-        
-        if (sec.data.showOrderType) lines.push('Type: ' + (isTakeaway ? 'Takeaway' : 'Dine In'));
+        let l1 = '', r1 = '', l2 = '', l3 = '', r3 = '';
         if (sec.data.showDateTime) {
-           lines.push('Date: ' + dateStr);
-           lines.push('Time: ' + timeStr);
+            l1 = `Date: ${dateStr}`;
+            l2 = timeStr;
         }
+        if (sec.data.showTableNo || sec.data.showOrderType) {
+            r1 = `${typeStr}${sec.data.showTableNo && tablePart ? ': ' + tablePart : ''}`;
+        }
+        if (sec.data.showBillNo && order.billNumber) {
+            r3 = `Bill No.: ${order.billNumber}`;
+        }
+        l3 = `Cashier: ${settings.cashierName || 'biller'}`;
+
+        const leftColWidth = Math.floor(availableWidth * 0.5);
+        const formattedR1 = r1.includes('Dine In') ? boldOn + r1 + boldOff : r1;
+        
+        if (l1 || r1) lines.push(l1.padEnd(leftColWidth) + formattedR1);
+        if (l2) lines.push(l2);
+        if (l3 || r3) lines.push(l3.padEnd(leftColWidth) + r3);
         if (order.categoryHeader) lines.push('Category: ' + order.categoryHeader);
         break;
+      }
 
       case 'customerInfo':
         if (sec.data.showName && order.customerName) lines.push('Name: ' + order.customerName);
         if (sec.data.showMobile && order.customerPhone) lines.push('Mobile: ' + order.customerPhone);
         break;
 
-      case 'itemList':
+      case 'itemList': {
         const wQty = sec.data.colQty || 4;
         const wPrice = sec.data.colPrice || 8;
         const wTotal = sec.data.colTotal || 8;
-        let headW = availableWidth - (sec.data.showQty?wQty:0) - (sec.data.showPrice?wPrice:0) - (sec.data.showTotal?wTotal:0) - 1;
+        const wNote = sec.data.colNote || 15;
+        
+        let headW = availableWidth - (sec.data.showQty?wQty:0) - (sec.data.showPrice?wPrice:0) - (sec.data.showTotal?wTotal:0) - (sec.data.showNoteCol?wNote:0) - 1;
         
         let headStr = '';
-        if (sec.data.qtyBeforeName && sec.data.showQty) headStr += 'QTY'.padStart(wQty);
-        headStr += 'ITEM'.padEnd(headW + 1);
-        if (!sec.data.qtyBeforeName && sec.data.showQty) headStr += 'QTY'.padStart(wQty);
-        if (sec.data.showPrice) headStr += 'PRICE'.padStart(wPrice);
-        if (sec.data.showTotal) headStr += 'AMT'.padStart(wTotal);
-        lines.push(headStr.trimEnd());
+        if (sec.data.qtyBeforeName && sec.data.showQty) headStr += 'Qty'.padStart(wQty);
+        headStr += 'Item'.padEnd(headW + 1);
+        if (sec.data.showNoteCol) headStr += 'Special Note'.padStart(wNote);
+        if (!sec.data.qtyBeforeName && sec.data.showQty) headStr += 'Qty'.padStart(wQty);
+        if (sec.data.showPrice) headStr += 'Price'.padStart(wPrice);
+        if (sec.data.showTotal) headStr += 'Amount'.padStart(wTotal);
+        lines.push(wrapSize(headStr.trimEnd(), sec.data.headerFontSize, sec.data.headerFontWeight));
+        lines.push(divider);
 
         let processedItems = order.items;
         if (sec.data.mergeDuplicates) {
@@ -270,38 +355,123 @@ function generateCommandsFromTemplate(order, template, settings) {
         }
 
         for (const item of processedItems) {
-          const amt = (item.qty * item.price).toFixed(0);
+          const amt = (item.qty * item.price).toFixed(2);
           const namePart = (item.name.substring(0, headW)).padEnd(headW + 1);
           let rowStr = '';
           
-          if (sec.data.qtyBeforeName && sec.data.showQty) rowStr += item.qty.toString().padStart(wQty - 1) + ' ';
-          rowStr += namePart;
-          if (!sec.data.qtyBeforeName && sec.data.showQty) rowStr += item.qty.toString().padStart(wQty - 1) + ' ';
-          if (sec.data.showPrice) rowStr += item.price.toFixed(0).padStart(wPrice - 1) + ' ';
-          if (sec.data.showTotal) rowStr += amt.padStart(wTotal - 1);
+          let formattedName = namePart;
+          if (docType === 'KOT') {
+              formattedName = boldOn + namePart + boldOff;
+          }
+          
+          if (sec.data.qtyBeforeName && sec.data.showQty) rowStr += item.qty.toString().padStart(wQty);
+          rowStr += formattedName;
+          if (sec.data.showNoteCol) rowStr += '—'.padStart(wNote);
+          if (!sec.data.qtyBeforeName && sec.data.showQty) rowStr += item.qty.toString().padStart(wQty);
+          if (sec.data.showPrice) rowStr += item.price.toFixed(2).padStart(wPrice);
+          if (sec.data.showTotal) rowStr += amt.padStart(wTotal);
           
           lines.push(rowStr.trimEnd());
-          if (sec.data.showNotes !== false && item.note) lines.push('  Note: ' + item.note);
+          if (item.name.length > headW) {
+             lines.push(item.name.substring(headW).trim());
+          }
+          if (sec.data.showNotes !== false && item.note) {
+             lines.push('  Note: ' + item.note);
+          }
         }
         break;
+      }
+      case 'charges': {
+        const totalQty = order.items.reduce((sum, i) => sum + (i.qty || 1), 0);
+        const subTotal = (order.subtotal || 0).toFixed(2);
+        
+        lines.push(divider);
+        
+        const wQty = itemListSec.data.colQty || 4;
+        const wPrice = itemListSec.data.colPrice || 8;
+        const wTotal = itemListSec.data.colTotal || 8;
+        const qtyBefore = itemListSec.data.qtyBeforeName;
+        const headW = availableWidth - (itemListSec.data.showQty?wQty:0) - (itemListSec.data.showPrice?wPrice:0) - (itemListSec.data.showTotal?wTotal:0) - 1;
 
-      case 'charges':
-        const sub = (order.subtotal || 0).toFixed(2);
-        lines.push('Subtotal'.padEnd(availableWidth - sub.length) + sub);
+        // 3-Line Sandwich Layout for Mid-Alignment
+        
+        // Line 1: Sub (Top)
+        let row1 = '';
+        if (qtyBefore) row1 += ' '.repeat(wQty);
+        row1 += ' '.repeat(headW + 1);
+        if (!qtyBefore) row1 += ' '.repeat(wQty);
+        row1 += 'Sub'.padStart(wPrice);
+        lines.push(wrapSize(row1.trimEnd(), sec.data.totalQtyFontSize));
+
+        // Line 2: Total Qty + Amount (Mid)
+        let row2 = '';
+        if (qtyBefore) row2 += totalQty.toString().padStart(wQty);
+        row2 += 'Total Qty:'.padStart(headW + 1);
+        if (!qtyBefore) row2 += totalQty.toString().padStart(wQty);
+        row2 += ' '.repeat(wPrice);
+        row2 += subTotal.padStart(wTotal);
+        lines.push(wrapSize(row2.trimEnd(), sec.data.totalQtyFontSize, 'bold'));
+
+        // Line 3: Total (Bottom)
+        let row3 = '';
+        if (qtyBefore) row3 += ' '.repeat(wQty);
+        row3 += ' '.repeat(headW + 1);
+        if (!qtyBefore) row3 += ' '.repeat(wQty);
+        row3 += 'Total'.padStart(wPrice);
+        lines.push(wrapSize(row3.trimEnd(), sec.data.totalQtyFontSize));
+        
         if (sec.data.showServiceCharge && order.serviceCharge > 0) {
           const sc = order.serviceCharge.toFixed(2);
-          lines.push('Service Chg'.padEnd(availableWidth - sc.length) + sc);
+          // Line 1: Service Charge (Top)
+          let sc1 = '';
+          if (qtyBefore) sc1 += ' '.repeat(wQty);
+          sc1 += 'Service Charge'.padStart(headW + 1);
+          if (!qtyBefore) sc1 += ' '.repeat(wQty);
+          lines.push(wrapSize(sc1.trimEnd(), sec.data.serviceChargeFontSize));
+          
+          // Line 2: Amount (Mid)
+          let sc2 = '';
+          if (qtyBefore) sc2 += ' '.repeat(wQty);
+          sc2 += ' '.repeat(headW + 1);
+          if (!qtyBefore) sc2 += ' '.repeat(wQty);
+          sc2 += ' '.repeat(wPrice);
+          sc2 += sc.padStart(wTotal);
+          lines.push(wrapSize(sc2.trimEnd(), sec.data.serviceChargeFontSize, 'bold'));
+
+          // Line 3: (Optional) (Bottom)
+          let sc3 = '';
+          if (qtyBefore) sc3 += ' '.repeat(wQty);
+          sc3 += '(Optional)'.padStart(headW + 1);
+          if (!qtyBefore) sc3 += ' '.repeat(wQty);
+          lines.push(wrapSize(sc3.trimEnd(), sec.data.serviceChargeFontSize));
         }
         if (sec.data.showGst && order.gstAmount > 0) {
           const gst = order.gstAmount.toFixed(2);
-          lines.push('GST'.padEnd(availableWidth - gst.length) + gst);
+          let gstRow = '';
+          if (qtyBefore) gstRow += ' '.repeat(wQty);
+          gstRow += 'GST'.padStart(headW + 1);
+          if (!qtyBefore) gstRow += ' '.repeat(wQty);
+          gstRow += ' '.repeat(wPrice);
+          gstRow += gst.padStart(wTotal);
+          lines.push(wrapSize(gstRow.trimEnd(), sec.data.serviceChargeFontSize));
         }
         break;
+      }
 
-      case 'totalSummary':
+      case 'totalSummary': {
+        const ro = (order.roundOff || 0).toFixed(2);
         const gt = (order.grandTotal || 0).toFixed(2);
-        lines.push('GRAND TOTAL    ' + gt);
+        const wTotal = itemListSec.data.colTotal || 8;
+        const mainW = availableWidth - wTotal;
+
+        lines.push(divider);
+        if (ro !== "0.00" && ro !== "-0.00") {
+            lines.push(wrapSize('Round off'.padStart(mainW) + (Number(ro) > 0 ? '+' : '') + ro.padStart(wTotal), sec.data.roundOffFontSize));
+        }
+        lines.push(boldOn + 'Grand Total'.padStart(mainW) + '₹' + gt.padStart(wTotal - 1) + boldOff);
+        lines.push(divider);
         break;
+      }
 
       case 'footer':
         if (sec.data.text) lines.push(...sec.data.text.split('\n'));
@@ -358,7 +528,11 @@ function generateCommandsFromTemplate(order, template, settings) {
 
     if (isBold) data.push(boldOff);
     if (lines.length > 0) {
-       data.push(sizeNormal, line);
+       data.push(sizeNormal);
+       if (['header', 'customerInfo', 'orderInfo'].includes(sec.type)) {
+         const sepGap = global.separatorSpacing !== undefined ? global.separatorSpacing : 5;
+         data.push(esc + '3' + String.fromCharCode(sepGap), '\n', line, esc + '3' + String.fromCharCode(lineSpacing));
+       }
        if (sectionSpacing > 0 && i < sections.length - 1) data.push('\n'.repeat(sectionSpacing));
     }
     
@@ -367,30 +541,29 @@ function generateCommandsFromTemplate(order, template, settings) {
 
   if (marginBottom > 0) data.push('\n'.repeat(marginBottom));
   else data.push('\n\n\n\n');
+  data.push(esc + '2'); // Reset to default line spacing
   data.push(esc + 'm'); // Cut
   return data;
 }
 
-function generateKotCommands(order, settings) {
+export function generateKotCommands(order, settings) {
   const templates = settings.printTemplates || [];
   let template = templates.find(t => t.type === 'kot' && t.isDefault) || templates.find(t => t.type === 'kot');
   
   if (!template) {
-    // Fallback if no template exists
     template = { paperWidth: 80, sections: [{ id: 's1', type: 'header', visible: true, order: 1, style: { textAlign: 'center', fontSize: 16, fontWeight: 'bold' }, data: { text: 'KOT' } }, { id: 's2', type: 'orderInfo', visible: true, order: 2, style: { textAlign: 'left', fontSize: 14, fontWeight: 'bold' }, data: { showTableNo: true, showOrderType: true, showDateTime: true } }, { id: 's3', type: 'itemList', visible: true, order: 3, style: { textAlign: 'left', fontSize: 14, fontWeight: 'bold' }, data: { showQty: true, showPrice: false, showTotal: false } }] };
   }
 
-  return generateCommandsFromTemplate(order, template, settings);
+  return generateCommandsFromTemplate(order, template, settings, 'KOT');
 }
 
-function generateBillCommands(order, settings) {
+export function generateBillCommands(order, settings) {
   const templates = settings.printTemplates || [];
   let template = templates.find(t => t.type === 'bill' && t.isDefault) || templates.find(t => t.type === 'bill');
   
   if (!template) {
-    // Fallback
     template = { paperWidth: 80, sections: [{ id: 's1', type: 'header', visible: true, order: 1, style: { textAlign: 'center', fontSize: 14, fontWeight: 'bold' }, data: { text: 'TYDE CAFE', address: '' } }, { id: 's2', type: 'orderInfo', visible: true, order: 2, style: { textAlign: 'left', fontSize: 12, fontWeight: 'normal' }, data: { showBillNo: true, showTableNo: true, showOrderType: true, showDateTime: true } }, { id: 's3', type: 'itemList', visible: true, order: 3, style: { textAlign: 'left', fontSize: 12, fontWeight: 'normal' }, data: { showQty: true, showPrice: true, showTotal: true } }, { id: 's4', type: 'charges', visible: true, order: 4, style: { textAlign: 'right', fontSize: 12, fontWeight: 'normal' }, data: { showGst: true, showServiceCharge: true } }, { id: 's5', type: 'totalSummary', visible: true, order: 5, style: { textAlign: 'right', fontSize: 14, fontWeight: 'bold' }, data: {} }] };
   }
 
-  return generateCommandsFromTemplate(order, template, settings);
+  return generateCommandsFromTemplate(order, template, settings, 'BILL');
 }

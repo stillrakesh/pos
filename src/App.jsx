@@ -1618,6 +1618,12 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
 const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullReset, devices = [], onUpdateDeviceStatus, onDeleteDevice, isConnected, onRestoreData, appVersion, categories }) => {
   const [activeTab, setActiveTab] = useState('design');
   const [localSettings, setLocalSettings] = useState(settings);
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -1626,7 +1632,7 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
 
   const handleSave = () => {
     onSaveSettings(localSettings);
-    alert('Settings Saved Successfully!');
+    showNotification('Settings Saved Successfully!');
   };
 
   return (
@@ -1710,6 +1716,27 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
 
         {activeTab === 'billing' && (
           <BillDesigner settings={localSettings} onSaveSettings={(s) => { setLocalSettings(s); onSaveSettings(s); }} />
+        )}
+
+        {notification && (
+          <div style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            background: notification.type === 'error' ? '#ef4444' : '#10b981',
+            color: 'white',
+            padding: '12px 24px',
+            borderRadius: '12px',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            zIndex: 10000,
+            animation: 'slideUp 0.3s ease-out'
+          }}>
+            <CheckCircle size={18} />
+            <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{notification.message}</span>
+          </div>
         )}
 
         {activeTab === 'connection' && (
@@ -2757,12 +2784,20 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   };
 
   const printBill = async () => {
+    const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const seqKey = `bill_seq_${today}`;
+    let seq = parseInt(localStorage.getItem(seqKey) || '0', 10);
+    seq += 1;
+    localStorage.setItem(seqKey, seq.toString());
+    const billNo = seq.toString().padStart(4, '0');
+
     await printPosToSerial({
       orderId: table?.id,
       tableName: table?.name || `Table ${table?.id}`,
       customerName, customerPhone,
       items: cart,
       subtotal, serviceCharge, gstAmount, roundOff, grandTotal,
+      billNumber: billNo,
       orderType: table?.type || 'Dine In'
     }, 'BILL', settings);
   };
@@ -3187,6 +3222,16 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
     }
 
     if (isPrint) {
+      let billNo = undefined;
+      if (isBill) {
+        const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
+        const seqKey = `bill_seq_${today}`;
+        let seq = parseInt(localStorage.getItem(seqKey) || '0', 10);
+        seq += 1;
+        localStorage.setItem(seqKey, seq.toString());
+        billNo = seq.toString().padStart(4, '0');
+      }
+
       await printPosToSerial({
         orderId: table?.id,
         isReprint: actionType.includes('Reprint'),
@@ -3198,6 +3243,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
         serviceCharge: serviceCharge,
         roundOff: roundOff,
         grandTotal: grandTotal,
+        billNumber: billNo,
         orderType: table?.type === 'Delivery' ? 'Delivery' : table?.type === 'Takeaway' ? 'Pick Up' : 'Dine In'
       }, isBill ? 'BILL' : 'KOT', settings);
     }
@@ -4222,9 +4268,10 @@ function MainApp() {
                 gstEnabled: data.gstEnabled !== undefined ? (data.gstEnabled === 1 || data.gstEnabled === true) : prev.gstEnabled,
                 autoServiceCharge: data.autoServiceCharge !== undefined ? (data.autoServiceCharge === 1 || data.autoServiceCharge === true) : prev.autoServiceCharge
               };
-              const merged = { ...prev, ...normalizedData };
+              // Prioritize existing local templates if they exist to prevent overwrite by stale backend
+              const merged = { ...normalizedData, ...prev };
               saveToLocal('pos_settings', merged);
-              settingsRef.current = merged; // Update ref too
+              settingsRef.current = merged;
               return merged;
             });
           }
@@ -4247,7 +4294,7 @@ function MainApp() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(settings)
         }).catch(err => console.warn("Failed to sync settings to backend"));
-      }, 2000); // Debounce
+      }, 500); // Shorter debounce
       return () => clearTimeout(timer);
     }
   }, [settings]);
@@ -4689,6 +4736,13 @@ function MainApp() {
           settings={settings} 
           onClose={() => setQuickPrintTable(null)} 
           onPrint={(discountAmt, service, gstAmount, grandTotal) => {
+            const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
+            const seqKey = `bill_seq_${today}`;
+            let seq = parseInt(localStorage.getItem(seqKey) || '0', 10);
+            seq += 1;
+            localStorage.setItem(seqKey, seq.toString());
+            const billNo = seq.toString().padStart(4, '0');
+
             printPosToSerial({ 
               ...quickPrintTable, 
               items: quickPrintTable.orders, 
@@ -4699,6 +4753,7 @@ function MainApp() {
               gstAmount: gstAmount,
               grandTotal,
               roundOff: (grandTotal - (getOrderTotal(quickPrintTable.orders) - discountAmt + service + gstAmount)).toFixed(2),
+              billNumber: billNo,
               cashier: settings.cashierName || 'Biller'
             }, 'BILL', settings);
             setQuickPrintTable(null);
