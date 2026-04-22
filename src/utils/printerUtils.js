@@ -1,33 +1,40 @@
 import { get, set } from 'idb-keyval';
-import {
-  connectQzTray,
-  isQzConnected,
-  findPrinters,
-  selectPrinter,
-  getSelectedPrinter,
-  printViaQzTray
-} from './qzTrayPrinter';
+
+const SETTINGS_KEY = 'pos_printer_settings';
+
+export async function findPrinters() {
+  if (window.electronAPI) {
+    try {
+      const printers = await window.electronAPI.getPrinters();
+      return printers.map(p => p.name);
+    } catch (e) {
+      console.error('Failed to get printers from Electron:', e);
+      return [];
+    }
+  }
+  return [];
+}
+
+export async function selectPrinter(printerName) {
+  const current = await get(SETTINGS_KEY) || {};
+  await set(SETTINGS_KEY, { ...current, printerName });
+  console.log('[Print] Printer selected:', printerName);
+}
+
+export async function getSelectedPrinter() {
+  const prefs = await get(SETTINGS_KEY);
+  return prefs?.printerName || null;
+}
 
 /**
  * ═══════════════════════════════════════════════════════════════
- *  TYDE POS — Unified Printing Engine
+ *  TYDE POS — Unified Printing Engine (Phase 3B - Direct Electron)
  *  
- *  Priority: QZ Tray (silent) → Browser Print (fallback)
- *  
- *  QZ Tray = ZERO popups, sends ESC/POS raw commands directly
- *  to the thermal printer via the QZ Tray desktop service.
+ *  Priority: Electron Silent Print → Browser Print (fallback)
  * ═══════════════════════════════════════════════════════════════
  */
 
-/**
- * The main print function called by KOT and Bill buttons.
- * Uses QZ Tray for silent thermal printing — no browser popups.
- * 
- * @param {Object} orderData - Order object with items, tableName, etc.
- * @param {string} type - 'BILL' or 'KOT'
- */
 export const printPosToSerial = async (orderData, type = 'BILL', customSettings = null) => {
-  // Load default settings
   let settings = {
     resName: 'Tyde Cafe',
     headerText: 'Nerul Ferry Terminal',
@@ -63,7 +70,6 @@ export const printPosToSerial = async (orderData, type = 'BILL', customSettings 
     if (customSettings) {
       settings = { ...settings, ...customSettings };
     } else {
-      // Primary: load from localStorage pos_settings (where printTemplates are saved by BillDesigner)
       try {
         const localRaw = localStorage.getItem('pos_settings');
         if (localRaw) {
@@ -71,7 +77,6 @@ export const printPosToSerial = async (orderData, type = 'BILL', customSettings 
           settings = { ...settings, ...localSettings };
         }
       } catch (e) { }
-      // Secondary: also merge idb-keyval prefs if present (legacy / printer name)
       const rawSettings = await get('pos_printer_settings');
       if (rawSettings) settings = { ...settings, ...rawSettings };
     }
@@ -79,15 +84,6 @@ export const printPosToSerial = async (orderData, type = 'BILL', customSettings 
     console.warn('[Print] Settings load failed, using defaults');
   }
 
-  // Map settings to qzTrayPrinter format (preserve all settings including printTemplates)
-  const qzSettings = {
-    ...settings,
-    billHeader: settings.resName || settings.billHeader || 'Tyde Cafe',
-    billFooter: settings.footerText || settings.billFooter || 'Thank You!',
-    address: settings.headerText || settings.address || '',
-  };
-
-  // Normalize order data for the QZ formatter
   const normalizedOrder = {
     tableName: orderData.tableName || orderData.table || '--',
     orderType: orderData.orderType || 'Dine In',
@@ -111,94 +107,65 @@ export const printPosToSerial = async (orderData, type = 'BILL', customSettings 
     grandTotal: orderData.grandTotal || orderData.total || 0,
   };
 
-  // ─── Try QZ Tray (silent printing) ────────────────────────
-  try {
-    if (type === 'KOT' && (settings.separateKotByCategory || settings.separateKotStations)) {
-      // Load KOT Stations from settings (backend/config source) or legacy groups
-      const stations = settings.printerStations || settings.kotGroups || [];
+  const printerName = await getSelectedPrinter();
 
-      // Group items
-      const grouped = {};
+  if (type === 'KOT' && (settings.separateKotByCategory || settings.separateKotStations)) {
+    const stations = settings.printerStations || settings.kotGroups || [];
+    const grouped = {};
 
-      normalizedOrder.items.forEach(item => {
-        // Find if this item's category belongs to a station
-        const station = stations.find(s => (s.categories || []).includes(item.category));
-        const stationName = station ? station.name : 'MAIN KITCHEN';
+    normalizedOrder.items.forEach(item => {
+      const station = stations.find(s => (s.categories || []).includes(item.category));
+      const stationName = station ? station.name : 'MAIN KITCHEN';
+      if (!grouped[stationName]) grouped[stationName] = [];
+      grouped[stationName].push(item);
+    });
 
-        if (!grouped[stationName]) grouped[stationName] = [];
-        grouped[stationName].push(item);
-      });
+    const slips = Object.keys(grouped).map(sName => ({
+      ...normalizedOrder,
+      items: grouped[sName],
+      categoryHeader: sName.toUpperCase()
+    }));
 
-      const groupNames = Object.keys(grouped);
-      console.log(`[Print] Grouping KOT into ${groupNames.length} slips using stations:`, groupNames);
-
-      for (const sName of groupNames) {
-        const slipOrder = {
-          ...normalizedOrder,
-          items: grouped[sName],
-          categoryHeader: sName.toUpperCase()
-        };
-        const res = await printViaQzTray(slipOrder, type, qzSettings);
-        if (!res.success) throw new Error(res.message);
-      }
-      return;
-    }
-
-    const result = await printViaQzTray(normalizedOrder, type, qzSettings);
-
-    if (!result.success) {
-      throw new Error(result.message);
-    }
-
-    console.log(`[Print] ✅ ${type} printed silently via QZ Tray`);
-    return;
-  } catch (qzErr) {
-    const msg = qzErr?.message || String(qzErr);
-
-    // If QZ Tray is genuinely not running, fall back to browser print
-    // If QZ Tray is not running, not configured, or connection failed, fall back to browser print
-    if (
-      msg.includes('not running') ||
-      msg.includes('WebSocket') ||
-      msg.includes('ECONNREFUSED') ||
-      msg.includes('No printer selected') ||
-      msg.includes('not connected')
-    ) {
-      console.warn('[Print] QZ Tray not available, falling back to browser print dialog...');
-
-      if (type === 'KOT' && (settings.separateKotByCategory || settings.separateKotStations)) {
-        const stations = settings.printerStations || settings.kotGroups || [];
-        const grouped = {};
-        normalizedOrder.items.forEach(item => {
-          const station = stations.find(s => (s.categories || []).includes(item.category));
-          const stationName = station ? station.name : 'MAIN KITCHEN';
-          if (!grouped[stationName]) grouped[stationName] = [];
-          grouped[stationName].push(item);
-        });
-
-        const slips = Object.keys(grouped).map(sName => ({
-          ...normalizedOrder,
-          items: grouped[sName],
-          categoryHeader: sName.toUpperCase()
-        }));
-
-        fallbackBrowserPrint(slips, type, settings);
-      } else {
-        fallbackBrowserPrint([normalizedOrder], type, settings);
-      }
-      return;
-    }
-
-    // For other errors (printer offline, not configured), throw so the UI can show it
-    throw new Error(msg);
+    await doPrint(slips, type, settings, printerName);
+  } else {
+    await doPrint([normalizedOrder], type, settings, printerName);
   }
 };
 
-/**
- * Fallback: uses window.print() with a styled receipt.
- * Layout matches the reference thermal bill exactly.
- */
-function fallbackBrowserPrint(orderData, type, settings) {
+async function doPrint(orders, type, settings, printerName) {
+  const html = generatePrintHTML(orders, type, settings);
+
+  if (window.electronAPI) {
+    try {
+      const result = await window.electronAPI.printHtml(html, printerName);
+      if (!result.success) {
+        console.warn('[Print] Silent print failed, falling back to browser print:', result.message);
+        fallbackToBrowser(html);
+      } else {
+        console.log(`[Print] ✅ ${type} printed silently via Electron`);
+      }
+    } catch (e) {
+      console.error('[Print] Electron print error:', e);
+      fallbackToBrowser(html);
+    }
+  } else {
+    console.warn('[Print] Electron API not found, falling back to browser print.');
+    fallbackToBrowser(html);
+  }
+}
+
+function fallbackToBrowser(html) {
+  // Strip the auto-print script if already present, then re-inject cleanly
+  const stripped = html
+    .replace(/<script>window\.onload.*?<\/script>/gs, '')
+    .replace('</body></html>', '');
+  const fullHtml = stripped + '<script>window.onload=()=>{window.print();setTimeout(()=>window.close(),800);};</script></body></html>';
+  const win = window.open('', '_blank', 'width=420,height=900');
+  if (win) { win.document.write(fullHtml); win.document.close(); win.focus(); }
+}
+
+// Pure function — returns HTML string. Do NOT open any window here.
+function generatePrintHTML(orders, type, settings) {
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
   const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -218,46 +185,66 @@ function fallbackBrowserPrint(orderData, type, settings) {
   const boldLine = isDotted ? '1.5px dotted #000' : '2px solid #000';
   const thinLine = '1px solid #000';
 
-  const orders = Array.isArray(orderData) ? orderData : [orderData];
+  const ordersArray = Array.isArray(orders) ? orders : [orders];
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { background: #fff; }
-  body { display: flex; justify-content: center; }
+  html, body {
+    background: #fff;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  body { display: block; }
+  .wrap {
+    width: 255px;
+    max-width: 100%;
+    margin: 0;
+    overflow: hidden;
+  }
   .receipt {
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     font-size: 13px;
     color: #000;
     width: 100%;
-    max-width: ${paperPx}px;
-    padding: ${padT}px ${padR}px ${padB}px ${padL}px;
-    line-height: 1.35;
+    padding: 0;
+    line-height: 1.4;
     -webkit-font-smoothing: none;
     text-rendering: crispEdges;
+    word-wrap: break-word;
+    overflow: hidden;
   }
   /* Separators */
   .sb { border: 0; border-top: ${boldLine}; margin: 4px 0; }
   .st { border: 0; border-top: ${thinLine};  margin: 3px 0; }
   /* Header */
   .hdr { text-align: center; margin-bottom: 3px; }
-  /* Two-col info rows */
-  .ir { display: flex; justify-content: space-between; }
-  .ir .l { }
-  .ir .r { text-align: right; white-space: nowrap; padding-left: 6px; }
-  /* Item table */
-  .t { width: 100%; border-collapse: collapse; }
+  /* Two-col info rows — table-based, NO flexbox */
+  .ir { width: 100%; border-collapse: collapse; }
+  .ir td { padding: 0; vertical-align: top; }
+  .ir .l { text-align: left; }
+  .ir .r { text-align: right; white-space: nowrap; padding-left: 4px; }
+  /* Item table — Strict fixed layout */
+  .t { width: 100%; table-layout: fixed; border-collapse: collapse; }
   .t th {
     font-size: 13px; font-weight: normal;
     text-align: left; padding: 4px 0;
     border-top: ${boldLine}; border-bottom: ${boldLine};
   }
   .t td { font-size: 13px; padding: 3px 0; vertical-align: top; }
-  /* Fixed column widths — shared by header, body AND totals rows */
-  .ci { padding-right: 4px; }
-  .cq { width: 22px; text-align: right; padding-right: 6px; }
-  .cp { width: 52px; text-align: right; padding-right: 12px; }
-  .ca { width: 54px; text-align: right; }
+  
+  /* KOT Fixed Columns (75 / 25) */
+  .kot-item { width: 75%; overflow: hidden; word-wrap: break-word; text-align: left; }
+  .kot-qty  { width: 25%; text-align: center; }
+  
+  /* Bill Fixed Columns (45 / 13 / 22 / 20) */
+  .ci { width: 45%; overflow: hidden; word-wrap: break-word; text-align: left; }
+  .cq { width: 13%; text-align: center; }
+  .cp { width: 22%; text-align: right; padding-right: 3px; }
+  .ca { width: 20%; text-align: left; padding-left: 4px; }
   /* Grand total row */
   .gt td {
     font-size: 14px; font-weight: 700; padding: 5px 0;
@@ -265,20 +252,21 @@ function fallbackBrowserPrint(orderData, type, settings) {
   }
   .footer { text-align: center; font-size: 12px; margin-top: 10px; }
   @media print {
-    @page { margin: 0; size: ${paperMm}mm auto; }
-    body { display: block; }
-    .receipt { margin: 0 auto; width: 100%; max-width: 100%; }
+    @page { margin: 0; }
+    html, body { margin: 0; padding: 0; width: 100%; }
+    .wrap { width: 255px; margin: 0; }
+    .receipt { padding: 0; font-size: 12px; }
     .pb { page-break-after: always; }
   }
-</style></head><body><div class="receipt">
-${orders.map((order, idx) => {
+</style></head><body><div class="wrap"><div class="receipt">
+${ordersArray.map((order, idx) => {
     const isTakeaway = order.orderType === 'Takeaway' || order.orderType === 'Delivery' ||
       (order.tableName && /^(TAK|TA|DEL|DL)-/i.test(order.tableName));
     const totalQty = (order.items || []).reduce((s, i) => s + (i.qty || 0), 0);
 
     /* ── KOT layout ── */
     if (type === 'KOT') {
-      return `<div class="${idx < orders.length - 1 ? 'pb' : ''}">
+      return `<div class="${idx < ordersArray.length - 1 ? 'pb' : ''}">
       <div class="hdr">
         <div style="font-size:15px;font-weight:700;">${isTakeaway ? 'Takeaway' : 'Dine In'}</div>
         <div style="font-size:13px;font-weight:700;">
@@ -292,14 +280,14 @@ ${orders.map((order, idx) => {
       <div style="border-top:1.5px dotted #000; margin: 4px 0;"></div>
       <table class="t">
         <thead><tr>
-          <th class="ci" style="font-weight:400; border:none;">Item</th>
-          <th class="ca" style="text-align:right; font-weight:400; border:none;">Qty</th>
+          <th class="kot-item" style="text-align:left; border-top:none; border-bottom:1.5px dotted #000;">Item</th>
+          <th class="kot-qty"  style="text-align:center; border-top:none; border-bottom:1.5px dotted #000;">Qty</th>
         </tr></thead>
         <tbody>
           ${(order.items || []).map(item => `
           <tr>
-            <td class="ci"><strong>${item.name}</strong>${item.note ? `<br/><span style="font-size:11px;font-style:italic;padding-left:5px;">Note: ${item.note}</span>` : ''}</td>
-            <td class="ca" style="font-size:14px;font-weight:700;text-align:right;">x${item.qty}</td>
+            <td class="kot-item"><strong>${item.name}</strong>${item.note ? `<br/><span style="font-size:11px;font-style:italic;padding-left:5px;">Note: ${item.note}</span>` : ''}</td>
+            <td class="kot-qty" style="font-size:14px;font-weight:700;">x${item.qty}</td>
           </tr>`).join('')}
         </tbody>
       </table>
@@ -308,7 +296,7 @@ ${orders.map((order, idx) => {
 
     /* ── BILL layout ── */
     const tableLabel = (order.tableName || '--').replace(/^table\s*/i, '');
-    return `<div class="${idx < orders.length - 1 ? 'pb' : ''}">
+    return `<div class="${idx < ordersArray.length - 1 ? 'pb' : ''}">
 
     <div class="hdr">
       <div style="font-size:15px;font-weight:700;">${settings.resName || 'Tyde Cafe'}</div>
@@ -320,21 +308,21 @@ ${orders.map((order, idx) => {
     <hr class="sb" style="margin-bottom:4px;"/>
 
     ${isTakeaway ? `
-      <div class="ir"><span class="l">Date: ${dateStr}</span><span class="r" style="font-weight:700;">Takeaway</span></div>
-      <div class="ir"><span class="l">${timeStr}</span><span class="r">Token: ${(order.tableName || '--').replace(/Takeaway/i, 'TK')}${order.customerName ? ' | ' + order.customerName : ''}</span></div>
-      <div class="ir" style="margin-bottom:3px;"><span class="l">Cashier: biller</span><span class="r">Bill No.: ${order.billNumber || '---'}</span></div>
+      <table class="ir"><tr><td class="l">Date: ${dateStr}</td><td class="r" style="font-weight:700;">Takeaway</td></tr></table>
+      <table class="ir"><tr><td class="l">${timeStr}</td><td class="r">Token: ${(order.tableName || '--').replace(/Takeaway/i, 'TK')}${order.customerName ? ' | ' + order.customerName : ''}</td></tr></table>
+      <table class="ir" style="margin-bottom:3px;"><tr><td class="l">Cashier: biller</td><td class="r">Bill No.: ${order.billNumber || '---'}</td></tr></table>
     ` : `
-      <div class="ir"><span class="l">Date: ${dateStr}</span><span class="r" style="font-weight:700;">Dine In: ${tableLabel}</span></div>
-      <div class="ir"><span class="l">${timeStr}</span><span class="r">Bill No.: ${order.billNumber || '---'}</span></div>
-      <div class="ir" style="margin-bottom:3px;"><span class="l">Cashier: biller</span><span class="r"></span></div>
+      <table class="ir"><tr><td class="l">Date: ${dateStr}</td><td class="r" style="font-weight:700;">Dine In: ${tableLabel}</td></tr></table>
+      <table class="ir"><tr><td class="l">${timeStr}</td><td class="r">Bill No.: ${order.billNumber || '---'}</td></tr></table>
+      <table class="ir" style="margin-bottom:3px;"><tr><td class="l">Cashier: biller</td><td class="r"></td></tr></table>
     `}
 
     <table class="t">
       <thead><tr>
-        <th class="ci">Item</th>
+        <th class="ci" style="text-align:left;">Item</th>
         <th class="cq" style="text-align:center;">Qty</th>
-        <th class="cp" style="text-align:center;">Price</th>
-        <th class="ca">Amount</th>
+        <th class="cp" style="text-align:right; padding-right:3px;">Price</th>
+        <th class="ca" style="text-align:left; padding-left:4px;">Amt</th>
       </tr></thead>
       <tbody>
         ${(order.items || []).map(item => `
@@ -376,19 +364,15 @@ ${orders.map((order, idx) => {
         <!-- Round off: extremely small font, sits between bold separator and Grand Total -->
         <tr style="font-size:6px;color:#555;">
           <td class="ci" colspan="2"></td>
-          <td class="cp" style="text-align:right;white-space:nowrap;">Round off</td>
-          <td class="ca" style="white-space:nowrap;">${(order.roundOff || 0) >= 0 ? '+' : ''}${parseFloat(order.roundOff || 0).toFixed(2)}</td>
+          <td class="cp" style="text-align:right;white-space:nowrap;padding-right:3px;">Round off</td>
+          <td class="ca" style="white-space:nowrap;text-align:left;padding-left:4px;">${(order.roundOff || 0) >= 0 ? '+' : ''}${parseFloat(order.roundOff || 0).toFixed(2)}</td>
         </tr>
       </tbody>
       <tfoot>
         <!-- Grand Total: border-bottom only (no top border — round off is directly above) -->
         <tr>
-          <td colspan="4" style="padding:4px 0 5px;font-size:14px;font-weight:700;border-bottom:${boldLine};">
-            <div style="display:flex;justify-content:flex-end;gap:8px;">
-              <span>Grand Total</span>
-              <span>${settings.currencySymbol || '\u20b9'}${(order.grandTotal || 0).toFixed(2)}</span>
-            </div>
-          </td>
+          <td class="ci" colspan="2" style="padding:4px 10px 5px 0;font-size:14px;font-weight:700;border-bottom:${boldLine};text-align:right;">Grand Total</td>
+          <td class="ca" colspan="2" style="padding:4px 0 5px;font-size:14px;font-weight:700;border-bottom:${boldLine};text-align:right;">${settings.currencySymbol || '\u20b9'}${(order.grandTotal || 0).toFixed(2)}</td>
         </tr>
       </tfoot>
     </table>
@@ -396,12 +380,10 @@ ${orders.map((order, idx) => {
     <div class="footer">${settings.footerText || settings.billFooter || 'Sea you soon \u2014 under the moon'}</div>
   </div>`;
   }).join('')}
-</div>
-<script>window.onload=()=>{window.print();setTimeout(()=>window.close(),800);};</script>
+</div></div>
 </body></html>`;
 
-  const win = window.open('', '_blank', 'width=420,height=900');
-  if (win) { win.document.write(html); win.document.close(); win.focus(); }
+  return html;
 }
 
 
