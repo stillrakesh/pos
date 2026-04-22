@@ -34,8 +34,14 @@ jobs:
       - name: Build Frontend React App
         run: npm run build
 
+      - name: Build Captain App
+        run: |
+          cd frontend/captain
+          npm install
+          npm run build
+
       - name: Build Mac DMG
-        run: npx electron-builder --mac -c.mac.identity=null
+        run: npx electron-builder --mac --x64 -c.mac.identity=null
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
