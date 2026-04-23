@@ -4,7 +4,7 @@ import {
   Menu, Search, Store, Monitor, LayoutGrid, Clock, Bell, User, Wifi,
   ChevronDown, ChevronUp, Info, CreditCard, Banknote, Printer, Eye, Plus,
   Minus, X, Utensils, Smartphone, BarChart3, TrendingUp, PieChart, AlertTriangle, Truck, ShoppingBag, ChefHat, MessageSquare, CheckSquare, Sunset, Trash2, Package, XCircle,
-  Settings2, ReceiptText, RefreshCw, RotateCcw, Percent
+  Settings2, ReceiptText, RefreshCw, RotateCcw, Percent, CheckCircle
 } from 'lucide-react';
 import './index.css';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, LineChart, Line } from 'recharts';
@@ -178,7 +178,7 @@ const AppSidebar = ({ activeView, onViewChange, stats, isConnected, isSyncing, o
     {
       title: 'Daily Operations',
       items: [
-        { id: 'analytics', label: 'Dashboard', icon: Monitor, badge: stats.liveOrders > 0 ? stats.liveOrders : null },
+        { id: 'analytics', label: 'Dashboard', icon: Monitor },
         { id: 'tables', label: 'Running Orders', icon: Clock, badge: stats.activeTables > 0 ? stats.activeTables : null },
         { id: 'orderhistory', label: 'All Orders', icon: ShoppingBag },
         { id: 'nontables', label: 'Online Orders', icon: Smartphone, badge: stats.activeOnline > 0 ? stats.activeOnline : null },
@@ -418,27 +418,28 @@ const AppTopNavbar = ({ globalSearch, onSearchChange, onToggleSidebar, onViewCha
 );
 
 /* --- ORDER HISTORY VIEW --- */
-const OrderHistoryView = ({ orderHistory, activePickups = [], onSelectActive, globalSearch, tables = [] }) => {
-  const [viewMode, setViewMode] = useState('card'); // 'card', 'table', 'compact'
+const OrderHistoryView = ({ orderHistory, activePickups = [], onSelectActive, globalSearch, tables = [], onReorder }) => {
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'active', 'completed', 'cancelled'
   const [localSearch, setLocalSearch] = useState('');
 
   const searchVal = globalSearch || localSearch;
 
+  const getStatus = (order) => {
+    if (order.status === 'CANCELED' || order.status === 'cancelled' || order.status === 'CANCELLED') return 'cancelled';
+    if (order.isActive) return 'active';
+    return 'completed';
+  };
+
   const allOrders = [
-    ...tables.filter(t => t.orders && t.orders.length > 0).map(t => ({ 
-      ...t, 
-      isActive: true, 
-      tableId: t.name || t.id, 
-      type: 'Dine In',
+    ...tables.filter(t => t.orders && t.orders.length > 0).map(t => ({
+      ...t, isActive: true, tableId: t.name || t.id, orderType: 'Dine In',
       timestamp: t.createdAt || Date.now()
     })),
-    ...activePickups.map(o => ({ 
-      ...o, 
-      isActive: true, 
-      type: o.type || 'Pickup',
+    ...activePickups.map(o => ({
+      ...o, isActive: o.status !== 'CANCELED', orderType: o.type || 'Pickup',
       timestamp: o.createdAt || Date.now()
     })),
-    ...orderHistory.map(o => ({ ...o, isActive: false }))
+    ...orderHistory.map(o => ({ ...o, isActive: false, orderType: o.type || o.orderType || 'Order' }))
   ].filter(o => {
     if (!searchVal) return true;
     const s = searchVal.toLowerCase();
@@ -450,328 +451,213 @@ const OrderHistoryView = ({ orderHistory, activePickups = [], onSelectActive, gl
            (items.some(item => (item.name || '').toLowerCase().includes(s)));
   }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
+  const filteredOrders = allOrders.filter(o => {
+    const st = getStatus(o);
+    if (activeTab === 'all') return true;
+    return st === activeTab;
+  });
+
   const getOrderTotal = (order) => {
     if (order.grandTotal) return order.grandTotal;
-    return (order.cart || order.orders || []).reduce((acc, i) => acc + (i.price * i.qty), 0);
+    return (order.cart || order.orders || []).reduce((acc, i) => acc + (i.price * (i.qty || i.quantity || 1)), 0);
   };
 
-  const stats = {
-    revenue: orderHistory.reduce((acc, o) => acc + o.grandTotal, 0),
-    active: activePickups.length,
-    avg: orderHistory.length > 0 ? (orderHistory.reduce((acc, o) => acc + o.grandTotal, 0) / orderHistory.length).toFixed(0) : 0
-  };
+  const completedOrders = allOrders.filter(o => getStatus(o) === 'completed');
+  const cancelledOrders = allOrders.filter(o => getStatus(o) === 'cancelled');
+  const activeOrders    = allOrders.filter(o => getStatus(o) === 'active');
+  const revenue = completedOrders.reduce((acc, o) => acc + getOrderTotal(o), 0);
+  const avgTicket = completedOrders.length > 0 ? (revenue / completedOrders.length).toFixed(0) : 0;
 
   const handleExportExcel = () => {
-    if (orderHistory.length === 0) {
-      alert("No data available to export.");
-      return;
-    }
-
-    const filteredHistory = (orderHistory || []).filter(order => {
-      if (!order) return false;
-      const isPaid = order.paymentStatus !== 'UNPAID' && order.payment_status !== 'UNPAID';
-      return isPaid;
-    });
-
-    const data = filteredHistory.map(order => ({
+    if (orderHistory.length === 0) { alert("No data available to export."); return; }
+    const data = orderHistory.filter(o => getStatus(o) !== 'cancelled').map(order => ({
       'Date': new Date(order.timestamp).toLocaleDateString(),
       'Time': new Date(order.timestamp).toLocaleTimeString(),
       'Order ID': order.id,
-      'Table/Type': order.tableId,
-      'Customer Name': order.customerName || 'N/A',
+      'Type': order.orderType || order.type || 'Order',
+      'Customer': order.customerName || 'Walk-In',
       'Phone': order.phone || 'N/A',
       'Subtotal': order.subtotal || 0,
-      'Discount': order.discountAmt || 0,
-      'Loyalty Redeemed': order.redeemedPoints || 0,
-      'Service Charge': order.serviceCharge || 0,
-      'Grand Total': order.grandTotal,
-      'Payment Method': order.paymentMethod,
-      'Note': order.note || '',
-      'Items Sold': order.cart.map(i => `${i.name} (x${i.qty})`).join(', ')
+      'Grand Total': getOrderTotal(order),
+      'Payment': order.paymentMethod || 'N/A',
+      'Items': (order.cart || []).map(i => `${i.name}(x${i.qty})`).join(', ')
     }));
-
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Sales Report");
-
-    // Formatting: Set column widths for better readability
-    const wscols = [
-      { wch: 12 }, { wch: 10 }, { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 15 },
-      { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 15 },
-      { wch: 30 }, { wch: 60 }
-    ];
-    ws['!cols'] = wscols;
-
-    XLSX.writeFile(wb, `TydeCafe_Sales_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, "Sales");
+    ws['!cols'] = [{ wch: 12 }, { wch: 10 }, { wch: 20 }, { wch: 12 }, { wch: 20 }, { wch: 15 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 60 }];
+    XLSX.writeFile(wb, `TydeCafe_Sales_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '48px', background: '#fcfcfd' }} className="animate-fade-in no-scrollbar">
-      {/* Premium Dashboard Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-            <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'var(--primary)' }}></div>
-            <span style={{ fontSize: '11px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px' }}>Operational Intelligence</span>
-          </div>
-          <h2 style={{ fontSize: '42px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1.5px', lineHeight: '1', display: 'flex', alignItems: 'center', gap: '20px' }}>
-            Transaction <span style={{ color: 'var(--primary)', fontStyle: 'italic' }}>Archive</span>
-            <button
-              onClick={handleExportExcel}
-              style={{
-                fontSize: '13px', fontWeight: '800', padding: '12px 24px', borderRadius: '14px',
-                background: '#10b981', color: 'white', border: 'none', cursor: 'pointer',
-                boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', gap: '8px'
-              }}
-            >
-              <TrendingUp size={16} /> Export Excel report
-            </button>
-          </h2>
+  const statusConfig = {
+    active:    { label: 'ONGOING',   bg: '#fff7ed', color: '#c2410c', border: '#ffedd5', dot: '#f97316' },
+    completed: { label: 'COMPLETED', bg: '#f0fdf4', color: '#15803d', border: '#dcfce7', dot: '#22c55e' },
+    cancelled: { label: 'CANCELLED', bg: '#fef2f2', color: '#b91c1c', border: '#fecaca', dot: '#ef4444' },
+  };
 
-          {/* VIEW SWITCHER */}
-          <div style={{ display: 'flex', gap: '8px', marginTop: '24px', background: '#f1f5f9', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
-            {[
-              { id: 'card', label: 'Cards', icon: LayoutGrid },
-              { id: 'table', label: 'Detailed List', icon: Menu },
-              { id: 'compact', label: 'Compact', icon: LayoutGrid }
-            ].map(mode => (
-              <button
-                key={mode.id}
-                onClick={() => setViewMode(mode.id)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '8px',
-                  border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '700', transition: 'all 0.2s',
-                  background: viewMode === mode.id ? 'white' : 'transparent',
-                  color: viewMode === mode.id ? '#0f172a' : '#64748b',
-                  boxShadow: viewMode === mode.id ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
-                }}
-              >
-                <mode.icon size={14} /> {mode.label}
-              </button>
-            ))}
+  const filterTabs = [
+    { id: 'all',       label: 'All Orders',  count: allOrders.length },
+    { id: 'active',    label: 'Active',       count: activeOrders.length },
+    { id: 'completed', label: 'Completed',    count: completedOrders.length },
+    { id: 'cancelled', label: 'Cancelled',    count: cancelledOrders.length },
+  ];
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', background: '#f8fafc' }} className="animate-fade-in no-scrollbar">
+
+      {/* ── Header ── */}
+      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '24px 32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div>
+            <h2 style={{ fontSize: '26px', fontWeight: '950', color: '#0f172a', letterSpacing: '-0.8px' }}>Order History</h2>
+            <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>All transactions including active, completed, and cancelled orders</p>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            {/* Search */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f1f5f9', padding: '10px 16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <Search size={14} color="#94a3b8" />
+              <input value={localSearch} onChange={e => setLocalSearch(e.target.value)} placeholder="Search orders..." style={{ background: 'none', border: 'none', outline: 'none', fontSize: '13px', fontWeight: '600', width: '160px', color: '#0f172a' }} />
+            </div>
+            <button onClick={handleExportExcel} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '12px', background: '#10b981', color: 'white', border: 'none', cursor: 'pointer', fontWeight: '800', fontSize: '13px', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}>
+              <TrendingUp size={14} /> Export
+            </button>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <div style={{ background: 'white', padding: '20px 28px', borderRadius: '24px', boxShadow: '0 20px 30px -10px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
-            <div style={{ fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Net Revenue</div>
-            <div style={{ fontSize: '28px', fontWeight: '950', color: '#0f172a' }}>₹{stats.revenue.toLocaleString()}</div>
-          </div>
-          <div style={{ background: 'white', padding: '20px 28px', borderRadius: '24px', boxShadow: '0 20px 30px -10px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
-            <div style={{ fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Ticket Avg</div>
-            <div style={{ fontSize: '28px', fontWeight: '950', color: '#0f172a' }}>₹{stats.avg}</div>
-          </div>
-          {stats.active > 0 && (
-            <div style={{ background: 'var(--primary)', padding: '20px 28px', borderRadius: '24px', boxShadow: '0 20px 30px -10px rgba(163, 17, 42, 0.3)', color: 'white' }}>
-              <div style={{ fontSize: '10px', fontWeight: '900', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Live Track</div>
-              <div style={{ fontSize: '28px', fontWeight: '950' }}>{stats.active}</div>
+        {/* ── Stats Row ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
+          {[
+            { label: 'Total Revenue', value: `₹${revenue.toLocaleString()}`, color: '#0f172a', bg: '#f0fdf4', border: '#dcfce7' },
+            { label: 'Completed', value: completedOrders.length, color: '#15803d', bg: '#f0fdf4', border: '#dcfce7' },
+            { label: 'Active Now', value: activeOrders.length, color: '#c2410c', bg: '#fff7ed', border: '#ffedd5' },
+            { label: 'Ticket Avg', value: `₹${avgTicket}`, color: '#0f172a', bg: '#eff6ff', border: '#dbeafe' },
+          ].map((s, i) => (
+            <div key={i} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: '14px', padding: '14px 18px' }}>
+              <div style={{ fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>{s.label}</div>
+              <div style={{ fontSize: '22px', fontWeight: '950', color: s.color }}>{s.value}</div>
             </div>
-          )}
+          ))}
+        </div>
+
+        {/* ── Filter Tabs ── */}
+        <div style={{ display: 'flex', gap: '4px', background: '#f1f5f9', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
+          {filterTabs.map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+              padding: '8px 18px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '800', transition: 'all 0.15s',
+              background: activeTab === tab.id ? 'white' : 'transparent',
+              color: activeTab === tab.id ? '#0f172a' : '#64748b',
+              boxShadow: activeTab === tab.id ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+              display: 'flex', alignItems: 'center', gap: '6px'
+            }}>
+              {tab.label}
+              <span style={{ fontSize: '11px', fontWeight: '900', padding: '1px 7px', borderRadius: '20px', background: activeTab === tab.id ? '#f1f5f9' : '#e2e8f0', color: activeTab === tab.id ? '#0f172a' : '#94a3b8' }}>
+                {tab.count}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {allOrders.length === 0 ? (
-        <div style={{ padding: '120px 20px', textAlign: 'center' }}>
-          <div style={{ width: '100px', height: '100px', background: '#f8fafc', borderRadius: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 32px', border: '1px solid #e2e8f0', transform: 'rotate(-5deg)' }}>
-            <ShoppingBag size={40} color="#cbd5e1" />
-          </div>
-          <h3 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b' }}>No transactions recorded</h3>
-          <p style={{ color: '#64748b', fontSize: '16px', marginTop: '12px', maxWidth: '400px', margin: '12px auto' }}>Your transaction ledger is currently empty.</p>
-        </div>
-      ) : (
-        <div style={{
-          display: viewMode === 'card' ? 'grid' : 'flex',
-          flexDirection: viewMode === 'card' ? 'initial' : 'column',
-          gridTemplateColumns: viewMode === 'card' ? 'repeat(auto-fill, minmax(400px, 1fr))' : 'initial',
-          gap: viewMode === 'compact' ? '8px' : '24px'
-        }}>
-          {/* Table Header for Table Mode */}
-          {viewMode === 'table' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 2fr) 1fr 1fr 1fr', padding: '0 32px 12px', fontSize: '11px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              <span>Customer / Entity</span>
-              <span style={{ textAlign: 'center' }}>Transaction Info</span>
-              <span style={{ textAlign: 'center' }}>Items Summary</span>
-              <span style={{ textAlign: 'right' }}>Grand Total</span>
+      {/* ── Order List ── */}
+      <div style={{ padding: '24px 32px' }}>
+        {filteredOrders.length === 0 ? (
+          <div style={{ padding: '80px 20px', textAlign: 'center' }}>
+            <div style={{ width: '80px', height: '80px', background: '#f8fafc', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '1px solid #e2e8f0' }}>
+              <ShoppingBag size={32} color="#cbd5e1" />
             </div>
-          )}
+            <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1e293b' }}>No orders found</h3>
+            <p style={{ color: '#64748b', fontSize: '14px', marginTop: '8px' }}>Try changing the filter or search term</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {filteredOrders.map((order, idx) => {
+              const status = getStatus(order);
+              const sc = statusConfig[status];
+              const total = getOrderTotal(order);
+              const items = order.cart || order.orders || [];
+              const time = order.timestamp ? new Date(order.timestamp).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+              const canOpen = status === 'active';
+              const canReorder = status === 'completed' || status === 'cancelled';
 
-          {allOrders.map((order, idx) => {
-            const isSettled = !order.isActive;
-            const total = getOrderTotal(order);
-            const time = order.timestamp ? new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Live';
-
-            if (viewMode === 'table') {
               return (
-                <div
-                  key={order.id || idx}
-                  onClick={() => !isSettled && onSelectActive(order)}
-                  style={{
-                    background: 'white', borderRadius: '16px', padding: '16px 32px', display: 'grid', gridTemplateColumns: 'minmax(200px, 2fr) 1fr 1fr 1fr',
-                    alignItems: 'center', border: '1px solid #f1f5f9', cursor: isSettled ? 'default' : 'pointer', transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = '#fcfcfd'; e.currentTarget.style.transform = 'scale(1.002)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.transform = 'scale(1)'; }}
+                <div key={order.id || idx} style={{
+                  background: 'white', borderRadius: '18px', border: `1px solid ${status === 'cancelled' ? '#fecaca' : '#e2e8f0'}`,
+                  overflow: 'hidden', transition: 'box-shadow 0.2s',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.04)'
+                }}
+                  onMouseEnter={e => e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.08)'}
+                  onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)'}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: isSettled ? '#f0fdf4' : '#fff1f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {isSettled ? <CheckSquare size={16} color="#10b981" /> : <Clock size={16} color="var(--primary)" />}
+                  {/* Left accent bar by status */}
+                  <div style={{ display: 'flex' }}>
+                    <div style={{ width: '4px', flexShrink: 0, background: sc.dot, borderRadius: '4px 0 0 4px' }} />
+                    <div style={{ flex: 1, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+
+                      {/* Status icon */}
+                      <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: sc.bg, border: `1px solid ${sc.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        {status === 'active' && <Clock size={20} color={sc.dot} />}
+                        {status === 'completed' && <CheckCircle size={20} color={sc.dot} />}
+                        {status === 'cancelled' && <XCircle size={20} color={sc.dot} />}
+                      </div>
+
+                      {/* Main info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: '900', fontSize: '15px', color: '#0f172a' }}>
+                            {order.customerName || (order.tableId ? `Table ${order.tableId}` : 'Walk-In')}
+                          </span>
+                          {/* Status pill */}
+                          <span style={{ fontSize: '10px', fontWeight: '900', padding: '2px 10px', borderRadius: '20px', background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, letterSpacing: '0.5px' }}>
+                            {sc.label}
+                          </span>
+                          {/* Order type badge */}
+                          <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '20px', background: '#f1f5f9', color: '#475569' }}>
+                            {order.orderType || order.type || 'Dine In'}
+                          </span>
+                          {order.paymentMethod && (
+                            <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '20px', background: '#eff6ff', color: '#2563eb' }}>
+                              {order.paymentMethod}
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                          <span>🕒 {time}</span>
+                          <span>📦 {items.length} item{items.length !== 1 ? 's' : ''}: {items.slice(0, 3).map(i => `${i.name}(x${i.qty || i.quantity || 1})`).join(', ')}{items.length > 3 ? ` +${items.length - 3} more` : ''}</span>
+                          {order.phone && <span>📞 {order.phone}</span>}
+                        </div>
+                      </div>
+
+                      {/* Total + Actions */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', flexShrink: 0 }}>
+                        <div style={{ fontSize: '20px', fontWeight: '950', color: status === 'cancelled' ? '#94a3b8' : '#0f172a', textDecoration: status === 'cancelled' ? 'line-through' : 'none' }}>
+                          ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          {canOpen && (
+                            <button onClick={() => onSelectActive(order)} style={{ padding: '8px 16px', borderRadius: '10px', background: 'var(--primary)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '800', boxShadow: '0 4px 8px rgba(163,17,42,0.2)' }}>
+                              Open Order
+                            </button>
+                          )}
+                          {canReorder && items.length > 0 && (
+                            <button onClick={() => {
+                              if (window.confirm(`Re-create this order with ${items.length} item(s)?`)) {
+                                onSelectActive({ ...order, isActive: true, status: 'NEW', id: `TA-${Date.now()}`, createdAt: new Date().toISOString(), timestamp: Date.now(), paymentStatus: 'UNPAID', payment_status: 'UNPAID' });
+                              }
+                            }} style={{ padding: '8px 16px', borderRadius: '10px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', cursor: 'pointer', fontSize: '12px', fontWeight: '800' }}>
+                              Re-Order
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
                     </div>
-                    <div>
-                      <div style={{ fontWeight: '800', color: '#0f172a', fontSize: '13px' }}>{order.customerName || order.id || 'Walk-In Customer'}</div>
-                      <div style={{ fontSize: '10px', color: '#94a3b8' }}>By: {order.phone || 'Staff'}</div>
-                    </div>
                   </div>
-                  <div style={{ textAlign: 'center', fontSize: '12px', fontWeight: '600', color: '#64748b' }}>
-                    #{String(order.id).slice(-6)} • {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • <span style={{ color: isSettled ? '#10b981' : 'var(--primary)' }}>{isSettled ? 'SETTLED' : 'ONGOING'}</span>
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
-                    {order.tableId ? `Table ${order.tableId}` : order.type} • {(order.cart || order.orders || []).length} items
-                  </div>
-                  <div style={{ textAlign: 'right', fontWeight: '900', color: '#0f172a', fontSize: '16px' }}>₹{total.toFixed(2)}</div>
                 </div>
               );
-            }
-
-            if (viewMode === 'compact') {
-              return (
-                <div
-                  key={order.id || idx}
-                  onClick={() => !isSettled && onSelectActive(order)}
-                  style={{
-                    background: 'white', borderRadius: '12px', padding: '12px 24px', display: 'flex', justifyContent: 'space-between',
-                    alignItems: 'center', border: '1px solid #f1f5f9', cursor: isSettled ? 'default' : 'pointer', fontSize: '13px'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: isSettled ? '#10b981' : 'var(--primary)' }}></div>
-                    <span style={{ fontWeight: '800' }}>{order.customerName || order.id || 'Walk-In'}</span>
-                    <span style={{ color: '#94a3b8', fontSize: '11px' }}>ID: {String(order.id).slice(-4)}</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                    <span style={{ color: '#64748b' }}>{time}</span>
-                    <span style={{ fontWeight: '900', minWidth: '80px', textAlign: 'right' }}>₹{total.toFixed(2)}</span>
-                    {!isSettled && <div style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '4px', background: 'var(--primary)', color: 'white', fontWeight: '900' }}>LIVE</div>}
-                  </div>
-                </div>
-              );
-            }
-
-            // DEFAULT CARD VIEW
-            return (
-              <div
-                key={order.id || idx}
-                onClick={() => !isSettled && onSelectActive(order)}
-                style={{
-                  background: 'white',
-                  borderRadius: '28px',
-                  padding: '32px',
-                  border: '1px solid #f1f5f9',
-                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01)',
-                  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                  cursor: isSettled ? 'default' : 'pointer',
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '24px'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-8px)';
-                  e.currentTarget.style.boxShadow = '0 30px 60px -12px rgba(0,0,0,0.08), 0 18px 36px -18px rgba(0,0,0,0.08)';
-                  e.currentTarget.style.borderColor = 'var(--primary)33';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.01)';
-                  e.currentTarget.style.borderColor = '#f1f5f9';
-                }}
-              >
-                {/* Card Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ display: 'flex', gap: '16px' }}>
-                    <div style={{
-                      width: '56px', height: '56px', borderRadius: '18px',
-                      background: isSettled ? '#f0fdf4' : '#fff1f2',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                    }}>
-                      {isSettled ? <CheckSquare size={24} color="#10b981" /> : <Clock size={24} color="var(--primary)" className="animate-pulse" />}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.3px' }}>
-                        {order.customerName || 'Walk-In Customer'}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '4px' }}>
-                        ID: {String(order.id).slice(-6)} • {new Date(order.timestamp).toLocaleString()}
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', marginTop: '4px' }}>
-                        Ordered By: {order.phone || 'System/Staff'}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{
-                      padding: '8px 16px', borderRadius: '12px', fontSize: '10px', fontWeight: '900', letterSpacing: '1px',
-                      background: isSettled ? '#f0fdf4' : '#fff7ed',
-                      color: isSettled ? '#15803d' : '#c2410c',
-                      border: isSettled ? '1px solid #dcfce7' : '1px solid #ffedd5',
-                      marginBottom: '8px'
-                    }}>
-                      {isSettled ? 'SETTLED' : 'ONGOING'}
-                    </div>
-                    <div style={{ fontSize: '12px', fontWeight: '900', color: '#1e293b' }}>
-                      {order.tableId ? `Table ${order.tableId}` : order.type}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Body - Items List */}
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {(order.cart || order.orders || []).map((item, i) => (
-                      <div key={i} style={{
-                        padding: '6px 14px', background: '#f8fafc', borderRadius: '10px',
-                        fontSize: '12px', color: '#4b5563', fontWeight: '700', border: '1px solid #f1f5f9'
-                      }}>
-                        {item.qty} × {item.name}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Footer - Total Cost */}
-                <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Total Amount</div>
-                    <div style={{ fontSize: '28px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1px' }}>₹{total.toFixed(2)}</div>
-                  </div>
-
-                  {!isSettled && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onSelectActive(order); }}
-                      style={{
-                        background: 'linear-gradient(to right, var(--primary), var(--primary-hover))',
-                        color: 'white', border: 'none', padding: '14px 28px', borderRadius: '16px',
-                        fontSize: '14px', fontWeight: '900', cursor: 'pointer',
-                        boxShadow: '0 10px 20px -5px rgba(163, 17, 42, 0.4)'
-                      }}
-                    >
-                      OPEN ORDER
-                    </button>
-                  )}
-                  {isSettled && (
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '10px', color: '#10b981', fontWeight: '900', textTransform: 'uppercase' }}>Transaction Success</div>
-                      <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
-                        {[1, 2, 3].map(i => <div key={i} style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#10b981' }} />)}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -996,7 +882,9 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
         name,
         price: parseFloat(price),
         category: selectedCategory || "Uncategorized",
-        type
+        type,
+        available: true,
+        inStock: true
       };
 
       // ✅ 1. UPDATE LOCALLY FIRST (Instant UI)
@@ -2828,14 +2716,14 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
         service_charge_enabled: applyServiceCharge, service_charge_rate: serviceChargeRate
       });
       setCart([]);
-      if (onBack) onBack();
+      if (onBack) onBack(cart);
       return;
     }
 
     // 🔥 INSTANT UI ACTION
     const fullCartForSync = [...cart];
     setCart([]);
-    if (onBack) onBack();
+    if (onBack) onBack(fullCartForSync);
 
     // Perform background tasks
     (async () => {
@@ -2884,14 +2772,14 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       });
       await printKOT(deltaItems);
       setCart([]);
-      if (onBack) onBack();
+      if (onBack) onBack(cart);
       return;
     }
 
     // 🔥 INSTANT UI ACTION
     const fullCartForSync = [...cart];
     setCart([]);
-    if (onBack) onBack();
+    if (onBack) onBack(fullCartForSync);
 
     // Perform background tasks
     (async () => {
@@ -3308,7 +3196,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
           {filteredItems.map(item => {
             const isRetail = item.type === 'retail';
             let liveStock = null;
-            let isAvailable = item.inStock;
+            let isAvailable = item.inStock !== undefined ? item.inStock : true;
 
             if (isRetail) {
               const cartQty = cart.reduce((acc, c) => c.id === item.id ? acc + c.qty : acc, 0);
@@ -3320,7 +3208,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
             return (
               <div
                 key={item.id}
-                className={`item-card ${item.type === 'Non-Veg' ? 'non-veg' : 'veg'}`}
+                className={`item-card ${String(item.type || '').toLowerCase() === 'non-veg' ? 'non-veg' : 'veg'}`}
                 onClick={() => {
                   if (!IS_LOCAL) return alert("Read-Only Mode: Menu updates disabled.");
                   if (isAvailable || !isRetail) handleItemClick(item);
@@ -3989,7 +3877,16 @@ function MainApp() {
     console.log("[handleCancelOrder] Attempting to cancel ID:", sid);
     setNonTableOrders(prev => {
       if (!Array.isArray(prev)) return [];
-      const updated = prev.map(o => String(o.id || '').trim().toUpperCase() === sid ? { ...o, status: 'CANCELED' } : o);
+      const orderToCancel = prev.find(o => String(o.id || '').trim().toUpperCase() === sid);
+      if (orderToCancel) {
+        const cancelledOrder = { ...orderToCancel, status: 'CANCELED', paymentStatus: 'CANCELLED', timestamp: Date.now() };
+        setOrderHistory(h => {
+          const newHistory = [cancelledOrder, ...h].slice(0, 1000);
+          saveToLocal('pos_order_history', newHistory);
+          return newHistory;
+        });
+      }
+      const updated = prev.filter(o => String(o.id || '').trim().toUpperCase() !== sid);
       saveToLocal('pos_nontable_orders', updated);
       return updated;
     });
@@ -4165,8 +4062,25 @@ function MainApp() {
   };
 
 
-  const [orderHistory, setOrderHistory] = useState(() => loadFromLocal('pos_order_history'));
-  const [nonTableOrders, setNonTableOrders] = useState(() => loadFromLocal('pos_nontable_orders'));
+  const [orderHistory, setOrderHistory] = useState(() => {
+    let history = loadFromLocal('pos_order_history') || [];
+    let nontables = loadFromLocal('pos_nontable_orders') || [];
+    const stuckCancelled = nontables.filter(o => String(o.status || '').toUpperCase() === 'CANCELED');
+    if (stuckCancelled.length > 0) {
+      history = [...stuckCancelled.map(o => ({ ...o, paymentStatus: 'CANCELLED', timestamp: o.timestamp || Date.now() })), ...history].slice(0, 1000);
+      saveToLocal('pos_order_history', history);
+    }
+    return history;
+  });
+
+  const [nonTableOrders, setNonTableOrders] = useState(() => {
+    let nontables = loadFromLocal('pos_nontable_orders') || [];
+    const active = nontables.filter(o => String(o.status || '').toUpperCase() !== 'CANCELED');
+    if (active.length !== nontables.length) {
+      saveToLocal('pos_nontable_orders', active);
+    }
+    return active;
+  });
 
   // --- DAILY RESET & MIGRATION LOGIC ---
   useEffect(() => {
@@ -4666,9 +4580,9 @@ function MainApp() {
   // Stats calculation for badges
   const stats = {
     liveOrders: nonTableOrders.length,
-    activeTables: tables.filter(t => t.status !== 'free').length,
+    activeTables: tables.filter(t => t.orders && t.orders.length > 0).length,
     activeOnline: nonTableOrders.length,
-    pendingKot: tables.filter(t => t.status === 'occupied').length + nonTableOrders.filter(o => o.status === 'occupied').length
+    pendingKot: tables.filter(t => t.orders && t.orders.length > 0).length + nonTableOrders.length
   };
 
   // ── Approval Wall ──────────────────────────────────────────
