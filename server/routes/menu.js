@@ -100,7 +100,7 @@ router.get('/:id', (req, res) => {
 // ─────────────────────────────────────────────────────────────
 router.post('/', (req, res) => {
   try {
-    let { items, name, category, price, available, inStock } = req.body;
+    let { items, name, category, price, available, inStock, type } = req.body;
     
     // Support POS frontend alias
     if (available === undefined && inStock !== undefined) {
@@ -125,14 +125,16 @@ router.post('/', (req, res) => {
             id: existing.id,
             category: itemCat,
             price: itemPrice,
-            available: itemAvailable !== false
+            available: itemAvailable !== false,
+            type: mi.type || 'Veg'
           });
         } else {
           statements.insertMenuItem({
             name: itemName,
             category: itemCat,
             price: itemPrice,
-            available: itemAvailable !== false
+            available: itemAvailable !== false,
+            type: mi.type || 'Veg'
           });
         }
       });
@@ -158,7 +160,8 @@ router.post('/', (req, res) => {
       name: name.trim(),
       category: category ? category.trim() : 'Uncategorised',
       price,
-      available
+      available,
+      type: type || 'Veg'
     });
 
     const item = statements.getMenuById({ id: result.lastInsertRowid });

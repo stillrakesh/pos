@@ -89,9 +89,12 @@ export async function initDatabase() {
       category      TEXT NOT NULL DEFAULT 'Uncategorised',
       price         REAL NOT NULL DEFAULT 0,
       available     INTEGER NOT NULL DEFAULT 1,
+      type          TEXT NOT NULL DEFAULT 'Veg',
       created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     );
   `);
+  // Migration: add type column if it doesn't exist yet (for existing databases)
+  try { db.run(`ALTER TABLE menu ADD COLUMN type TEXT NOT NULL DEFAULT 'Veg'`); } catch(e) { /* column already exists */ }
 
   db.run(`CREATE INDEX IF NOT EXISTS idx_tables_status ON tables(status)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_menu_cat_avail ON menu(category, available)`);
@@ -399,23 +402,24 @@ export const statements = {
     return rows[0] || null;
   },
 
-  insertMenuItem({ name, category, price, available }) {
+  insertMenuItem({ name, category, price, available, type }) {
     db.run(
-      `INSERT INTO menu (name, category, price, available) VALUES (?, ?, ?, ?)`,
-      [name, category || 'Uncategorised', price, available !== undefined ? (available ? 1 : 0) : 1]
+      `INSERT INTO menu (name, category, price, available, type) VALUES (?, ?, ?, ?, ?)`,
+      [name, category || 'Uncategorised', price, available !== undefined ? (available ? 1 : 0) : 1, type || 'Veg']
     );
     const lastId = db.exec(`SELECT last_insert_rowid() as id`)[0].values[0][0];
     persistToFile();
     return { lastInsertRowid: lastId };
   },
 
-  updateMenuItem({ id, name, category, price, available }) {
+  updateMenuItem({ id, name, category, price, available, type }) {
     const setClauses = [];
     const params = [];
     if (name !== undefined) { setClauses.push('name = ?'); params.push(name); }
     if (category !== undefined) { setClauses.push('category = ?'); params.push(category); }
     if (price !== undefined) { setClauses.push('price = ?'); params.push(price); }
     if (available !== undefined) { setClauses.push('available = ?'); params.push(available ? 1 : 0); }
+    if (type !== undefined) { setClauses.push('type = ?'); params.push(type); }
     if (setClauses.length === 0) return { changes: 0 };
     params.push(id);
     db.run(`UPDATE menu SET ${setClauses.join(', ')} WHERE id = ?`, params);

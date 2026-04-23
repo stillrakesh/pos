@@ -22,7 +22,20 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
 
   useEffect(() => {
     // Check if running inside Electron
-    const check = () => setConnected(!!window.electronAPI);
+    const check = () => {
+      const isElectron = !!window.electronAPI;
+      setConnected(isElectron);
+    };
+
+    const detectPrinters = async () => {
+      if (!window.electronAPI) return alert("Cannot detect: Browser Mode is active. Please use the Desktop App.");
+      try {
+        const list = await window.electronAPI.getPrinters();
+        alert(`Found ${list.length} printers: \n${list.map(p => p.name).join('\n')}`);
+      } catch (err) {
+        alert("Detection failed: " + err.message);
+      }
+    };
     check();
     // Retry once after a short delay just in case of race condition
     setTimeout(check, 1000);
@@ -286,8 +299,19 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
         </div>
       )}
 
+      <div style={{ textAlign: 'center', marginTop: '20px' }}>
+        <button 
+          onClick={() => {
+            window.location.reload();
+          }}
+          style={{ padding: '8px 16px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+        >
+          DETECT PRINTERS & REFRESH BRIDGE
+        </button>
+      </div>
+
       <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '10px', color: '#94a3b8', fontWeight: 'bold' }}>
-        BRIDGE VERSION: 1.2 (ULTIMATE MAC FIX)
+        BRIDGE VERSION: 1.3 (PRO)
       </div>
     </div>
   );

@@ -37,7 +37,7 @@ const __dirname  = path.dirname(__filename);
 // ─────────────────────────────────────────────────────────────
 const app        = express();
 const httpServer = createServer(app);
-const PORT       = process.env.PORT || 3001;
+const PORT       = process.env.PORT || 3100;
 
 const io = new Server(httpServer, {
   cors: {
@@ -466,14 +466,14 @@ if (existsSync(posDist)) {
   });
 }
 
-// ─────────────────────────────────────────────────────────────
 // Serve Captain App (built static bundle)
-// Served at /captain/ so origin = http://{ip}:{PORT}
-// ─────────────────────────────────────────────────────────────
-const captainDist = path.join(__dirname, '../frontend/captain/dist');
-app.use('/captain', express.static(captainDist));
+const captainDist = path.join(process.cwd(), 'frontend/captain/dist');
+const backupCaptainDist = path.join(__dirname, '../frontend/captain/dist');
+const finalCaptainDist = existsSync(captainDist) ? captainDist : backupCaptainDist;
+
+app.use('/captain', express.static(finalCaptainDist));
 app.get(/^\/captain/, (req, res) => {
-  res.sendFile(path.join(captainDist, 'index.html'));
+  res.sendFile(path.join(finalCaptainDist, 'index.html'));
 });
 
 // ─────────────────────────────────────────────────────────────

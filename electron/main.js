@@ -126,8 +126,8 @@ function createWindow() {
 
   mainWindow.maximize();
 
-  const targetURL = 'http://127.0.0.1:3001';
-  const healthURL = 'http://127.0.0.1:3001/api/health';
+  const targetURL = 'http://127.0.0.1:3100';
+  const healthURL = 'http://127.0.0.1:3100/api/health';
 
   console.log('⏳ [Electron] Waiting for backend at', targetURL);
 
