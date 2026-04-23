@@ -106,29 +106,38 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
   };
 
   return (
-    <div style={{ maxWidth: '850px', margin: '20px auto', display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '100px', position: 'relative' }}>
+    <div style={{ maxWidth: '850px', margin: '20px auto', display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '30px', position: 'relative' }}>
       
-      {/* ── Save Floating Action Button ── */}
+      {/* ── Save Bar (sticky, not fixed) ── */}
       <div style={{ 
-        position: 'fixed', bottom: '30px', right: '30px', zIndex: 100,
-        display: 'flex', gap: '12px'
+        position: 'sticky', top: 0, zIndex: 50,
+        background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)',
+        borderRadius: '16px', padding: '12px 20px',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
       }}>
+        <div>
+          <div style={{ fontWeight: '800', fontSize: '14px', color: '#0f172a' }}>Printer Configuration</div>
+          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Changes will apply on next print</div>
+        </div>
         <button 
           onClick={onSave}
           style={{ 
-            padding: '16px 32px', borderRadius: '100px', border: 'none',
+            padding: '12px 28px', borderRadius: '12px', border: 'none',
             background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-            color: 'white', fontWeight: '900', fontSize: '15px', cursor: 'pointer',
-            boxShadow: '0 20px 25px -5px rgba(79, 70, 229, 0.4)',
-            display: 'flex', alignItems: 'center', gap: '10px',
+            color: 'white', fontWeight: '800', fontSize: '14px', cursor: 'pointer',
+            boxShadow: '0 8px 16px rgba(79, 70, 229, 0.3)',
+            display: 'flex', alignItems: 'center', gap: '8px',
             transition: 'transform 0.2s, box-shadow 0.2s'
           }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 25px 30px -5px rgba(79, 70, 229, 0.5)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(79, 70, 229, 0.4)'; }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 20px rgba(79, 70, 229, 0.4)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 16px rgba(79, 70, 229, 0.3)'; }}
         >
-          <Save size={20} /> Save Printer Config
+          <Save size={16} /> Save Config
         </button>
       </div>
+
 
       {/* ── KOT Printing Configuration ── */}
       <div style={cardStyle}>

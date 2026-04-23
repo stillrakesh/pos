@@ -1638,21 +1638,21 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
   return (
     <div className="view-container animate-fade-in no-scrollbar" style={{ padding: 0 }}>
       {/* Settings Navigation */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', background: 'white', padding: '0 32px' }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', background: 'white', padding: '0 16px', overflowX: 'auto', flexShrink: 0 }} className="no-scrollbar">
         {[
-          { id: 'design', label: 'General Design', icon: <Monitor size={18} /> },
-          { id: 'billing', label: 'Bill Designer', icon: <ReceiptText size={18} /> },
-          { id: 'connection', label: 'Backend Server', icon: <Wifi size={18} /> },
-          { id: 'printer', label: 'Printer Setup', icon: <Printer size={18} /> },
-          { id: 'taxes', label: 'Taxes & Charges', icon: <Percent size={18} /> },
-          { id: 'devices', label: 'Linked Devices', icon: <Smartphone size={18} /> },
-          { id: 'system', label: 'System & Safety', icon: <Settings2 size={18} /> }
+          { id: 'design', label: 'Design', icon: <Monitor size={16} /> },
+          { id: 'billing', label: 'Bill', icon: <ReceiptText size={16} /> },
+          { id: 'connection', label: 'Server', icon: <Wifi size={16} /> },
+          { id: 'printer', label: 'Printer', icon: <Printer size={16} /> },
+          { id: 'taxes', label: 'Taxes', icon: <Percent size={16} /> },
+          { id: 'devices', label: 'Devices', icon: <Smartphone size={16} /> },
+          { id: 'system', label: 'System', icon: <Settings2 size={16} /> }
         ].map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             style={{ 
-              display: 'flex', alignItems: 'center', gap: '8px', padding: '16px 24px', fontSize: '14px', fontWeight: '900', border: 'none', background: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '6px', padding: '14px 18px', fontSize: '13px', fontWeight: '900', border: 'none', background: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
               color: activeTab === tab.id ? localSettings.accentColor : '#64748b',
               borderBottom: `3px solid ${activeTab === tab.id ? localSettings.accentColor : 'transparent'}`,
               transition: 'all 0.2s'
@@ -4803,28 +4803,28 @@ function MainApp() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Main Header */}
         <div style={{ background: 'var(--primary)', height: '4px' }}></div>
-        <header style={{ background: 'white', padding: '0 24px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--primary)' }}>
-              <Store size={24} />
-              <h1 style={{ fontSize: '20px', fontWeight: '900', letterSpacing: '-0.5px' }}>{settings.resName}</h1>
+        <header style={{ background: 'white', padding: '0 16px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', gap: '12px', minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)', flexShrink: 0 }}>
+              <Store size={22} />
+              <h1 style={{ fontSize: '17px', fontWeight: '900', letterSpacing: '-0.5px', whiteSpace: 'nowrap' }}>{settings.resName}</h1>
             </div>
-            <button onClick={() => setShowSidebar(!showSidebar)} style={{ padding: '8px', borderRadius: 'var(--radius-md)', background: '#f1f5f9', border: 'none', cursor: 'pointer', color: '#64748b' }}>
-              <Menu size={20} />
+            <button onClick={() => setShowSidebar(!showSidebar)} style={{ padding: '7px', borderRadius: 'var(--radius-md)', background: '#f1f5f9', border: 'none', cursor: 'pointer', color: '#64748b', flexShrink: 0 }}>
+              <Menu size={18} />
             </button>
-            <h1 style={{ fontSize: '20px', fontWeight: '950', color: '#1e293b', letterSpacing: '-0.5px' }}>
+            <h1 style={{ fontSize: '16px', fontWeight: '950', color: '#1e293b', letterSpacing: '-0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {view === 'tables' && 'Floor Plan'}
-              {view === 'nontables' && 'Online & External Orders'}
-              {view === 'analytics' && 'Operational Intelligence'}
+              {view === 'nontables' && 'Pickup / Online'}
+              {view === 'analytics' && 'Intelligence'}
               {view === 'ordering' && `Table ${selectedTable?.name}`}
-              {view === 'kds' && 'Live Kitchen (KDS)'}
-              {view === 'captain' && 'Captain Orders — Live Feed'}
-              {view === 'globalsettings' && 'System Configuration'}
+              {view === 'kds' && 'Kitchen (KDS)'}
+              {view === 'captain' && 'Captain Orders'}
+              {view === 'globalsettings' && 'Settings'}
               {view === 'dayclose' && 'End of Day'}
             </h1>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
             {/* SYNC BUTTON */}
             {IS_LOCAL && (
               <button 
@@ -4855,24 +4855,24 @@ function MainApp() {
               </span>
             </div>
 
-            <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '14px', padding: '4px 16px', alignItems: 'center', border: '1px solid #e2e8f0' }}>
-              <Search size={16} color="#94a3b8" />
+            <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '14px', padding: '4px 12px', alignItems: 'center', border: '1px solid #e2e8f0' }}>
+              <Search size={15} color="#94a3b8" />
               <input
                 type="text"
                 value={globalSearch}
                 onChange={(e) => handleGlobalSearch(e.target.value)}
-                placeholder="Search orders, phones..."
-                style={{ background: 'none', border: 'none', padding: '10px', outline: 'none', fontSize: '13px', fontWeight: '600', width: '240px' }}
+                placeholder="Search..."
+                style={{ background: 'none', border: 'none', padding: '8px', outline: 'none', fontSize: '13px', fontWeight: '600', width: '140px' }}
               />
             </div>
 
             {/* GLOBAL NAVIGATION PILLS */}
-            <div style={{ display: 'flex', gap: '8px', background: '#f1f5f9', padding: '6px', borderRadius: '16px', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)', border: '1px solid #e2e8f0' }}>
-              <button onClick={() => setView('tables')} style={{ padding: '10px 24px', borderRadius: '12px', background: view === 'tables' ? 'var(--primary)' : 'transparent', color: view === 'tables' ? 'white' : '#64748b', fontWeight: '900', border: 'none', cursor: 'pointer', fontSize: '14px', transition: 'all 0.2s', boxShadow: view === 'tables' ? '0 4px 12px rgba(148,22,28,0.2)' : 'none' }}>
-                Table View
+            <div style={{ display: 'flex', gap: '6px', background: '#f1f5f9', padding: '5px', borderRadius: '14px', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)', border: '1px solid #e2e8f0', flexShrink: 0 }}>
+              <button onClick={() => setView('tables')} style={{ padding: '8px 16px', borderRadius: '10px', background: view === 'tables' ? 'var(--primary)' : 'transparent', color: view === 'tables' ? 'white' : '#64748b', fontWeight: '900', border: 'none', cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s', whiteSpace: 'nowrap', boxShadow: view === 'tables' ? '0 4px 12px rgba(148,22,28,0.2)' : 'none' }}>
+                Tables
               </button>
-              <button onClick={() => setView('nontables')} style={{ padding: '10px 24px', borderRadius: '12px', background: view === 'nontables' ? 'var(--primary)' : 'transparent', color: view === 'nontables' ? 'white' : '#64748b', fontWeight: '900', border: 'none', cursor: 'pointer', fontSize: '14px', transition: 'all 0.2s', boxShadow: view === 'nontables' ? '0 4px 12px rgba(148,22,28,0.2)' : 'none' }}>
-                Pick up / Online Orders
+              <button onClick={() => setView('nontables')} style={{ padding: '8px 16px', borderRadius: '10px', background: view === 'nontables' ? 'var(--primary)' : 'transparent', color: view === 'nontables' ? 'white' : '#64748b', fontWeight: '900', border: 'none', cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s', whiteSpace: 'nowrap', boxShadow: view === 'nontables' ? '0 4px 12px rgba(148,22,28,0.2)' : 'none' }}>
+                Pickup
               </button>
             </div>
           </div>
