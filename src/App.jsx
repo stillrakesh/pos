@@ -2710,7 +2710,13 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       return null;
     }).filter(Boolean);
 
-    if (deltaItems.length === 0) { alert("No new items to send to KOT"); return; }
+    // If no NEW items but we are on a table that was previously empty (Shifting), allow saving
+    if (deltaItems.length === 0 && (initialOrder || []).length > 0 && cart.length > 0) {
+      // This is a Table Shift or Update without new items - allow it to proceed to onSaveOrder
+    } else if (deltaItems.length === 0) { 
+      alert("No new items to send to KOT"); 
+      return; 
+    }
 
     if (isTakeaway) {
       await onSaveOrder(table.id, cart, 'kot_pending', {
@@ -3281,7 +3287,8 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
               value={table?.id || ''}
               onChange={(e) => {
                 if (onChangeTable && e.target.value !== String(table?.id)) {
-                  onChangeTable(table.id, Number(e.target.value), cart);
+                  // Use the raw value (string), do NOT force Number() as IDs can be alphanumeric
+                  onChangeTable(table.id, e.target.value, cart);
                 }
               }}
               style={{ border: '1px solid var(--primary)', color: 'var(--primary)', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', outline: 'none', background: 'white' }}
