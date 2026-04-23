@@ -43,12 +43,21 @@ jobs:
           npm run build
 
       - name: Build Mac DMG
-        run: npx electron-builder --mac --x64 -c.mac.identity=null
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npx electron-builder --mac --x64 -c.mac.identity=null --publish never > build.log 2>&1 || echo "BUILD_FAILED" >> build.log
+          cat build.log
+          if grep -q "BUILD_FAILED" build.log; then exit 1; fi
+
+      - name: Upload Debug Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mac-Debug-Logs
+          path: build.log
 
       - name: Upload DMG to GitHub
         uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: Mac-Installer
           path: release/*.dmg
