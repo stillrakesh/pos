@@ -2607,21 +2607,26 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   const [customerInfo, setCustomerInfo] = useState(null);
   const [redeemedPoints, setRedeemedPoints] = useState(0);
 
+  // SYNC CUSTOMER INFO ONLY ON INITIAL LOAD OR PHONE CHANGE
   useEffect(() => {
     if (customerPhone.length === 10 && customers && customers[customerPhone]) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCustomerInfo(customers[customerPhone]);
-      setCustomerName(customers[customerPhone].name);
-    } else if (table?.customerName || table?.phone) {
-      setCustomerName(table.customerName || '');
-      setCustomerPhone(table.phone || '');
-      setCustomerInfo(null);
+      // Only auto-fill name if it's currently empty or was just initialized
+      if (!customerName || customerName === 'Walk-In') {
+        setCustomerName(customers[customerPhone].name);
+      }
     } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCustomerInfo(null);
-      setRedeemedPoints(0);
     }
   }, [customerPhone, customers]);
+
+  // Handle switching between different tables/orders
+  useEffect(() => {
+    setCustomerName(table?.customerName || '');
+    setCustomerPhone(table?.phone || '');
+    setOrderNote(table?.note || '');
+    setCart(initialOrder || []);
+  }, [table?.id]);
 
   // Modifiers & Modal State
   const [showModifierModal, setShowModifierModal] = useState(null);
