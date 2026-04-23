@@ -22,7 +22,10 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
 
   useEffect(() => {
     // Check if running inside Electron
-    setConnected(!!window.electronAPI);
+    const check = () => setConnected(!!window.electronAPI);
+    check();
+    // Retry once after a short delay just in case of race condition
+    setTimeout(check, 1000);
     
     // Load selected printer
     getSelectedPrinter().then(saved => {
@@ -282,6 +285,10 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
            )}
         </div>
       )}
+
+      <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '10px', color: '#94a3b8', fontWeight: 'bold' }}>
+        BRIDGE VERSION: 1.1 (MAC FIX)
+      </div>
     </div>
   );
 };
