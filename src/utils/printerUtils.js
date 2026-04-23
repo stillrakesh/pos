@@ -271,7 +271,7 @@ ${ordersArray.map((order, idx) => {
         <div style="font-size:15px;font-weight:700;">${isTakeaway ? 'Takeaway' : 'Dine In'}</div>
         <div style="font-size:13px;font-weight:700;">
           ${isTakeaway
-          ? `Token No: ${order.tableName || '--'}${order.customerName ? ' | ' + order.customerName : ''}`
+          ? `Token: ${(order.tableName || '--').replace(/Takeaway\s*/i, 'TK')}${order.customerName ? ' | ' + order.customerName : ''}`
           : `Table No: ${(order.tableName || '--').replace(/^table\s*/i, '')}`}
         </div>
         ${order.categoryHeader ? `<div style="font-size:12px;margin-top:2px;">${order.categoryHeader}</div>` : ''}
@@ -309,7 +309,7 @@ ${ordersArray.map((order, idx) => {
 
     ${isTakeaway ? `
       <table class="ir"><tr><td class="l">Date: ${dateStr}</td><td class="r" style="font-weight:700;">Takeaway</td></tr></table>
-      <table class="ir"><tr><td class="l">${timeStr}</td><td class="r">Token: ${(order.tableName || '--').replace(/Takeaway/i, 'TK')}${order.customerName ? ' | ' + order.customerName : ''}</td></tr></table>
+      <table class="ir"><tr><td class="l">${timeStr}</td><td class="r">Token: ${(order.tableName || '--').replace(/Takeaway\s*/i, 'TK')}${order.customerName ? ' | ' + order.customerName : ''}</td></tr></table>
       <table class="ir" style="margin-bottom:3px;"><tr><td class="l">Cashier: biller</td><td class="r">Bill No.: ${order.billNumber || '---'}</td></tr></table>
     ` : `
       <table class="ir"><tr><td class="l">Date: ${dateStr}</td><td class="r" style="font-weight:700;">Dine In: ${tableLabel}</td></tr></table>
