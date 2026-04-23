@@ -2,6 +2,8 @@
   "name": "restaurant-pos",
   "productName": "Restaurant POS",
   "version": "1.0.0",
+  "description": "Restaurant POS Desktop App",
+  "author": "Tyde Cafe",
   "private": true,
   "type": "module",
   "main": "electron/main.js",
