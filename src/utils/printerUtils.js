@@ -200,9 +200,10 @@ function generatePrintHTML(orders, type, settings) {
   }
   body { display: block; }
   .wrap {
-    width: 255px;
+    width: 300px;
     max-width: 100%;
-    margin: 0;
+    margin: 0 0 0 20px;
+    padding: 0;
     overflow: hidden;
   }
   .receipt {
@@ -210,7 +211,7 @@ function generatePrintHTML(orders, type, settings) {
     font-size: 13px;
     color: #000;
     width: 100%;
-    padding: 0;
+    padding: 0 0 0 30px;
     line-height: 1.4;
     -webkit-font-smoothing: none;
     text-rendering: crispEdges;
@@ -241,10 +242,10 @@ function generatePrintHTML(orders, type, settings) {
   .kot-qty  { width: 25%; text-align: center; }
   
   /* Bill Fixed Columns (45 / 13 / 22 / 20) */
-  .ci { width: 45%; overflow: hidden; word-wrap: break-word; text-align: left; }
-  .cq { width: 13%; text-align: center; }
-  .cp { width: 22%; text-align: right; padding-right: 3px; }
-  .ca { width: 20%; text-align: left; padding-left: 4px; }
+  .ci { width: 43%; overflow: hidden; word-wrap: break-word; text-align: left; }
+  .cq { width: 10%; text-align: center; }
+  .cp { width: 25%; text-align: center; }
+  .ca { width: 22%; text-align: left; padding-left: 4px; }
   /* Grand total row */
   .gt td {
     font-size: 14px; font-weight: 700; padding: 5px 0;
@@ -321,8 +322,8 @@ ${ordersArray.map((order, idx) => {
       <thead><tr>
         <th class="ci" style="text-align:left;">Item</th>
         <th class="cq" style="text-align:center;">Qty</th>
-        <th class="cp" style="text-align:right; padding-right:3px;">Price</th>
-        <th class="ca" style="text-align:left; padding-left:4px;">Amt</th>
+        <th class="cp" style="text-align:center; padding-right:3px;">Price</th>
+        <th class="ca" style="text-align:left; padding-left:4px;">Amount</th>
       </tr></thead>
       <tbody>
         ${(order.items || []).map(item => `
