@@ -205,6 +205,8 @@ function generatePrintHTML(orders, type, settings) {
     margin: 0;
     padding: 0;
     overflow: visible;
+    height: auto !important; /* Force continuous height */
+    display: block !important;
   }
   .receipt {
     font-family: Verdana, Geneva, Tahoma, sans-serif;

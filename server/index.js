@@ -473,7 +473,9 @@ const pathsToTry = [
   path.join(__dirname, '../frontend/captain/dist'),
   path.join(process.cwd(), 'frontend/captain/dist'),
   path.join(appPath, 'Resources/app/frontend/captain/dist'),
-  path.join(appPath, 'Contents/Resources/app/frontend/captain/dist')
+  path.join(appPath, 'Contents/Resources/app/frontend/captain/dist'),
+  '/Applications/Rest POS.app/Contents/Resources/app/frontend/captain/dist',
+  '/Applications/Restaurant POS.app/Contents/Resources/app/frontend/captain/dist'
 ];
 
 const finalCaptainDist = pathsToTry.find(p => existsSync(p)) || pathsToTry[0];
