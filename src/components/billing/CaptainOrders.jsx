@@ -27,7 +27,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
   const [captainMode, setCaptainMode] = useState(() => {
     return localStorage.getItem('captain_mode_enabled') === 'true';
   });       // Captain Mode toggle
-  const [networkInfo, setNetworkInfo] = useState({ ip: 'localhost', port: 3001 });
+  const [networkInfo, setNetworkInfo] = useState({ ip: 'localhost', port: 3100 });
 
   // Duplicate prevention: Set of order IDs that have been processed (printed or queued)
   const processedIdsRef = useRef(new Set());
@@ -36,11 +36,12 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
 
   // Create accurate Captain App URL based strictly on Backend's active IP
   const getCaptainUrl = () => {
+    if (backendUrl && backendUrl !== 'http://localhost:3100') return `${backendUrl}/captain/`;
     try {
-      const urlObj = new URL(backendUrl || BASE_URL);
-      return `http://${urlObj.hostname}:3001/captain/`;
+      const urlObj = new URL(window.location.href);
+      return `http://${urlObj.hostname}:3100/captain/`;
     } catch {
-      return `http://localhost:3001/captain/`;
+      return `http://localhost:3100/captain/`;
     }
   };
 

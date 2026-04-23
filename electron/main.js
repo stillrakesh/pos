@@ -59,7 +59,7 @@ function startBackend() {
     stdio: ['ignore', 'pipe', 'pipe'],
     env: {
       ...process.env,
-      PORT: '3001',
+      PORT: '3100',
       DATA_DIR: dataPath,
     },
   });
