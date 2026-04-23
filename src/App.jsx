@@ -4943,15 +4943,19 @@ function MainApp() {
               CATEGORIES={Array.from(new Set([...categories, ...productCategories]))}
               settings={settings}
               customers={customers}
-              onChangeTable={(oldId, newId, currentCart) => {
+              onChangeTable={async (oldId, newId, currentCart) => {
                 if (selectedTable && oldId !== newId) {
                   const targetTable = tables.find(t => t.id === newId);
                   if (targetTable) {
+                    // 1. CLEAR OLD TABLE ON BACKEND
+                    await deleteAnyOrder(oldId);
+                    
+                    // 2. SAVE TO NEW TABLE ON BACKEND
+                    await saveOrderToTable(newId, currentCart, 'kot_pending');
+                    
+                    // 3. UPDATE LOCAL STATE (for immediate UI feedback)
                     setTables(prev => prev.map(t => {
                       if (t.id === newId) return { ...t, orders: currentCart, status: 'kot_pending', createdAt: t.createdAt || Date.now() };
-                      if (t.id === oldId && (String(selectedTable.id).startsWith('DEL-') || String(selectedTable.id).startsWith('TAK-') || String(selectedTable.id).startsWith('TA-') || String(selectedTable.id).startsWith('DL-'))) {
-                        return { ...t, orders: [], status: 'vacant', createdAt: null };
-                      }
                       if (t.id === oldId) return { ...t, orders: [], status: 'vacant', createdAt: null };
                       return t;
                     }));
