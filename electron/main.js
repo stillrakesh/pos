@@ -117,6 +117,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: false,
       preload: path.join(app.getAppPath(), 'electron', 'preload.cjs')
     },
     title: 'Tyde POS Desktop',

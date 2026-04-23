@@ -287,7 +287,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
       )}
 
       <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '10px', color: '#94a3b8', fontWeight: 'bold' }}>
-        BRIDGE VERSION: 1.1 (MAC FIX)
+        BRIDGE VERSION: 1.2 (ULTIMATE MAC FIX)
       </div>
     </div>
   );
