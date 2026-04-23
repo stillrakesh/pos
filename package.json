@@ -39,6 +39,7 @@
     "mac": {
       "target": "dmg",
       "identity": null,
+      "minimumSystemVersion": "10.12.0",
       "extraResources": [
         {
           "from": "bundled-node-mac",
