@@ -468,8 +468,15 @@ if (existsSync(posDist)) {
 
 // Serve Captain App (built static bundle)
 const appPath = process.env.APP_PATH || path.join(__dirname, '..');
-const captainDist = path.join(appPath, 'frontend/captain/dist');
-const finalCaptainDist = existsSync(captainDist) ? captainDist : path.join(__dirname, '../frontend/captain/dist');
+const pathsToTry = [
+  path.join(appPath, 'frontend/captain/dist'),
+  path.join(__dirname, '../frontend/captain/dist'),
+  path.join(process.cwd(), 'frontend/captain/dist'),
+  path.join(appPath, 'Resources/app/frontend/captain/dist'),
+  path.join(appPath, 'Contents/Resources/app/frontend/captain/dist')
+];
+
+const finalCaptainDist = pathsToTry.find(p => existsSync(p)) || pathsToTry[0];
 
 app.use('/captain', express.static(finalCaptainDist));
 app.get(/^\/captain/, (req, res) => {

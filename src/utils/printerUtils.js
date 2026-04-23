@@ -202,16 +202,17 @@ function generatePrintHTML(orders, type, settings) {
   .wrap {
     width: 300px;
     max-width: 100%;
-    margin: 0 0 0 20px;
+    margin: 0;
     padding: 0;
-    overflow: hidden;
+    overflow: visible;
   }
   .receipt {
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     font-size: 13px;
     color: #000;
     width: 100%;
-    padding: 0 0 0 30px;
+    padding: 0 10px;
+    box-sizing: border-box;
     line-height: 1.4;
     -webkit-font-smoothing: none;
     text-rendering: crispEdges;
