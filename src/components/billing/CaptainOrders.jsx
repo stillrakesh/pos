@@ -4,7 +4,6 @@ import { QRCodeSVG } from 'qrcode.react';
 import { BASE_URL } from '../../constants';
 import { fetchOrders, updateOrderStatus } from '../../utils/apiClient';
 import { printPosToSerial } from '../../utils/printerUtils';
-import { isQzConnected } from '../../utils/qzTrayPrinter';
 import { formatCurrency } from '../../utils/formatters';
 
 /**
@@ -24,7 +23,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
   const [soundEnabled, setSoundEnabled] = useState(true);      // Sound notification toggle
   const [isPrinting, setIsPrinting] = useState(null);          // Currently printing order ID
   const [printError, setPrintError] = useState(null);          // Last print error message
-  const [printMethod, setPrintMethod] = useState('detecting'); // 'qz-tray' | 'web-serial' | 'none'
+  const [printMethod, setPrintMethod] = useState('detecting'); // 'electron' | 'web-serial' | 'none'
   const [captainMode, setCaptainMode] = useState(() => {
     return localStorage.getItem('captain_mode_enabled') === 'true';
   });       // Captain Mode toggle
@@ -47,8 +46,8 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
 
   // Detect preferred print method on mount
   useEffect(() => {
-    if (isQzConnected()) {
-      setPrintMethod('qz-tray');
+    if (window.electronAPI) {
+      setPrintMethod('electron');
     } else if ('serial' in navigator) {
       setPrintMethod('web-serial');
     } else {
@@ -137,7 +136,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
 
       // Print via unified engine (QZ Tray silent → browser fallback)
       await printPosToSerial(kotData, 'KOT', settings);
-      setPrintMethod('qz-tray');
+      setPrintMethod('electron');
 
       // Update status on server
       await updateOrderStatus(order.id, 'PRINTED');
@@ -216,10 +215,10 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
               {isOnline && (
                 <span style={{ 
                   fontSize: '10px', fontWeight: '900', padding: '2px 8px', borderRadius: '6px',
-                  background: printMethod === 'qz-tray' ? 'rgba(99, 102, 241, 0.15)' : printMethod === 'web-serial' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                  color: printMethod === 'qz-tray' ? '#818cf8' : printMethod === 'web-serial' ? '#f59e0b' : '#ef4444'
+                  background: printMethod === 'electron' ? 'rgba(99, 102, 241, 0.15)' : printMethod === 'web-serial' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  color: printMethod === 'electron' ? '#818cf8' : printMethod === 'web-serial' ? '#f59e0b' : '#ef4444'
                 }}>
-                  🖨️ {printMethod === 'qz-tray' ? 'QZ Tray' : printMethod === 'web-serial' ? 'Web Serial' : 'No Printer'}
+                  🖨️ {printMethod === 'electron' ? 'Electron Printer' : printMethod === 'web-serial' ? 'Web Serial' : 'No Printer'}
                 </span>
               )}
             </div>

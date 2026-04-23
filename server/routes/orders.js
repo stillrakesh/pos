@@ -8,6 +8,7 @@ const router = Router();
 // POST /api/orders — Create a new order from captain app
 // ─────────────────────────────────────────────────────────────
 router.post('/', (req, res) => {
+  console.log('📦 [POST /api/orders] Incoming order payload:', JSON.stringify(req.body, null, 2));
   try {
     const { table_number, table_id, items, notes, gst_enabled, gst_rate, service_charge_enabled, service_charge_rate } = req.body;
 

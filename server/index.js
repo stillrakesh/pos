@@ -14,6 +14,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 
 import { initDatabase, forceSave } from './db.js';
 import { statements } from './db.js';
@@ -81,7 +82,19 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// ── Normalize double-slash URLs (e.g. //api/orders → /api/orders) ──
+// Happens when Captain App builds URL from window.location.origin which may
+// already have a trailing slash.
+app.use((req, res, next) => {
+  if (req.url.startsWith('//')) {
+    req.url = req.url.replace(/^\/\/+/, '/');
+  }
+  next();
+});
+
 app.use(express.json({ limit: '2mb' }));
+
 
 // ─────────────────────────────────────────────────────────────
 // Request logger
@@ -440,6 +453,18 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.get('/api/network', (req, res) => {
   res.json({ ip: getLocalIP(), port: PORT });
 });
+
+// ─────────────────────────────────────────────────────────────
+// Serve POS UI (built static bundle)
+// ─────────────────────────────────────────────────────────────
+const posDist = path.join(__dirname, '../dist');
+if (existsSync(posDist)) {
+  app.use(express.static(posDist));
+  // Serve index.html for all non-api routes (SPA support)
+  app.get(/^\/(?!api|orders|tables|menu|billing|devices|signing|captain|sync|health).*/, (req, res) => {
+    res.sendFile(path.join(posDist, 'index.html'));
+  });
+}
 
 // ─────────────────────────────────────────────────────────────
 // Serve Captain App (built static bundle)

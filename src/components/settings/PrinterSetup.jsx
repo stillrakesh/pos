@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Printer, Wifi, WifiOff, RefreshCw, Check, AlertTriangle, Zap, TestTube, LayoutGrid, Save, Trash2, Plus } from 'lucide-react';
 import { 
-  connectQzTray, 
-  disconnectQzTray,
-  isQzConnected, 
   findPrinters, 
   selectPrinter, 
   getSelectedPrinter, 
-  testPrint 
-} from '../../utils/qzTrayPrinter';
+  printPosToSerial
+} from '../../utils/printerUtils';
 import { BASE_URL } from '../../constants';
 
 /**
@@ -17,39 +14,25 @@ import { BASE_URL } from '../../constants';
  */
 const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
   const [connected, setConnected] = useState(false);
-  const [connecting, setConnecting] = useState(false);
   const [qzPrinters, setQzPrinters] = useState([]);
   const [detecting, setDetecting] = useState(false);
-  const [selectedName, setSelectedName] = useState(getSelectedPrinter() || '');
+  const [selectedName, setSelectedName] = useState('');
   const [testResult, setTestResult] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    setConnected(isQzConnected());
-    const saved = getSelectedPrinter();
-    if (saved) setSelectedName(saved);
-  }, []);
+    // Check if running inside Electron
+    setConnected(!!window.electronAPI);
+    
+    // Load selected printer
+    getSelectedPrinter().then(saved => {
+      if (saved) setSelectedName(saved);
+    });
 
-  const handleConnect = async () => {
-    setConnecting(true);
-    setError('');
-    try {
-      const ok = await connectQzTray();
-      setConnected(ok);
-      if (!ok) setError('Could not connect to QZ Tray. Ensure it is running.');
-    } catch (err) {
-      setError(err.message);
-      setConnected(false);
-    } finally {
-      setConnecting(false);
+    if (window.electronAPI) {
+      handleDetect();
     }
-  };
-
-  const handleDisconnect = async () => {
-    await disconnectQzTray();
-    setConnected(false);
-    setQzPrinters([]);
-  };
+  }, []);
 
   const handleDetect = async () => {
     setDetecting(true);
@@ -74,9 +57,22 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
   const handleTestPrint = async () => {
     setTestResult(null);
     setError('');
-    const result = await testPrint(settings);
-    setTestResult(result);
-    if (!result.success) setError(result.message);
+    try {
+      const dummyOrder = {
+        tableName: 'Test Table',
+        orderType: 'Dine In',
+        items: [
+          { name: 'Paper Test Item', qty: 1, price: 0 },
+          { name: 'Connection Active', qty: 2, price: 0 }
+        ],
+        grandTotal: 0
+      };
+      await printPosToSerial(dummyOrder, 'KOT', settings);
+      setTestResult({ success: true, message: 'Test print sent successfully.' });
+    } catch (e) {
+      setTestResult({ success: false, message: e.message });
+      setError(e.message);
+    }
   };
 
   const toggleSetting = (key) => {
@@ -187,7 +183,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
           <div style={{ padding: '8px', background: '#eef2ff', borderRadius: '12px' }}>
             <Printer size={20} color="#6366f1" />
           </div>
-          <span style={titleStyle}>QZ Tray Hardware Link</span>
+          <span style={titleStyle}>Direct Hardware Link</span>
         </div>
         
         <div style={{ 
@@ -205,23 +201,14 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: '900', fontSize: '16px', color: connected ? '#065f46' : '#991b1b' }}>
-              {connected ? 'Hardware Connected' : 'Hardware Disconnected'}
+              {connected ? 'Electron Print API Active' : 'Browser Mode Active'}
             </div>
             <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>
               {connected 
-                ? 'Ready to dispatch print jobs to local hardware' 
-                : 'Start QZ Tray on this terminal to enable printing'}
+                ? 'Ready to dispatch silent print jobs to local hardware' 
+                : 'Install the Desktop App to enable silent background printing'}
             </div>
           </div>
-          {connected ? (
-            <button onClick={handleDisconnect} style={{ padding: '12px 24px', borderRadius: '14px', border: '1px solid #fecaca', background: 'white', color: '#dc2626', cursor: 'pointer', fontWeight: '800', fontSize: '13px' }}>
-              Disconnect
-            </button>
-          ) : (
-            <button onClick={handleConnect} disabled={connecting} style={{ padding: '12px 24px', borderRadius: '14px', border: 'none', background: connecting ? '#94a3b8' : '#6366f1', color: 'white', cursor: connecting ? 'wait' : 'pointer', fontWeight: '800', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Zap size={16} /> {connecting ? 'Linking...' : 'Link Hardware'}
-            </button>
-          )}
         </div>
       </div>
 

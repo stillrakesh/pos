@@ -8,7 +8,20 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const DB_PATH = join(__dirname, '..', 'data', 'pos_orders.db');
+const DB_NAME = 'pos_orders.db';
+const DATA_DIR = process.env.DATA_DIR || join(__dirname, '..', 'data');
+const DB_PATH = join(DATA_DIR, DB_NAME);
+
+// Ensure data directory exists
+if (!existsSync(DATA_DIR)) {
+  try {
+    const fs = await import('fs');
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  } catch (e) {
+    // Fallback if top-level await import fails in some node versions
+    // though in ESM it should be fine.
+  }
+}
 
 let db;
 let saveTimer = null;
