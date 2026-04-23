@@ -30,23 +30,32 @@ jobs:
           cp node-v20.12.2-darwin-x64/bin/node ./bundled-node-mac
           chmod +x ./bundled-node-mac
 
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Build Frontend React App
-        run: npm run build
-
-      - name: Build Captain App
+      - name: Build and Package Mac App
         run: |
+          echo "=== Starting Full Build ===" > build.log
+          
+          echo "--- Installing Root Dependencies ---" >> build.log
+          npm install --legacy-peer-deps >> build.log 2>&1 || echo "FAIL_ROOT_INSTALL" >> build.log
+          
+          echo "--- Building Root App ---" >> build.log
+          npm run build >> build.log 2>&1 || echo "FAIL_ROOT_BUILD" >> build.log
+          
+          echo "--- Building Captain App ---" >> build.log
           cd frontend/captain
-          npm install
-          npm run build
-
-      - name: Build Mac DMG
-        run: |
-          npx electron-builder --mac --x64 -c.mac.identity=null --publish never > build.log 2>&1 || echo "BUILD_FAILED" >> build.log
+          npm install --legacy-peer-deps >> ../../build.log 2>&1 || echo "FAIL_CAPTAIN_INSTALL" >> ../../build.log
+          npm run build >> ../../build.log 2>&1 || echo "FAIL_CAPTAIN_BUILD" >> ../../build.log
+          cd ../..
+          
+          echo "--- Packaging Mac App ---" >> build.log
+          npx electron-builder --mac --x64 -c.mac.identity=null --publish never >> build.log 2>&1 || echo "FAIL_PACKAGER" >> build.log
+          
+          echo "=== Build Complete ===" >> build.log
           cat build.log
-          if grep -q "BUILD_FAILED" build.log; then exit 1; fi
+          
+          if grep -q "FAIL_" build.log; then
+            echo "A build step failed! Please download Mac-Debug-Logs."
+            exit 1
+          fi
 
       - name: Upload Debug Logs
         if: always()
