@@ -61,6 +61,7 @@ function startBackend() {
       ...process.env,
       PORT: '3100',
       DATA_DIR: dataPath,
+      APP_PATH: app.getAppPath()
     },
   });
 
@@ -184,10 +185,7 @@ ipcMain.handle('print-html', async (event, html, printerName) => {
               deviceName: printerName || undefined,
               printBackground: true,
               margins: { marginType: 'none' },
-              pageSize: {
-                width: 80000,
-                height: 297000
-              }
+              color: false
             }, (success, failureReason) => {
               printWindow.close();
               if (success) {
