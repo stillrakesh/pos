@@ -673,10 +673,36 @@ const RetailProductSetupView = ({ categories, setCategories, menuItems, setMenuI
     }
   };
 
-  const deleteCategory = (catName) => {
+  const deleteCategory = async (catName) => {
     if (window.confirm(`Are you sure you want to delete the Retail category "${catName}"?`)) {
       const pwd = window.prompt("Security Check: Enter master password to delete category");
-      if (pwd === "biller") setCategories(categories.filter(c => c !== catName));
+      if (pwd === "biller") {
+        // 1. Update locally first
+        setCategories(categories.filter(c => c !== catName));
+        setMenuItems(prev => prev.map(item => {
+          const itemCat = typeof item.category === 'object' ? item.category.name : (item.category || item.cat);
+          if (itemCat === catName) {
+            return { ...item, category: 'Uncategorised', cat: 'Uncategorised' };
+          }
+          return item;
+        }));
+
+        // 2. Sync to backend
+        try {
+          const res = await fetch(`${BASE_URL}/menu/category/${encodeURIComponent(catName)}`, {
+            method: 'DELETE'
+          });
+          if (!res.ok) throw new Error("DELETE category request failed");
+          // Refresh real data from backend
+          await loadMenu();
+          await loadCategories();
+        } catch (err) {
+          console.warn("⚠️ Failed to sync category deletion to server:", err);
+          alert("Warning: Failed to sync category deletion to server. The category was deleted locally, but it may reappear on restart.");
+        }
+      } else {
+        alert("Incorrect Password. Deletion cancelled.");
+      }
     }
   };
 
@@ -886,11 +912,33 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
     }
   };
 
-  const deleteCategory = (catName) => {
+  const deleteCategory = async (catName) => {
     if (window.confirm(`Are you sure you want to delete the category "${catName}"? This will not delete the items in this category.`)) {
       const pwd = window.prompt("Security Check: Enter master password to delete category");
       if (pwd === "biller") {
+        // 1. Update locally first
         setCategories(categories.filter(c => c !== catName));
+        setMenuItems(prev => prev.map(item => {
+          const itemCat = typeof item.category === 'object' ? item.category.name : (item.category || item.cat);
+          if (itemCat === catName) {
+            return { ...item, category: 'Uncategorised', cat: 'Uncategorised' };
+          }
+          return item;
+        }));
+
+        // 2. Sync to backend
+        try {
+          const res = await fetch(`${BASE_URL}/menu/category/${encodeURIComponent(catName)}`, {
+            method: 'DELETE'
+          });
+          if (!res.ok) throw new Error("DELETE category request failed");
+          // Refresh real data from backend
+          await loadMenu();
+          await loadCategories();
+        } catch (err) {
+          console.warn("⚠️ Failed to sync category deletion to server:", err);
+          alert("Warning: Failed to sync category deletion to server. The category was deleted locally, but it may reappear on restart.");
+        }
       } else {
         alert("Incorrect Password. Deletion cancelled.");
       }

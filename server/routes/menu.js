@@ -251,6 +251,41 @@ router.put('/:id', (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
+// DELETE /api/menu/category/:name — Clear category from all items
+// ─────────────────────────────────────────────────────────────
+router.delete('/category/:name', (req, res) => {
+  try {
+    const catName = req.params.name;
+    
+    // Find all items belonging to this category
+    const items = statements.getAllMenu();
+    const matching = items.filter(i => i.category === catName);
+    
+    // Update them to 'Uncategorised'
+    for (const item of matching) {
+      statements.updateMenuItem({
+        id: item.id,
+        category: 'Uncategorised'
+      });
+    }
+    
+    const io = req.app.get('io');
+    if (io) io.emit('menu_updated', getFullMenu());
+    
+    res.json({
+      success: true,
+      message: `Category "${catName}" removed. ${matching.length} items moved to Uncategorised.`
+    });
+  } catch (err) {
+    console.error(`[DELETE /api/menu/category/:name] Error:`, err);
+    res.status(500).json({ 
+      error: 'SERVER_ERROR', 
+      message: 'Failed to delete category' 
+    });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
 // DELETE /api/menu/:id — Delete a menu item
 // ─────────────────────────────────────────────────────────────
 router.delete('/:id', (req, res) => {
