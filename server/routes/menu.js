@@ -100,7 +100,7 @@ router.get('/:id', (req, res) => {
 // ─────────────────────────────────────────────────────────────
 router.post('/', (req, res) => {
   try {
-    let { items, name, category, price, available, inStock, type } = req.body;
+    let { items, name, category, price, available, inStock, type, shortcode } = req.body;
     
     // Support POS frontend alias
     if (available === undefined && inStock !== undefined) {
@@ -126,7 +126,8 @@ router.post('/', (req, res) => {
             category: itemCat,
             price: itemPrice,
             available: itemAvailable !== false,
-            type: mi.type || 'Veg'
+            type: mi.type || 'Veg',
+            shortcode: mi.shortcode || ''
           });
         } else {
           statements.insertMenuItem({
@@ -134,7 +135,8 @@ router.post('/', (req, res) => {
             category: itemCat,
             price: itemPrice,
             available: itemAvailable !== false,
-            type: mi.type || 'Veg'
+            type: mi.type || 'Veg',
+            shortcode: mi.shortcode || ''
           });
         }
       });
@@ -161,7 +163,8 @@ router.post('/', (req, res) => {
       category: category ? category.trim() : 'Uncategorised',
       price,
       available,
-      type: type || 'Veg'
+      type: type || 'Veg',
+      shortcode: shortcode ? shortcode.trim() : ''
     });
 
     const item = statements.getMenuById({ id: result.lastInsertRowid });
@@ -204,7 +207,7 @@ router.put('/:id', (req, res) => {
       });
     }
 
-    let { name, category, price, available, inStock } = req.body;
+    let { name, category, price, available, inStock, type, shortcode } = req.body;
     
     // Support POS frontend alias
     if (available === undefined && inStock !== undefined) {
@@ -223,7 +226,9 @@ router.put('/:id', (req, res) => {
       name: name !== undefined ? String(name).trim() : undefined,
       category: category !== undefined ? String(category).trim() : undefined,
       price,
-      available
+      available,
+      type: type !== undefined ? String(type).trim() : undefined,
+      shortcode: shortcode !== undefined ? String(shortcode).trim() : undefined
     });
 
     const updated = statements.getMenuById({ id });

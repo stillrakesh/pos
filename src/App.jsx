@@ -185,7 +185,6 @@ const AppSidebar = ({ activeView, onViewChange, stats, isConnected, isSyncing, o
         { id: 'kds', label: 'KOT', icon: Utensils, badge: stats.pendingKot > 0 ? stats.pendingKot : null, hidden: !IS_LOCAL },
         { id: 'captain', label: 'Captain Orders', icon: Wifi, hidden: !IS_LOCAL },
         { id: 'dayclose', label: 'Settlement', icon: Banknote, hidden: !IS_LOCAL },
-        { id: 'profit-loss', label: 'Profit & Loss', icon: TrendingUp, hidden: !IS_LOCAL },
       ].filter(item => !item.hidden)
     },
     {
@@ -195,8 +194,6 @@ const AppSidebar = ({ activeView, onViewChange, stats, isConnected, isSyncing, o
         { id: 'menusetup', label: 'Menu', icon: Menu },
         { id: 'productsetup', label: 'Inventory', icon: Package },
         { id: 'floorplan', label: 'Floor Designer', icon: LayoutGrid },
-        { id: 'reports', label: 'Reports', icon: BarChart3 },
-        { id: 'crm', label: 'CRM', icon: User },
         { id: 'globalsettings', label: 'Settings', icon: LayoutGrid },
       ]
     }
@@ -720,7 +717,8 @@ const RetailProductSetupView = ({ categories, setCategories, menuItems, setMenuI
           const { deleteMenuItem } = await import('./utils/apiClient');
           await deleteMenuItem(id);
         } catch (err) {
-          console.warn("⚠️ Offline: Product removed locally only.");
+          console.warn("⚠️ Offline: Product removed locally only.", err);
+          alert("Warning: Failed to sync deletion to server. The item was removed locally, but it may reappear on restart.");
         }
       }
     }
@@ -832,13 +830,37 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [type, setType] = useState("Veg");
+  const [shortcode, setShortcode] = useState("");
   const [syncing, setSyncing] = useState(false);
+
+  // Edit Mode States
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editType, setEditType] = useState("Veg");
+  const [editShortcode, setEditShortcode] = useState("");
 
   useEffect(() => {
     if (!selectedCategory && categories.length > 0) {
       setSelectedCategory(categories[0]);
     }
   }, [categories, selectedCategory]);
+
+  const getInitials = (str) => {
+    return str
+      .split(' ')
+      .filter(Boolean)
+      .map(word => word[0] || '')
+      .join('')
+      .toUpperCase()
+      .slice(0, 4);
+  };
+
+  const handleNameChange = (val) => {
+    setName(val);
+    setShortcode(getInitials(val));
+  };
 
   const addCategory = async () => {
     if (newCat && !categories.includes(newCat)) {
@@ -883,6 +905,7 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
         price: parseFloat(price),
         category: selectedCategory || "Uncategorized",
         type,
+        shortcode,
         available: true,
         inStock: true
       };
@@ -891,6 +914,7 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
       setMenuItems(prev => [...prev, itemToLink]);
       setName("");
       setPrice("");
+      setShortcode("");
 
       // ✅ 2. TRY BACKEND SYNC (Optional)
       try {
@@ -900,8 +924,8 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(itemToLink)
         });
-        // Optional: reload to get server-side IDs if strictly needed
-        // await loadMenu(); 
+        // ✅ Reload to get real server-side IDs so delete/edit works!
+        await loadMenu(); 
       } catch (err) {
         console.warn("⚠️ POST /menu failed, item exists in LOCAL setup only.", err);
       }
@@ -921,7 +945,8 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
           const { deleteMenuItem } = await import('./utils/apiClient');
           await deleteMenuItem(id);
         } catch (err) {
-          console.warn("⚠️ Offline: Menu item removed locally only.");
+          console.warn("⚠️ Offline: Menu item removed locally only.", err);
+          alert("Warning: Failed to sync deletion to server. The item was removed locally, but it may reappear on restart.");
         }
       } else {
         alert("Incorrect Password. Deletion cancelled.");
@@ -929,8 +954,58 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
     }
   };
 
-  const toggleStock = (id) => {
-    setMenuItems(menuItems.map(item => item.id === id ? { ...item, inStock: !item.inStock } : item));
+  const toggleStock = async (id) => {
+    const item = menuItems.find(i => i.id === id);
+    if (!item) return;
+    const newStock = !item.inStock;
+
+    // update locally first
+    setMenuItems(prev => prev.map(i => i.id === id ? { ...i, inStock: newStock, available: newStock } : i));
+
+    // update backend
+    try {
+      const { updateMenuItemApi } = await import('./utils/apiClient');
+      await updateMenuItemApi(id, { available: newStock });
+    } catch (err) {
+      console.warn("⚠️ Failed to update stock status on server:", err);
+    }
+  };
+
+  const startEdit = (item) => {
+    setEditingId(item.id);
+    setEditName(item.name || "");
+    setEditPrice(item.price || "");
+    setEditCategory(item.category || item.cat || "");
+    setEditType(item.type || "Veg");
+    setEditShortcode(item.shortcode || "");
+  };
+
+  const saveEdit = async (id) => {
+    if (!editName || !editPrice || !editCategory) {
+      alert("Name, Price, and Category are required");
+      return;
+    }
+
+    const updatedData = {
+      name: editName,
+      price: parseFloat(editPrice),
+      category: editCategory,
+      type: editType,
+      shortcode: editShortcode
+    };
+
+    // Update locally first
+    setMenuItems(prev => prev.map(item => item.id === id ? { ...item, ...updatedData } : item));
+    setEditingId(null);
+
+    // Sync to backend
+    try {
+      const { updateMenuItemApi } = await import('./utils/apiClient');
+      await updateMenuItemApi(id, updatedData);
+      await loadMenu(); // Refresh real data from backend
+    } catch (err) {
+      console.warn("⚠️ Failed to update menu item on server:", err);
+    }
   };
 
   const clearAllItems = () => {
@@ -1000,12 +1075,12 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
             </button>
           </div>
           <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '16px' }}>Add new items or manage current inventory stock below.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr auto', gap: '10px', alignItems: 'center', marginBottom: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.2fr 1fr 1fr auto', gap: '10px', alignItems: 'center', marginBottom: '24px' }}>
             <input
               type="text"
               placeholder="Item Name"
               value={name}
-              onChange={e => setName(e.target.value)}
+              onChange={e => handleNameChange(e.target.value)}
               style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
             />
             <input
@@ -1038,32 +1113,106 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
               <option value="Veg">Veg</option>
               <option value="Non-Veg">Non-Veg</option>
             </select>
+            <input
+              type="text"
+              placeholder="Shortcode"
+              value={shortcode}
+              onChange={e => setShortcode(e.target.value.toUpperCase())}
+              style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
+            />
             <button onClick={addItem} className="btn-pp btn-pp-primary" style={{ padding: '10px 20px' }}>Add Item</button>
           </div>
 
           <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: '#374151', borderTop: '1px solid #e5e7eb', paddingTop: '24px' }}>Current Menu</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {menuItems.map(item => (
-              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px', background: item.inStock ? 'white' : '#fef2f2' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '2px', background: item.type === 'veg' ? '#10b981' : '#ef4444' }}></div>
-                  <div style={{ fontWeight: 'bold', color: '#1f2937' }}>{item.name}</div>
-                  <div style={{ color: '#6b7280', fontSize: '13px' }}>{typeof item.cat === 'object' ? item.cat.name : item.cat}</div>
+            {menuItems.map(item => {
+              if (item.id === editingId) {
+                return (
+                  <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto', gap: '8px', alignItems: 'center', padding: '12px', border: '1px solid #10b981', borderRadius: '8px', background: '#f0fdf4' }}>
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      style={{ padding: '6px', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                      placeholder="Item Name"
+                    />
+                    <input
+                      type="number"
+                      value={editPrice}
+                      onChange={e => setEditPrice(e.target.value)}
+                      style={{ padding: '6px', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                      placeholder="Price"
+                    />
+                    <select
+                      value={editCategory}
+                      onChange={e => setEditCategory(e.target.value)}
+                      style={{ padding: '6px', borderRadius: '4px', border: '1px solid #d1d5db', background: 'white' }}
+                    >
+                      {categories.map((cat, i) => {
+                        const name = typeof cat === 'object' ? cat.name : cat;
+                        return <option key={i} value={name}>{name}</option>;
+                      })}
+                    </select>
+                    <select
+                      value={editType}
+                      onChange={e => setEditType(e.target.value)}
+                      style={{ padding: '6px', borderRadius: '4px', border: '1px solid #d1d5db', background: 'white' }}
+                    >
+                      <option value="Veg">Veg</option>
+                      <option value="Non-Veg">Non-Veg</option>
+                    </select>
+                    <input
+                      type="text"
+                      value={editShortcode}
+                      onChange={e => setEditShortcode(e.target.value.toUpperCase())}
+                      style={{ padding: '6px', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                      placeholder="Shortcode"
+                    />
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button onClick={() => saveEdit(item.id)} style={{ background: '#10b981', color: 'white', border: 'none', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', fontWeight: 'bold' }} title="Save">✓</button>
+                      <button onClick={() => setEditingId(null)} style={{ background: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', fontWeight: 'bold' }} title="Cancel">✕</button>
+                    </div>
+                  </div>
+                );
+              }
+
+              const itemCat = typeof item.category === 'object' ? item.category.name : (item.category || item.cat);
+              const isVeg = String(item.type || 'veg').toLowerCase() === 'veg';
+
+              return (
+                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px', background: item.inStock ? 'white' : '#fef2f2' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '2px', background: isVeg ? '#10b981' : '#ef4444' }} title={isVeg ? 'Veg' : 'Non-Veg'}></div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontWeight: 'bold', color: '#1f2937' }}>{item.name}</span>
+                        {item.shortcode && (
+                          <span style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>
+                            {item.shortcode}
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ color: '#6b7280', fontSize: '12px' }}>{itemCat}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ fontWeight: 'bold', color: '#94161c' }}>₹{item.price}</div>
+                    <button
+                      onClick={() => toggleStock(item.id)}
+                      style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', background: item.inStock ? '#ecfdf5' : 'transparent', color: item.inStock ? '#10b981' : '#ef4444', borderColor: item.inStock ? '#10b981' : '#ef4444' }}
+                    >
+                      {item.inStock ? 'In Stock' : 'Out of Stock'}
+                    </button>
+                    <button onClick={() => startEdit(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4b5563', padding: '4px', fontSize: '14px' }} title="Edit Item">
+                      ✏️
+                    </button>
+                    <button onClick={() => deleteItem(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px' }} title="Delete Item">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{ fontWeight: 'bold', color: '#94161c' }}>₹{item.price}</div>
-                  <button
-                    onClick={() => toggleStock(item.id)}
-                    style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', background: item.inStock ? '#ecfdf5' : 'transparent', color: item.inStock ? '#10b981' : '#ef4444', borderColor: item.inStock ? '#10b981' : '#ef4444' }}
-                  >
-                    {item.inStock ? 'In Stock' : 'Out of Stock'}
-                  </button>
-                  <button onClick={() => deleteItem(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px' }}>
-                    <X size={18} />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -2591,6 +2740,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
     : `Table ${table?.name || table?.id || '...'}`;
 
   const [cart, setCart] = useState(initialOrder || []);
+  const searchInputRef = useRef(null);
   const [activeCat, setActiveCat] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const isPickup = table?.type === 'Takeaway' || table?.type === 'Delivery';
@@ -2885,6 +3035,66 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
     })();
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const activeEl = document.activeElement;
+      const isTyping = activeEl && 
+                       (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA') && 
+                       activeEl !== searchInputRef.current;
+      
+      if (isTyping) return;
+
+      switch(e.key) {
+        case 'F1':
+          e.preventDefault();
+          if (IS_LOCAL) handleSave();
+          break;
+        case 'F2':
+          e.preventDefault();
+          if (IS_LOCAL) handlePrintBill();
+          break;
+        case 'F3':
+          e.preventDefault();
+          if (IS_LOCAL) handleKOT();
+          break;
+        case 'F4':
+          e.preventDefault();
+          if (IS_LOCAL) handleKOTPrint();
+          break;
+        case 'Escape':
+          e.preventDefault();
+          if (showModifierModal) {
+            setShowModifierModal(null);
+          } else {
+            onBack(cart);
+          }
+          break;
+        case 'F5':
+          e.preventDefault();
+          if (searchInputRef.current) {
+            searchInputRef.current.focus();
+            searchInputRef.current.select();
+          }
+          break;
+        case '/':
+          // Focus search bar if not typing
+          if (activeEl !== searchInputRef.current) {
+            e.preventDefault();
+            if (searchInputRef.current) {
+              searchInputRef.current.focus();
+              searchInputRef.current.select();
+            }
+          }
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [cart, table, showModifierModal, IS_LOCAL]);
+
   // 1. Sync cart when initialOrder changes (background sync)
   useEffect(() => {
     setCart(initialOrder || []);
@@ -3152,8 +3362,10 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   const filteredItems = MENU_ITEMS
     .filter(item => {
       const itemCat = typeof item.category === 'object' ? item.category.name : item.category;
+      const query = searchQuery.toLowerCase().trim();
       return (activeCat === 'All' || itemCat === activeCat) &&
-             item.name.toLowerCase().includes(searchQuery.toLowerCase());
+             (item.name.toLowerCase().includes(query) || 
+              (item.shortcode && item.shortcode.toLowerCase().includes(query)));
     })
     .sort((a, b) => {
       if (a.inStock === b.inStock) return a.name.localeCompare(b.name);
@@ -3194,10 +3406,27 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
           <div style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', padding: '10px 16px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '10px', width: '300px' }}>
             <Search size={16} color="#64748b" />
             <input
+              ref={searchInputRef}
               type="text"
-              placeholder="Search anything..."
+              placeholder="Search (Code or Name)... (Enter to add)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const query = searchQuery.trim().toLowerCase();
+                  if (query) {
+                    let matchedItem = filteredItems.find(item => item.shortcode && item.shortcode.toLowerCase() === query);
+                    if (!matchedItem && filteredItems.length === 1) {
+                      matchedItem = filteredItems[0];
+                    }
+                    if (matchedItem && matchedItem.inStock !== false) {
+                      handleItemClick(matchedItem);
+                      setSearchQuery('');
+                      e.preventDefault();
+                    }
+                  }
+                }
+              }}
               style={{ background: 'transparent', border: 'none', outline: 'none', width: '100%', fontSize: '14px', color: '#1e293b' }}
             />
           </div>
@@ -3231,7 +3460,14 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                 }}
               >
                 <div style={{ fontSize: '13px', fontWeight: '800', color: '#111827', lineHeight: '1.2' }}>
-                  {item.name}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '4px' }}>
+                    <span>{item.name}</span>
+                    {item.shortcode && (
+                      <span style={{ fontSize: '9px', fontWeight: 'bold', color: 'var(--primary)', background: 'rgba(148, 22, 28, 0.08)', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>
+                        {item.shortcode}
+                      </span>
+                    )}
+                  </div>
                   {isRetail && <div style={{ marginTop: '4px', background: '#f0f9ff', color: '#0284c7', padding: '2px 6px', borderRadius: '4px', fontSize: '10px' }}>Stock: {liveStock}</div>}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
@@ -3554,10 +3790,10 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
           </div>
 
           <div className="footer-btn-grid" style={{ padding: '8px', gap: '8px' }}>
-            <button disabled={!IS_LOCAL} className="btn-maroon" onClick={handleSave} style={{ opacity: IS_LOCAL ? 1 : 0.5, cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }}>Save</button>
-            <button disabled={!IS_LOCAL} className="btn-maroon" onClick={handlePrintBill} style={{ opacity: IS_LOCAL ? 1 : 0.5, cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }}>Print Bill</button>
-            <button disabled={!IS_LOCAL} className="btn-grey" onClick={handleKOT} style={{ opacity: IS_LOCAL ? 1 : 0.5, cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }}>KOT</button>
-            <button disabled={!IS_LOCAL} className="btn-grey" style={{ background: '#374151', opacity: IS_LOCAL ? 1 : 0.5, cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }} onClick={handleKOTPrint}>KOT & Print</button>
+            <button disabled={!IS_LOCAL} className="btn-maroon" onClick={handleSave} style={{ opacity: IS_LOCAL ? 1 : 0.5, cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }} title="Save Order (F1)">Save (F1)</button>
+            <button disabled={!IS_LOCAL} className="btn-maroon" onClick={handlePrintBill} style={{ opacity: IS_LOCAL ? 1 : 0.5, cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }} title="Print Bill (F2)">Print Bill (F2)</button>
+            <button disabled={!IS_LOCAL} className="btn-grey" onClick={handleKOT} style={{ opacity: IS_LOCAL ? 1 : 0.5, cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }} title="Send KOT to Kitchen (F3)">KOT (F3)</button>
+            <button disabled={!IS_LOCAL} className="btn-grey" style={{ background: '#374151', opacity: IS_LOCAL ? 1 : 0.5, cursor: IS_LOCAL ? 'pointer' : 'not-allowed' }} onClick={handleKOTPrint} title="Send KOT and Print Ticket (F4)">KOT & Print (F4)</button>
           </div>
           
 

@@ -1,0 +1,34 @@
+# Ignore desktop build artifacts and electron
+release/
+electron/
+bundled-node.exe
+bundled-node-mac
+
+# Ignore node_modules everywhere
+**/node_modules/
+
+# Ignore backups and data directories
+backup/
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Ignore unrelated project directories/archives
+Restaurant POS Backend/
+frontend/captain.zip
+frontend/captain/node_modules/
+frontend/captain/dist/
+
+# Ignore development logs
+*.log
+.vite-dev.err.log
+.vite-dev.log
+server.log
+server_err.log
+
+# Ignore local config files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

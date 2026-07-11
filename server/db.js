@@ -90,11 +90,14 @@ export async function initDatabase() {
       price         REAL NOT NULL DEFAULT 0,
       available     INTEGER NOT NULL DEFAULT 1,
       type          TEXT NOT NULL DEFAULT 'Veg',
+      shortcode     TEXT DEFAULT '',
       created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     );
   `);
-  // Migration: add type column if it doesn't exist yet (for existing databases)
+  // Migration: add columns if they don't exist yet (for existing databases)
   try { db.run(`ALTER TABLE menu ADD COLUMN type TEXT NOT NULL DEFAULT 'Veg'`); } catch(e) { /* column already exists */ }
+  try { db.run(`ALTER TABLE menu ADD COLUMN shortcode TEXT DEFAULT ''`); } catch(e) { /* column already exists */ }
+  db.run(`CREATE INDEX IF NOT EXISTS idx_menu_shortcode ON menu(shortcode)`);
 
   db.run(`CREATE INDEX IF NOT EXISTS idx_tables_status ON tables(status)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_menu_cat_avail ON menu(category, available)`);
@@ -402,17 +405,17 @@ export const statements = {
     return rows[0] || null;
   },
 
-  insertMenuItem({ name, category, price, available, type }) {
+  insertMenuItem({ name, category, price, available, type, shortcode }) {
     db.run(
-      `INSERT INTO menu (name, category, price, available, type) VALUES (?, ?, ?, ?, ?)`,
-      [name, category || 'Uncategorised', price, available !== undefined ? (available ? 1 : 0) : 1, type || 'Veg']
+      `INSERT INTO menu (name, category, price, available, type, shortcode) VALUES (?, ?, ?, ?, ?, ?)`,
+      [name, category || 'Uncategorised', price, available !== undefined ? (available ? 1 : 0) : 1, type || 'Veg', shortcode || '']
     );
     const lastId = db.exec(`SELECT last_insert_rowid() as id`)[0].values[0][0];
     persistToFile();
     return { lastInsertRowid: lastId };
   },
 
-  updateMenuItem({ id, name, category, price, available, type }) {
+  updateMenuItem({ id, name, category, price, available, type, shortcode }) {
     const setClauses = [];
     const params = [];
     if (name !== undefined) { setClauses.push('name = ?'); params.push(name); }
@@ -420,6 +423,7 @@ export const statements = {
     if (price !== undefined) { setClauses.push('price = ?'); params.push(price); }
     if (available !== undefined) { setClauses.push('available = ?'); params.push(available ? 1 : 0); }
     if (type !== undefined) { setClauses.push('type = ?'); params.push(type); }
+    if (shortcode !== undefined) { setClauses.push('shortcode = ?'); params.push(shortcode); }
     if (setClauses.length === 0) return { changes: 0 };
     params.push(id);
     db.run(`UPDATE menu SET ${setClauses.join(', ')} WHERE id = ?`, params);
@@ -442,12 +446,14 @@ export const statements = {
     // Insert new
     for (const item of menuArray) {
       db.run(
-        `INSERT INTO menu (name, category, price, available) VALUES (?, ?, ?, ?)`,
+        `INSERT INTO menu (name, category, price, available, type, shortcode) VALUES (?, ?, ?, ?, ?, ?)`,
         [
           item.name,
           item.category || 'Uncategorised',
           item.price || 0,
-          item.available !== undefined ? (item.available ? 1 : 0) : 1
+          item.available !== undefined ? (item.available ? 1 : 0) : 1,
+          item.type || 'Veg',
+          item.shortcode || ''
         ]
       );
     }
