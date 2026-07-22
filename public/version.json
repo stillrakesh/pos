@@ -1,0 +1,32 @@
+{
+  "version": "v1.6.6",
+  "lastUpdated": "2026-05-27",
+  "notes": "Fixed Order History truncated to 10 days by relaxing the 1000-order React state limit while keeping localStorage cache size safe. Fixed discount calculation in Day Close report.",
+  "history": [
+    {
+      "version": "v1.6.6",
+      "date": "2026-05-27",
+      "changes": "Fixed Order History truncated to last 10 days (relaxed the 1000-order React state limit while safely caching to 1000 items in local storage). Mapped discount_amount correctly so discounts are tracked properly in Z-Report Day Close view."
+    },
+    {
+      "version": "v1.6.5",
+      "date": "2026-05-21",
+      "changes": "Persistent bill number sequence starting from 6000 (never resets on restart). Short code search Enter key now instantly adds first matching item to cart. Re-Order button replaced with View Order modal showing full order breakdown. Fixed order history delete 400 error for legacy/virtual order IDs. Fixed order history sync to correctly parse backend response format."
+    },
+    {
+      "version": "v1.6.4-Fix-SyncKOT",
+      "date": "2026-04-30",
+      "changes": "Resolved critical 'Sync Error' when sending KOT for new Pickup orders. Implemented Category-based KOT Exclusions (Save paper by skipping Water/Beverages). Fixed ReferenceError in navigation cleanup."
+    },
+    {
+      "version": "v1.6.3-Fix-OrderStability",
+      "date": "2026-04-30",
+      "changes": "Fixed order duplication via WebSocket/Local state reconciliation. Resolved Pickup 'Sync Error' by supporting virtual table IDs in backend. Implemented idempotent Order Deletion."
+    },
+    {
+      "version": "v1.5.0-ProSync-Stable",
+      "date": "2026-04-29",
+      "changes": "Implemented Server-Side Bill Sequence Locking and Implicit Data Synchronization for Captain Pro Mode printing."
+    }
+  ]
+}

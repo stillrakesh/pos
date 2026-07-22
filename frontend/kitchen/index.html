@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#821a1d" />
+    <meta name="description" content="Mobile Kitchen Station - Restaurant POS" />
+    <title>Kitchen Station</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --maroon: #821a1d;
+        --maroon-dark: #6b1518;
+        --maroon-light: #fef2f2;
+        --bg: #f0f4f8;
+        --white: #ffffff;
+        --border: #e2e8f0;
+        --text: #1e293b;
+        --text-secondary: #64748b;
+        --text-muted: #94a3b8;
+        --success: #22c55e;
+        font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+      body { background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+      #root { width: 100%; min-height: 100vh; }
+      button { cursor: pointer; transition: transform 0.1s ease, filter 0.1s ease; border: none; background: none; font-family: inherit; color: inherit; }
+      button:active { transform: scale(0.96); filter: brightness(0.9); }
+      .hide-scrollbar::-webkit-scrollbar { display: none; }
+      .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

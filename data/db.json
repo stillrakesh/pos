@@ -1,0 +1,78 @@
+{
+  "tables": [
+    {
+      "id": "A1",
+      "name": "Table A1",
+      "status": "VACANT",
+      "items": [],
+      "total": 0,
+      "createdAt": null,
+      "pos": {
+        "x": 880,
+        "y": 0
+      },
+      "scale": 1,
+      "orders": []
+    },
+    {
+      "id": "A2",
+      "name": "Table A2",
+      "status": "VACANT",
+      "items": [],
+      "total": 0,
+      "createdAt": null,
+      "scale": 1,
+      "orders": []
+    },
+    {
+      "id": "AA",
+      "name": "Table AA",
+      "status": "VACANT",
+      "items": [],
+      "total": 0,
+      "createdAt": null,
+      "pos": {
+        "x": 400,
+        "y": 40
+      },
+      "scale": 1,
+      "orders": []
+    }
+  ],
+  "menu": [
+    {
+      "id": "1776376760665",
+      "name": "Coffee",
+      "price": 100,
+      "category": "Drinks",
+      "type": "Veg",
+      "inStock": true
+    },
+    {
+      "id": "1776377923154",
+      "name": "Fried Rice",
+      "price": 150,
+      "category": "Food",
+      "type": "Veg",
+      "inStock": true
+    },
+    {
+      "id": "1776380510043",
+      "name": "Gulab",
+      "price": 195,
+      "category": "Sweet",
+      "type": "Veg",
+      "inStock": true
+    }
+  ],
+  "categories": [],
+  "sales": [],
+  "printers": [
+    {
+      "id": "printer_1776403002284",
+      "name": "Sweet",
+      "ip": "192.168.1.100",
+      "type": "network"
+    }
+  ]
+}

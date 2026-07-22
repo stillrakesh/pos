@@ -1,0 +1,72 @@
+name: Build macOS Installer
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Download macOS Node Binary
+        run: |
+          # Download the macOS Node executable so the backend can run on Mac
+          curl -LO https://nodejs.org/dist/v20.12.2/node-v20.12.2-darwin-x64.tar.gz
+          tar -xzf node-v20.12.2-darwin-x64.tar.gz
+          cp node-v20.12.2-darwin-x64/bin/node ./bundled-node-mac
+          chmod +x ./bundled-node-mac
+
+      - name: Build and Package Mac App
+        run: |
+          echo "=== Starting Full Build ===" > build.log
+          
+          echo "--- Installing Root Dependencies ---" >> build.log
+          npm install --legacy-peer-deps >> build.log 2>&1 || echo "FAIL_ROOT_INSTALL" >> build.log
+          
+          echo "--- Building Root App ---" >> build.log
+          npm run build >> build.log 2>&1 || echo "FAIL_ROOT_BUILD" >> build.log
+          
+          echo "--- Building Captain App ---" >> build.log
+          cd frontend/captain
+          npm install --legacy-peer-deps >> ../../build.log 2>&1 || echo "FAIL_CAPTAIN_INSTALL" >> ../../build.log
+          npm run build >> ../../build.log 2>&1 || echo "FAIL_CAPTAIN_BUILD" >> ../../build.log
+          cd ../..
+          
+          echo "--- Packaging Mac App ---" >> build.log
+          npx electron-builder --mac --x64 -c.mac.identity=null --publish never >> build.log 2>&1 || echo "FAIL_PACKAGER" >> build.log
+          
+          echo "=== Build Complete ===" >> build.log
+          cat build.log
+          
+          if grep -q "FAIL_" build.log; then
+            echo "A build step failed! Please download Mac-Debug-Logs."
+            exit 1
+          fi
+
+      - name: Upload Debug Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mac-Debug-Logs
+          path: build.log
+
+      - name: Upload DMG to GitHub
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: Mac-Installer
+          path: release/*.dmg
