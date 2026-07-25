@@ -68,6 +68,18 @@ let cachedPickupOrders = [];
 
 io.on('connection', (socket) => {
   console.log('DEVICE CONNECTED:', socket.id);
+  
+  // Broadcast updated active connected sockets count
+  try {
+    io.emit('device_count_updated', { count: io.sockets.sockets.size });
+  } catch (e) {}
+
+  socket.on('disconnect', () => {
+    console.log('DEVICE DISCONNECTED:', socket.id);
+    try {
+      io.emit('device_count_updated', { count: io.sockets.sockets.size });
+    } catch (e) {}
+  });
 
   if (socket.recovered) {
     console.log('DEVICE RECOVERED (skipping initial payload):', socket.id);
@@ -568,7 +580,7 @@ app.post('/table/:id/clear', (req, res) => {
 
     io.emit('kds_updated');
 
-    statements.updateTable({ id: table.id, status: 'AVAILABLE', order_items: '[]', created_at: null, bill_number: null });
+    statements.updateTable({ id: table.id, status: 'AVAILABLE', order_items: '[]', created_at: null, bill_number: null, customer_name: '', phone: '' });
 
     const updated = statements.getTableById({ id: table.id });
     if (updated) {
@@ -793,7 +805,69 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 // Network info (used by frontends to discover LAN IP)
 app.get('/api/network', (req, res) => {
-  res.json({ ip: getLocalIP(), port: PORT });
+  res.json({ 
+    ip: getLocalIP(), 
+    port: PORT,
+    connectedDevicesCount: io ? io.sockets.sockets.size : 0,
+    hostname: os.hostname(),
+    localDomain: `${os.hostname().toLowerCase()}.local`
+  });
+});
+
+// Comprehensive Network Diagnostics for Captain & Mobile connectivity
+app.get('/api/network-diagnostics', (req, res) => {
+  try {
+    const nets = os.networkInterfaces();
+    const interfaces = [];
+    const hostname = os.hostname();
+    const localDomain = `${hostname.toLowerCase()}.local`;
+    
+    for (const [name, netList] of Object.entries(nets)) {
+      if (!netList) continue;
+      for (const net of netList) {
+        if (net.family === 'IPv4' && !net.internal) {
+          const isVirtual = /virtual|vbox|vmware|wsl|hyper-v|vethernet/i.test(name);
+          interfaces.push({
+            name,
+            address: net.address,
+            netmask: net.netmask,
+            isLinkLocal: net.address.startsWith('169.254.'),
+            isVirtual,
+            captainUrl: `http://${net.address}:${PORT}/captain/`,
+            kitchenUrl: `http://${net.address}:${PORT}/kitchen/`
+          });
+        }
+      }
+    }
+
+    const primaryIp = getLocalIP();
+    const activeSockets = io ? io.sockets.sockets.size : 0;
+
+    res.json({
+      success: true,
+      hostname,
+      localDomain,
+      primaryIp,
+      port: PORT,
+      boundHost: '0.0.0.0',
+      connectedDevicesCount: activeSockets,
+      interfaces,
+      urls: {
+        primaryIpUrl: `http://${primaryIp}:${PORT}/captain/`,
+        hostnameUrl: `http://${localDomain}:${PORT}/captain/`,
+        localhostUrl: `http://localhost:${PORT}/captain/`,
+        kitchenUrl: `http://${primaryIp}:${PORT}/kitchen/`
+      },
+      healthCheck: {
+        serverBoundToAllInterfaces: true,
+        primaryIpDetected: primaryIp !== 'localhost',
+        multipleAdaptersDetected: interfaces.length > 1,
+        activeDevicesCount: activeSockets
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ─────────────────────────────────────────────────────────────

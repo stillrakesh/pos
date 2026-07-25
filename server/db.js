@@ -188,6 +188,8 @@ export async function initDatabase() {
     if (!columnNames.includes('bill_number')) db.run("ALTER TABLE tables ADD COLUMN bill_number TEXT");
     if (!columnNames.includes('covers')) db.run("ALTER TABLE tables ADD COLUMN covers INTEGER DEFAULT 1");
     if (!columnNames.includes('scale')) db.run("ALTER TABLE tables ADD COLUMN scale REAL DEFAULT 1.0");
+    if (!columnNames.includes('customer_name')) db.run("ALTER TABLE tables ADD COLUMN customer_name TEXT DEFAULT ''");
+    if (!columnNames.includes('phone')) db.run("ALTER TABLE tables ADD COLUMN phone TEXT DEFAULT ''");
 
     // Also add to orders for historical accuracy
     const orderInfo = db.exec("PRAGMA table_info(orders)");
@@ -342,25 +344,31 @@ export const statements = {
   },
 
   upsertCustomer(phone, name, amount_spent, points_redeemed) {
-    if (!phone || phone.length < 10) return;
-    const existingResult = db.exec(`SELECT * FROM customers WHERE phone = ?`, [phone]);
-    const pointsEarned = Math.floor(amount_spent / 100); // 1 point per 100 spent
+    if (!phone || String(phone).trim().length < 10) return;
+    const cleanPhone = String(phone).trim();
+    const cleanName = (name && name.trim() !== 'Walk-In' && name.trim() !== 'Guest') ? name.trim() : '';
+    const existingResult = db.exec(`SELECT * FROM customers WHERE phone = ?`, [cleanPhone]);
+    const pointsEarned = Math.floor((amount_spent || 0) / 100); // 1 point per 100 spent
     
     if (existingResult.length > 0 && existingResult[0].values.length > 0) {
+      const existingRow = existingResult[0].values[0];
+      const existingName = existingRow[1] || '';
+      const finalName = cleanName || existingName || 'Guest';
       db.run(
         `UPDATE customers SET 
+          name = ?,
           visits = visits + 1, 
           total_spent = total_spent + ?, 
-          loyalty_points = loyalty_points + ? - ?,
+          loyalty_points = MAX(0, loyalty_points + ? - ?),
           last_visit = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
          WHERE phone = ?`,
-        [amount_spent, pointsEarned, points_redeemed, phone]
+        [finalName, amount_spent || 0, pointsEarned, points_redeemed || 0, cleanPhone]
       );
     } else {
       db.run(
         `INSERT INTO customers (name, phone, visits, total_spent, loyalty_points, last_visit)
          VALUES (?, ?, 1, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
-        [name || 'Guest', phone, amount_spent, pointsEarned - points_redeemed]
+        [cleanName || 'Guest', cleanPhone, amount_spent || 0, Math.max(0, pointsEarned - (points_redeemed || 0))]
       );
     }
     persistToFile();
@@ -500,6 +508,14 @@ export const statements = {
     if (req.discount_rate !== undefined) { setClauses.push('discount_rate = ?'); params.push(req.discount_rate); }
     if (bill_number !== undefined) { setClauses.push('bill_number = ?'); params.push(bill_number); }
     if (scale !== undefined) { setClauses.push('scale = ?'); params.push(scale); }
+    if (req.customer_name !== undefined || req.customerName !== undefined) { 
+      setClauses.push('customer_name = ?'); 
+      params.push(req.customer_name || req.customerName || ''); 
+    }
+    if (req.phone !== undefined || req.customerPhone !== undefined) { 
+      setClauses.push('phone = ?'); 
+      params.push(req.phone || req.customerPhone || ''); 
+    }
     
     if (created_at !== undefined) {
       if (created_at === null) {

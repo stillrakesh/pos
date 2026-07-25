@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Wifi, WifiOff, Printer, CheckSquare, Clock, Zap, Volume2, VolumeX, RefreshCw, AlertTriangle, Smartphone, Link } from 'lucide-react';
+import { Wifi, WifiOff, Printer, CheckSquare, Clock, Zap, Volume2, VolumeX, RefreshCw, AlertTriangle, Smartphone, Link, Copy, Check, Info, Shield, ShieldAlert, Monitor, Globe, ChevronRight, HelpCircle, Activity, QrCode, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { BASE_URL } from '../../constants';
 import apiService from '../../services/apiService';
@@ -7,15 +7,8 @@ import { printPosToSerial } from '../../utils/printerUtils';
 import { formatCurrency } from '../../utils/formatters';
 
 /**
- * CaptainOrders — Live feed of orders from the captain app / external API.
- * 
- * Features:
- * - Polls GET /api/orders?status=NEW every 3 seconds
- * - Maintains a Set of printed order IDs to prevent duplicate prints
- * - Auto-prints KOT via thermal printer
- * - Updates order status to PRINTED after successful print
- * - Audio notification on new orders
- * - Shows connection status indicator
+ * CaptainOrders — Live feed of orders from the captain app / external API,
+ * plus Network & Connectivity Diagnostics for LAN Mobile Captain connections.
  */
 const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrder, settings, isOnline, backendUrl, menuItems = [] }) => {
   const [printedOrders, setPrintedOrders] = useState([]);      // Recently printed (for display)
@@ -27,27 +20,63 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
   const [captainMode, setCaptainMode] = useState(() => {
     return localStorage.getItem('captain_mode_enabled') === 'true';
   });       // Captain Mode toggle
-  const [networkInfo, setNetworkInfo] = useState({ ip: 'localhost', port: 3100 });
+  
+  // Network Diagnostics & Device Tracking State
+  const [diagnostics, setDiagnostics] = useState(null);
+  const [connectedDeviceCount, setConnectedDeviceCount] = useState(0);
+  const [showDiagnosticsModal, setShowDiagnosticsModal] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(null);
+  const [selectedIpUrl, setSelectedIpUrl] = useState('');
 
-  // Duplicate prevention: Set of order IDs that have been processed (printed or queued)
+  // Duplicate prevention: Set of order IDs that have been processed
   const processedIdsRef = useRef(new Set());
-  const pollTimerRef = useRef(null);
   const audioRef = useRef(null);
 
-  // Create accurate Captain App URL based strictly on Backend's active IP
+  // Fetch Network Diagnostics from server
+  const loadDiagnostics = useCallback(async () => {
+    try {
+      const res = await apiService.fetchNetworkDiagnostics();
+      if (res && res.success) {
+        setDiagnostics(res);
+        setConnectedDeviceCount(res.connectedDevicesCount || 0);
+        if (!selectedIpUrl && res.urls?.primaryIpUrl) {
+          setSelectedIpUrl(res.urls.primaryIpUrl);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to fetch network diagnostics:", err?.message || err);
+    }
+  }, [selectedIpUrl]);
+
+  useEffect(() => {
+    loadDiagnostics();
+    const timer = setInterval(loadDiagnostics, 5000);
+    return () => clearInterval(timer);
+  }, [loadDiagnostics]);
+
+  // Create fallback Captain App URL based strictly on Backend's active IP
   const getCaptainUrl = () => {
-    let base = 'http://localhost:3100';
+    if (selectedIpUrl) return selectedIpUrl;
+    let base = 'http://localhost:3101';
     if (backendUrl && backendUrl !== 'http://localhost:3100') {
       base = backendUrl;
     } else {
       try {
         const urlObj = new URL(window.location.href);
-        base = `http://${urlObj.hostname}:3100`;
+        base = `http://${urlObj.hostname}:3101`;
       } catch {
-        base = `http://localhost:3100`;
+        base = `http://localhost:3101`;
       }
     }
     return `${base.replace(/\/+$/, '')}/captain/`;
+  };
+
+  const activeUrl = getCaptainUrl();
+
+  const handleCopyUrl = (urlToCopy) => {
+    navigator.clipboard.writeText(urlToCopy);
+    setCopiedUrl(urlToCopy);
+    setTimeout(() => setCopiedUrl(null), 2500);
   };
 
   // Detect preferred print method on mount
@@ -61,17 +90,15 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
     }
   }, []);
 
-  // Init state from localstorage OR default
+  // Sync state to localstorage & backend
   useEffect(() => {
     localStorage.setItem('captain_mode_enabled', captainMode);
-    // Push state to backend dynamically
     apiService.syncCaptainMode(captainMode)
       .catch(err => console.error('Failed to sync captain mode status with backend', err));
   }, [captainMode, backendUrl]);
 
   // Initialize notification sound
   useEffect(() => {
-    // Create a simple beep using Web Audio API
     audioRef.current = {
       play: () => {
         if (!soundEnabled) return;
@@ -87,7 +114,6 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
           osc.start();
           gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
           osc.stop(ctx.currentTime + 0.5);
-          // Second beep
           setTimeout(() => {
             const osc2 = ctx.createOscillator();
             const gain2 = ctx.createGain();
@@ -100,30 +126,25 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
             gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
             osc2.stop(ctx.currentTime + 0.8);
           }, 200);
-        } catch (e) {
-          // Silently fail — audio isn't critical
-        }
+        } catch (e) {}
       }
     };
   }, [soundEnabled]);
 
   // ── Auto-Print a single order ────────────────────────────
   const printOrder = useCallback(async (order) => {
-    if (processedIdsRef.current.has(order.id)) return; // DUPLICATE GUARD
+    if (processedIdsRef.current.has(order.id)) return;
 
-    // Mark as processing immediately
     processedIdsRef.current.add(order.id);
     setIsPrinting(order.id);
     setPrintError(null);
 
     try {
-      // Format items for the KOT printer with category enrichment
       const kotData = {
         tableName: `T${order.table_number}`,
         orderType: 'Captain App',
         orderId: `API-${order.id}`,
         items: order.items.map(item => {
-          // Lookup category from local menu if missing
           const menuItem = (menuItems || []).find(m => m.name === item.name || m.id === item.id || m.item_id === item.item_id);
           return {
             name: item.name,
@@ -136,56 +157,29 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
         notes: order.notes || ''
       };
 
-      // Print via unified engine (QZ Tray silent → browser fallback)
       await printPosToSerial(kotData, 'KOT', settings);
       setPrintMethod('electron');
 
-      // Update status on server
       await apiService.updateOrderStatus(order.id, 'PRINTED');
 
-      // Move from new → printed in UI
       setNewOrders(prev => prev.filter(o => o.id !== order.id));
       setPrintedOrders(prev => [{ ...order, status: 'PRINTED', printedAt: Date.now() }, ...prev].slice(0, 20));
 
-      // Inject into POS table system if callback provided
-      if (onInjectOrder) {
-        onInjectOrder(order);
-      }
+      if (onInjectOrder) onInjectOrder(order);
     } catch (err) {
       console.error(`[CaptainOrders] Print failed for order #${order.id}:`, err);
       setPrintError(`Order #${order.id}: ${err.message || 'Print failed'}`);
-      // Remove from processed so it can be retried
       processedIdsRef.current.delete(order.id);
     } finally {
       setIsPrinting(null);
     }
   }, [onInjectOrder, settings]);
 
-  // ── Manual print trigger (for orders that weren't auto-printed) ──
   const handleManualPrint = useCallback((order) => {
-    // Remove from processed set to allow manual retry
     processedIdsRef.current.delete(order.id);
     printOrder(order);
   }, [printOrder]);
 
-  // ── Mark order as printed WITHOUT physical printing ──
-  const handleMarkPrinted = useCallback(async (order) => {
-    try {
-      processedIdsRef.current.add(order.id);
-      await apiService.updateOrderStatus(order.id, 'PRINTED');
-      setNewOrders(prev => prev.filter(o => o.id !== order.id));
-      setPrintedOrders(prev => [{ ...order, status: 'PRINTED', printedAt: Date.now() }, ...prev].slice(0, 20));
-
-      if (onInjectOrder) onInjectOrder(order);
-    } catch (err) {
-      console.error(`[CaptainOrders] Status update failed for #${order.id}:`, err);
-      processedIdsRef.current.delete(order.id);
-    }
-  }, [onInjectOrder]);
-
-  // ── Polling & Interval removed (now handled globally in App.jsx) ───────
-
-  // ── Helpers ─────────────────────────────────────────────
   const getOrderTotal = (items) => items.reduce((acc, i) => acc + (i.price * i.quantity), 0);
   const timeAgo = (ts) => {
     const diff = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
@@ -209,11 +203,27 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
             {isOnline ? <Wifi size={22} color="#10b981" /> : <WifiOff size={22} color="#ef4444" />}
           </div>
           <div>
-            <h2 style={{ fontSize: '22px', fontWeight: '950', letterSpacing: '-0.5px', margin: 0 }}>
-              Captain Control Panel
-            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h2 style={{ fontSize: '22px', fontWeight: '950', letterSpacing: '-0.5px', margin: 0 }}>
+                Captain Control Panel
+              </h2>
+
+              {/* Live Connected Devices Badge */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '4px 10px', borderRadius: '20px',
+                background: connectedDeviceCount > 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(148, 163, 184, 0.15)',
+                border: `1px solid ${connectedDeviceCount > 0 ? 'rgba(16, 185, 129, 0.4)' : 'rgba(148, 163, 184, 0.2)'}`,
+                color: connectedDeviceCount > 0 ? '#34d399' : '#94a3b8',
+                fontSize: '11px', fontWeight: '800'
+              }}>
+                <Smartphone size={13} />
+                <span>{connectedDeviceCount} Connected {connectedDeviceCount === 1 ? 'Device' : 'Devices'}</span>
+              </div>
+            </div>
+
             <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {isOnline ? 'Connected to API — polling every 3s' : 'API server offline — retrying...'}
+              {isOnline ? 'Connected to API — polling & real-time socket ready' : 'API server offline — retrying...'}
               {isOnline && (
                 <span style={{ 
                   fontSize: '10px', fontWeight: '900', padding: '2px 8px', borderRadius: '6px',
@@ -228,6 +238,20 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
         </div>
 
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {/* Network Diagnostics Button */}
+          <button
+            onClick={() => setShowDiagnosticsModal(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '10px 16px', borderRadius: '12px', fontSize: '12px', fontWeight: '900',
+              border: '1px solid rgba(99, 102, 241, 0.3)',
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1))',
+              color: '#a5b4fc', cursor: 'pointer'
+            }}
+          >
+            <Activity size={14} /> Network Health & Diagnostics
+          </button>
+
           {/* Captain Mode toggle */}
           <button
             onClick={() => setCaptainMode(!captainMode)}
@@ -242,6 +266,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
           >
             <Smartphone size={14} /> Captain Mode: {captainMode ? 'ON' : 'OFF'}
           </button>
+
           {/* Sound toggle */}
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
@@ -272,50 +297,108 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
 
           {/* Force refresh */}
           <button
-            onClick={onManualSync}
+            onClick={() => { loadDiagnostics(); if (onManualSync) onManualSync(); }}
             style={{
               padding: '10px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.05)', color: '#94a3b8', cursor: 'pointer'
             }}
+            title="Refresh Network & Orders"
           >
             <RefreshCw size={18} />
           </button>
         </div>
       </div>
 
-      {/* ── CAPTAIN MODE CONTROL PANEL ──────────────────────── */}
+      {/* ── CAPTAIN MODE CONTROL & CONNECTION PANEL ──────────────────────── */}
       {captainMode && (
-        <div style={{ padding: '24px 28px', background: '#1e293b', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: '24px', alignItems: 'center' }}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ padding: '24px 28px', background: '#1e293b', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '320px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
-              <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Captain Mode Connection</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px', color: '#e2e8f0', fontWeight: '700' }}>
+              <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                Captain Connection Links & Network Settings
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#e2e8f0', fontWeight: '700', flexWrap: 'wrap' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: isOnline ? '#10b981' : '#ef4444' }}>
-                  {isOnline ? <CheckSquare size={16} /> : <AlertTriangle size={16} />} Backend: {isOnline ? 'Running' : 'Offline'}
-                </span>
-                <span style={{ color: '#64748b' }}>|</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: navigator.onLine ? '#10b981' : '#f59e0b' }}>
-                  <Wifi size={16} /> Internet: {navigator.onLine ? 'Online' : 'Offline'}
+                  {isOnline ? <CheckSquare size={16} /> : <AlertTriangle size={16} />} Server: {isOnline ? 'Listening (0.0.0.0:3101)' : 'Offline'}
                 </span>
                 <span style={{ color: '#64748b' }}>|</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#38bdf8' }}>
-                  <Link size={16} /> Extracted Origin: {backendUrl || BASE_URL}
+                  <Smartphone size={16} /> Active Connections: <strong>{connectedDeviceCount}</strong>
+                </span>
+                <span style={{ color: '#64748b' }}>|</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#a5b4fc' }}>
+                  <Globe size={16} /> Hostname: <strong>{diagnostics?.localDomain || 'localhost'}</strong>
                 </span>
               </div>
             </div>
             
-            <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: '12px', color: '#38bdf8', fontWeight: '700', marginBottom: '4px' }}>Captain Access URL</div>
-                <div style={{ fontSize: '18px', fontWeight: '950', color: 'white' }}>{getCaptainUrl()}</div>
+            {/* Target URL Selector Box */}
+            <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: '16px', padding: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div style={{ fontSize: '12px', color: '#38bdf8', fontWeight: '800' }}>Active Captain App QR & Connection URL</div>
+                {diagnostics?.interfaces?.length > 1 && (
+                  <select 
+                    value={selectedIpUrl} 
+                    onChange={e => setSelectedIpUrl(e.target.value)}
+                    style={{ background: '#0f172a', color: '#38bdf8', border: '1px solid #334155', borderRadius: '8px', padding: '4px 8px', fontSize: '11px', fontWeight: '800', cursor: 'pointer' }}
+                  >
+                    {diagnostics.interfaces.map(iface => (
+                      <option key={iface.address} value={iface.captainUrl}>
+                        {iface.name}: {iface.address} {iface.isVirtual ? '(Virtual)' : '(LAN)'}
+                      </option>
+                    ))}
+                    {diagnostics.urls?.hostnameUrl && (
+                      <option value={diagnostics.urls.hostnameUrl}>Hostname: {diagnostics.localDomain}</option>
+                    )}
+                  </select>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#0f172a', padding: '10px 14px', borderRadius: '12px', border: '1px solid #334155' }}>
+                <div style={{ flex: 1, fontSize: '16px', fontWeight: '900', color: '#38bdf8', wordBreak: 'break-all', fontFamily: 'monospace' }}>
+                  {activeUrl}
+                </div>
+                <button
+                  onClick={() => handleCopyUrl(activeUrl)}
+                  style={{
+                    padding: '8px 14px', borderRadius: '8px', border: 'none',
+                    background: copiedUrl === activeUrl ? '#10b981' : '#38bdf8',
+                    color: copiedUrl === activeUrl ? 'white' : '#0f172a',
+                    fontWeight: '900', fontSize: '12px', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s'
+                  }}
+                >
+                  {copiedUrl === activeUrl ? <Check size={14} /> : <Copy size={14} />}
+                  {copiedUrl === activeUrl ? 'Copied!' : 'Copy URL'}
+                </button>
+              </div>
+
+              {/* Link shortcuts */}
+              <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
+                {diagnostics?.urls?.primaryIpUrl && (
+                  <button onClick={() => setSelectedIpUrl(diagnostics.urls.primaryIpUrl)} style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid #334155', background: selectedIpUrl === diagnostics.urls.primaryIpUrl ? 'rgba(56, 189, 248, 0.2)' : 'transparent', color: '#94a3b8', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                    📡 Primary Wi-Fi IP
+                  </button>
+                )}
+                {diagnostics?.urls?.hostnameUrl && (
+                  <button onClick={() => setSelectedIpUrl(diagnostics.urls.hostnameUrl)} style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid #334155', background: selectedIpUrl === diagnostics.urls.hostnameUrl ? 'rgba(56, 189, 248, 0.2)' : 'transparent', color: '#94a3b8', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                    💻 Local Domain ({diagnostics.localDomain})
+                  </button>
+                )}
+                <button onClick={() => setShowDiagnosticsModal(true)} style={{ marginLeft: 'auto', padding: '4px 10px', borderRadius: '6px', border: 'none', background: 'transparent', color: '#a5b4fc', fontSize: '11px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <HelpCircle size={12} /> Troubleshoot Mobile Connectivity →
+                </button>
               </div>
             </div>
           </div>
           
           {/* QR Code Container */}
-          <div style={{ background: 'white', padding: '12px', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-            <QRCodeSVG value={getCaptainUrl()} size={120} />
-            <span style={{ fontSize: '11px', color: '#0f172a', fontWeight: '900', textTransform: 'uppercase' }}>Scan to connect</span>
+          <div style={{ background: 'white', padding: '14px', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
+            <QRCodeSVG value={activeUrl} size={130} />
+            <span style={{ fontSize: '11px', color: '#0f172a', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Scan Mobile Camera
+            </span>
           </div>
         </div>
       )}
@@ -418,7 +501,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
 
         {/* EMPTY STATE */}
         {newOrders.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 20px', textAlign: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center' }}>
             <div style={{ 
               width: '120px', height: '120px', borderRadius: '40px', 
               background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05))',
@@ -430,14 +513,217 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
             <h3 style={{ fontSize: '28px', fontWeight: '950', color: '#e2e8f0', marginBottom: '12px' }}>
               {isOnline ? 'All Caught Up' : 'Offline Mode'}
             </h3>
-            <p style={{ color: '#64748b', fontSize: '16px', fontWeight: '700', maxWidth: '400px', lineHeight: 1.6 }}>
+            <p style={{ color: '#64748b', fontSize: '16px', fontWeight: '700', maxWidth: '440px', lineHeight: 1.6 }}>
               {isOnline 
-                ? 'No new orders to print right now. History will appear here as soon as a Captain pushes an order.' 
+                ? 'No new orders to print right now. Scan the QR code above on your mobile phone to connect Captain App.' 
                 : 'Waiting for local API server connection...'}
             </p>
+
+            <button 
+              onClick={() => setShowDiagnosticsModal(true)}
+              style={{
+                marginTop: '20px', padding: '12px 24px', borderRadius: '14px',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
+                background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8',
+                fontSize: '13px', fontWeight: '900', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '8px'
+              }}
+            >
+              <Activity size={16} /> Open Network & Firewall Diagnostics
+            </button>
           </div>
         )}
       </div>
+
+      {/* ── NETWORK DIAGNOSTICS & FIREWALL ASSISTANT MODAL ──────────────── */}
+      {showDiagnosticsModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(12px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+        }}>
+          <div style={{
+            background: '#1e293b', border: '1px solid #334155', borderRadius: '24px',
+            width: '100%', maxWidth: '850px', maxHeight: '90vh', overflowY: 'auto',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column'
+          }} className="no-scrollbar">
+            
+            {/* Modal Header */}
+            <div style={{ padding: '20px 28px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: '#1e293b', zIndex: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ padding: '10px', background: 'rgba(56, 189, 248, 0.15)', borderRadius: '12px' }}>
+                  <Activity size={22} color="#38bdf8" />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '950', color: 'white', margin: 0 }}>
+                    Captain App Network & Connection Diagnostics
+                  </h3>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '700' }}>
+                    Troubleshoot "Site can't be reached" errors for mobile devices
+                  </div>
+                </div>
+              </div>
+              <button onClick={() => setShowDiagnosticsModal(false)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#94a3b8', borderRadius: '10px', padding: '8px', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              
+              {/* System Checks Overview */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                
+                <div style={{ background: '#0f172a', padding: '16px', borderRadius: '16px', border: '1px solid #334155' }}>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Server Listening</div>
+                  <div style={{ fontSize: '15px', fontWeight: '950', color: '#10b981', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <CheckSquare size={16} /> 0.0.0.0:3101
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>All Network Interfaces</div>
+                </div>
+
+                <div style={{ background: '#0f172a', padding: '16px', borderRadius: '16px', border: '1px solid #334155' }}>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Connected Devices</div>
+                  <div style={{ fontSize: '15px', fontWeight: '950', color: '#38bdf8', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Smartphone size={16} /> {connectedDeviceCount} Active
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>Socket.IO Real-time</div>
+                </div>
+
+                <div style={{ background: '#0f172a', padding: '16px', borderRadius: '16px', border: '1px solid #334155' }}>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Local Domain</div>
+                  <div style={{ fontSize: '15px', fontWeight: '950', color: '#a5b4fc', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Globe size={16} /> {diagnostics?.localDomain || 'localhost'}
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>mDNS Network Name</div>
+                </div>
+
+                <div style={{ background: '#0f172a', padding: '16px', borderRadius: '16px', border: '1px solid #334155' }}>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Detected Adapters</div>
+                  <div style={{ fontSize: '15px', fontWeight: '950', color: '#f59e0b', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Monitor size={16} /> {diagnostics?.interfaces?.length || 1} Interfaces
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>IPv4 Addresses</div>
+                </div>
+
+              </div>
+
+              {/* Detected Network Adapters List */}
+              <div style={{ background: '#0f172a', borderRadius: '16px', border: '1px solid #334155', padding: '20px' }}>
+                <div style={{ fontWeight: '900', fontSize: '14px', color: 'white', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Monitor size={16} color="#38bdf8" /> Detected Network IP Addresses on this PC:
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {diagnostics?.interfaces?.map((iface, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#1e293b', borderRadius: '12px', border: '1px solid #334155' }}>
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '14px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span>{iface.name}</span>
+                          <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: iface.isVirtual ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)', color: iface.isVirtual ? '#f59e0b' : '#34d399', fontWeight: '900' }}>
+                            {iface.isVirtual ? 'VIRTUAL (Hyper-V/WSL)' : 'PHYSICAL LAN'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '13px', fontFamily: 'monospace', color: '#38bdf8', marginTop: '2px' }}>
+                          {iface.captainUrl}
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handleCopyUrl(iface.captainUrl)}
+                        style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #334155', background: copiedUrl === iface.captainUrl ? '#10b981' : '#334155', color: 'white', fontSize: '12px', fontWeight: '800', cursor: 'pointer' }}
+                      >
+                        {copiedUrl === iface.captainUrl ? 'Copied!' : 'Copy'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* STEP-BY-STEP TROUBLESHOOTING GUIDE FOR "SITE CAN'T BE REACHED" */}
+              <div>
+                <div style={{ fontWeight: '950', fontSize: '16px', color: '#f8fafc', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldAlert size={20} color="#ef4444" /> Fix "This site can't be reached" on Mobile Devices:
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  
+                  {/* CHECK 1 */}
+                  <div style={{ padding: '16px 20px', borderRadius: '16px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                    <div style={{ fontWeight: '900', fontSize: '15px', color: '#fca5a5', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      1. Change Windows Network Profile to "PRIVATE" (MOST COMMON FIX)
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.6 }}>
+                      When Windows sets Wi-Fi to <strong>"Public Network"</strong>, Windows Firewall blocks incoming connections from mobile phones automatically!<br />
+                      <strong>How to fix:</strong>
+                      <ol style={{ margin: '8px 0 0 20px', padding: 0 }}>
+                        <li>Open Windows Settings (Press <strong>Win + I</strong>)</li>
+                        <li>Go to <strong>Network & Internet → Wi-Fi</strong></li>
+                        <li>Click your connected Wi-Fi network name</li>
+                        <li>Change Network profile type from <strong>Public network</strong> to <strong>Private network</strong></li>
+                      </ol>
+                    </div>
+                  </div>
+
+                  {/* CHECK 2 */}
+                  <div style={{ padding: '16px 20px', borderRadius: '16px', background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                    <div style={{ fontWeight: '900', fontSize: '15px', color: '#38bdf8', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      2. Add Windows Firewall Inbound Rule for Port 3101
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.6 }}>
+                      If Windows Defender Firewall is blocking port 3101, run PowerShell as Administrator and paste:
+                      <div style={{ margin: '10px 0', padding: '12px', background: '#0f172a', borderRadius: '10px', fontFamily: 'monospace', fontSize: '12px', color: '#38bdf8', border: '1px solid #334155', wordBreak: 'break-all' }}>
+                        netsh advfirewall firewall add rule name="TYDE POS Captain (3101)" dir=in action=allow protocol=TCP localport=3101
+                      </div>
+                      <button 
+                        onClick={() => handleCopyUrl('netsh advfirewall firewall add rule name="TYDE POS Captain (3101)" dir=in action=allow protocol=TCP localport=3101')}
+                        style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', background: '#38bdf8', color: '#0f172a', fontWeight: '900', fontSize: '12px', cursor: 'pointer' }}
+                      >
+                        {copiedUrl?.startsWith('netsh') ? '✓ Command Copied!' : 'Copy PowerShell Command'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* CHECK 3 */}
+                  <div style={{ padding: '16px 20px', borderRadius: '16px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                    <div style={{ fontWeight: '900', fontSize: '15px', color: '#f59e0b', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      3. Verify Same Wi-Fi Network & Router "AP Isolation"
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.6 }}>
+                      - Ensure both your Desktop PC and Mobile Phone are connected to the exact same Wi-Fi SSID (e.g. both on "Tyde_WiFi_5G").<br />
+                      - Some Wi-Fi routers have <strong>"AP Isolation"</strong> or <strong>"Guest Mode"</strong> enabled, which prevents Wi-Fi devices from talking to each other. Turn off AP Isolation in your router settings if enabled.
+                    </div>
+                  </div>
+
+                  {/* CHECK 4 */}
+                  <div style={{ padding: '16px 20px', borderRadius: '16px', background: 'rgba(168, 85, 247, 0.1)', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
+                    <div style={{ fontWeight: '900', fontSize: '15px', color: '#c084fc', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      4. Try Hostname Link instead of IP Address
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.6 }}>
+                      On iPhone (Safari) and Android (Chrome), you can type the local hostname directly:
+                      <div style={{ fontSize: '15px', fontWeight: '950', color: '#c084fc', margin: '6px 0', fontFamily: 'monospace' }}>
+                        http://{diagnostics?.localDomain || 'rakesh-pc.local'}:3101/captain/
+                      </div>
+                      mDNS allows your phone to discover the PC even if the IP address changes!
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ padding: '16px 28px', borderTop: '1px solid #334155', display: 'flex', justifyContent: 'flex-end', background: '#1e293b', borderBottomLeftRadius: '24px', borderBottomRightRadius: '24px' }}>
+              <button onClick={() => setShowDiagnosticsModal(false)} style={{ padding: '10px 24px', borderRadius: '12px', border: 'none', background: '#38bdf8', color: '#0f172a', fontWeight: '900', fontSize: '13px', cursor: 'pointer' }}>
+                Done / Close Diagnostics
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* Inline styles for animations */}
       <style>{`

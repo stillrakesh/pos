@@ -517,6 +517,9 @@ router.put('/:tableId', (req, res) => {
       const isAlreadyOccupied = occupiedStatuses.includes(currentStatus);
       const newCreatedAt = isAlreadyOccupied && targetTable.created_at ? targetTable.created_at : new Date().toISOString();
 
+      const custName = req.body.customer_name || req.body.customerName || '';
+      const custPhone = req.body.phone || req.body.customerPhone || '';
+
       statements.updateTable({
         id: targetTable.id,
         status: dbStatus,
@@ -525,8 +528,20 @@ router.put('/:tableId', (req, res) => {
         gst_enabled: req.body.gst_enabled,
         gst_rate: req.body.gst_rate,
         service_charge_enabled: req.body.service_charge_enabled,
-        service_charge_rate: req.body.service_charge_rate
+        service_charge_rate: req.body.service_charge_rate,
+        customer_name: custName,
+        phone: custPhone
       });
+
+      // Auto-save/upsert customer to CRM database if phone is provided
+      if (custPhone && custPhone.length >= 10) {
+        try {
+          statements.upsertCustomer(custPhone, custName, total, req.body.redeemedPoints || 0);
+          console.log(`👤 Customer ${custName} (${custPhone}) auto-saved to CRM`);
+        } catch (crmErr) {
+          console.warn("CRM auto-save warning:", crmErr.message);
+        }
+      }
     }
 
     const io = req.app.get('io');

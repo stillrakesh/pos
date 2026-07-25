@@ -120,7 +120,9 @@ router.post('/settle', (req, res) => {
         status: 'AVAILABLE',
         order_items: '[]',
         created_at: null,
-        bill_number: null
+        bill_number: null,
+        customer_name: '',
+        phone: ''
       });
     }
 
@@ -238,7 +240,7 @@ router.post('/clear/:table_id', (req, res) => {
     });
 
     // Reset table
-    statements.updateTable({ id, status: 'AVAILABLE', order_items: '[]', created_at: null, bill_number: null });
+    statements.updateTable({ id, status: 'AVAILABLE', order_items: '[]', created_at: null, bill_number: null, customer_name: '', phone: '' });
     clearShiftForTable(table.table_number);
     statements.clearTableKotTickets(table.table_number);
 

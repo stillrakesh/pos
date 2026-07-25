@@ -78,6 +78,9 @@ export function normalizeTable(t) {
     order_items:  cleanItems, // Keep for backward compat
     items:        cleanItems, // For Captain App
     createdAt:    createdAtTs,
+    customerName: t.customer_name || t.customerName || '',
+    customer_name: t.customer_name || t.customerName || '',
+    phone:        t.phone || t.customerPhone || '',
     // Add subtotal for bill calculation
     subtotal:     subtotal,
     gstAmount:    gstAmount,

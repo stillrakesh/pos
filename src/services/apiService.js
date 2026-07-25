@@ -265,6 +265,10 @@ export const apiService = {
     return resilientFetch(`${BASE_URL}/customers`);
   },
 
+  async fetchCustomerHistory(phone) {
+    return resilientFetch(`${BASE_URL}/customers/${encodeURIComponent(phone)}/history`);
+  },
+
   async fetchAuditLogs() {
     return resilientFetch(`${BASE_URL}/audit`);
   },
@@ -389,6 +393,10 @@ export const apiService = {
 
   async fetchNetwork() {
     return resilientFetch(`${BASE_URL}/api/network`);
+  },
+
+  async fetchNetworkDiagnostics() {
+    return resilientFetch(`${BASE_URL}/api/network-diagnostics`);
   },
 
   async checkHealth() {

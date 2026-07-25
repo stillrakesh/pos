@@ -77,6 +77,11 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
   const [crmData, setCrmData] = useState([]);
   const [auditData, setAuditData] = useState([]);
   const [crmSearch, setCrmSearch] = useState('');
+  const [selectedCustomerProfile, setSelectedCustomerProfile] = useState(null);
+  const [customerOrdersHistory, setCustomerOrdersHistory] = useState([]);
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+  const [newCustPhone, setNewCustPhone] = useState('');
+  const [newCustName, setNewCustName] = useState('');
 
   // ─── Date range bounds (with business-day offset) ────────────
   const getDateRange = () => {
@@ -1117,51 +1122,296 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
         )}
 
         {/* CRM TAB */}
+        {/* CRM TAB */}
         {tab === 'crm' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <SectionCard title="Customer Database" subtitle="Loyalty and visit tracking">
+            <SectionCard 
+              title="Customer Database & CRM" 
+              subtitle="Track customer visit history, lifetime spend, and loyalty points"
+              action={
+                <button
+                  onClick={() => setShowAddCustomerModal(true)}
+                  style={{
+                    background: 'var(--primary)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '10px',
+                    fontWeight: '800',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Plus size={16} /> Add Customer
+                </button>
+              }
+            >
               <div style={{ marginBottom: 16, position: 'relative' }}>
-                <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: 12, top: 12 }} />
+                <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: 14, top: 13 }} />
                 <input 
                   type="text" 
-                  placeholder="Search by name or phone..." 
+                  placeholder="Search by name, phone number, or visit history..." 
                   value={crmSearch}
                   onChange={(e) => setCrmSearch(e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px 10px 36px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, outline: 'none' }}
+                  style={{ width: '100%', padding: '12px 14px 12px 40px', borderRadius: 12, border: '1px solid #cbd5e1', fontSize: 14, outline: 'none', fontWeight: '600' }}
                 />
               </div>
-              <div style={{ overflowX: 'auto' }}>
+
+              <div style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                      <th style={{ padding: '12px 16px', color: '#64748b', fontWeight: 800 }}>Customer</th>
                       <th style={{ padding: '12px 16px', color: '#64748b', fontWeight: 800 }}>Phone</th>
-                      <th style={{ padding: '12px 16px', color: '#64748b', fontWeight: 800 }}>Name</th>
                       <th style={{ padding: '12px 16px', color: '#64748b', fontWeight: 800 }}>Visits</th>
                       <th style={{ padding: '12px 16px', color: '#64748b', fontWeight: 800 }}>Total Spent</th>
                       <th style={{ padding: '12px 16px', color: '#64748b', fontWeight: 800 }}>Loyalty Pts</th>
                       <th style={{ padding: '12px 16px', color: '#64748b', fontWeight: 800 }}>Last Visit</th>
+                      <th style={{ padding: '12px 16px', color: '#64748b', fontWeight: 800, textAlign: 'right' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {crmData.filter(c => (c.phone || '').includes(crmSearch) || (c.name || '').toLowerCase().includes(crmSearch.toLowerCase())).map((c, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '12px 16px', fontWeight: 700 }}>{c.phone}</td>
-                        <td style={{ padding: '12px 16px', fontWeight: 700 }}>{c.name || '-'}</td>
-                        <td style={{ padding: '12px 16px' }}>{c.visits}</td>
-                        <td style={{ padding: '12px 16px', fontWeight: 800, color: '#10b981' }}>{formatCurrency(c.total_spent)}</td>
-                        <td style={{ padding: '12px 16px', fontWeight: 800, color: '#8b5cf6' }}>{c.loyalty_points}</td>
-                        <td style={{ padding: '12px 16px', color: '#94a3b8' }}>{new Date(c.last_visit).toLocaleDateString()}</td>
-                      </tr>
-                    ))}
+                    {crmData.filter(c => (c.phone || '').includes(crmSearch) || (c.name || '').toLowerCase().includes(crmSearch.toLowerCase())).map((c, i) => {
+                      const visits = c.visits || 1;
+                      const tier = visits >= 5 ? 'VIP' : visits >= 2 ? 'Regular' : 'New';
+                      const tierBg = tier === 'VIP' ? '#fef3c7' : tier === 'Regular' ? '#e0e7ff' : '#f1f5f9';
+                      const tierColor = tier === 'VIP' ? '#d97706' : tier === 'Regular' ? '#4338ca' : '#64748b';
+
+                      return (
+                        <tr 
+                          key={i} 
+                          style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer', transition: 'background 0.15s ease' }}
+                          onClick={async () => {
+                            setSelectedCustomerProfile(c);
+                            setCustomerOrdersHistory([]);
+                            // Fetch from server database for complete history
+                            try {
+                              const res = await apiService.fetchCustomerHistory(c.phone);
+                              if (res?.success && res.orders?.length > 0) {
+                                setCustomerOrdersHistory(res.orders);
+                                // Also update profile from server (more accurate)
+                                if (res.customer) setSelectedCustomerProfile(res.customer);
+                                return;
+                              }
+                            } catch (err) { console.warn('Server history fetch failed, using local:', err); }
+                            // Fallback: filter from local orderHistory
+                            const phoneStr = String(c.phone || '').trim();
+                            const nameStr = String(c.name || '').toLowerCase().trim();
+                            const history = (orderHistory || []).filter(o => {
+                              const oPhone = String(o.phone || o.customerPhone || '').trim();
+                              const oName = String(o.customerName || o.customer_name || '').toLowerCase().trim();
+                              return (phoneStr && oPhone === phoneStr) || (nameStr && oName && oName === nameStr);
+                            });
+                            setCustomerOrdersHistory(history);
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <td style={{ padding: '14px 16px', fontWeight: 800, color: '#1e293b' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#f1f5f9', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', color: 'var(--primary)', fontSize: '13px' }}>
+                                {(c.name || 'G')[0].toUpperCase()}
+                              </div>
+                              <div>
+                                <div>{c.name || 'Guest'}</div>
+                                <span style={{ background: tierBg, color: tierColor, fontSize: '10px', fontWeight: '800', padding: '1px 6px', borderRadius: '8px' }}>
+                                  {tier}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ padding: '14px 16px', fontWeight: '700', color: '#475569' }}>{c.phone}</td>
+                          <td style={{ padding: '14px 16px', fontWeight: '700' }}>{c.visits || 1} {c.visits === 1 ? 'visit' : 'visits'}</td>
+                          <td style={{ padding: '14px 16px', fontWeight: '900', color: '#10b981', fontSize: '14px' }}>{formatCurrency(c.total_spent || 0)}</td>
+                          <td style={{ padding: '14px 16px', fontWeight: '800', color: '#8b5cf6' }}>✨ {c.loyalty_points || 0} pts</td>
+                          <td style={{ padding: '14px 16px', color: '#64748b', fontSize: '12px' }}>
+                            {c.last_visit ? new Date(c.last_visit).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently'}
+                          </td>
+                          <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                            <button
+                              style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', fontSize: '11px', fontWeight: '700', cursor: 'pointer', color: '#334155' }}
+                            >
+                              View History
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                     {crmData.length === 0 && (
                       <tr>
-                        <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: '#94a3b8' }}>No customers found.</td>
+                        <td colSpan="7" style={{ textAlign: 'center', padding: '36px', color: '#94a3b8', fontSize: '14px' }}>
+                          No customer records found yet. Customers will automatically appear here as orders are placed with phone numbers!
+                        </td>
                       </tr>
                     )}
                   </tbody>
                 </table>
               </div>
             </SectionCard>
+          </div>
+        )}
+
+        {/* CUSTOMER PROFILE MODAL */}
+        {selectedCustomerProfile && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <div className="animate-fade-in" style={{ background: 'white', borderRadius: '16px', width: '650px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+              
+              {/* Profile Header */}
+              <div style={{ background: 'var(--primary)', color: 'white', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '900' }}>
+                    {(selectedCustomerProfile.name || 'G')[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{selectedCustomerProfile.name || 'Guest'}</h3>
+                    <div style={{ fontSize: '13px', opacity: 0.9, marginTop: '2px' }}>📱 {selectedCustomerProfile.phone}</div>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedCustomerProfile(null)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: '800', fontSize: '12px' }}>
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Stats Bar */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', padding: '16px 24px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <div style={{ background: 'white', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Visits</div>
+                  <div style={{ fontSize: '18px', fontWeight: '900', color: '#1e293b', marginTop: '2px' }}>{selectedCustomerProfile.visits || 1}</div>
+                </div>
+                <div style={{ background: 'white', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Total Spent</div>
+                  <div style={{ fontSize: '18px', fontWeight: '900', color: '#10b981', marginTop: '2px' }}>{formatCurrency(selectedCustomerProfile.total_spent || 0)}</div>
+                </div>
+                <div style={{ background: 'white', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Loyalty Pts</div>
+                  <div style={{ fontSize: '18px', fontWeight: '900', color: '#8b5cf6', marginTop: '2px' }}>✨ {selectedCustomerProfile.loyalty_points || 0}</div>
+                </div>
+                <div style={{ background: 'white', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Avg Order</div>
+                  <div style={{ fontSize: '18px', fontWeight: '900', color: '#0284c7', marginTop: '2px' }}>
+                    {formatCurrency(selectedCustomerProfile.visits > 0 ? (selectedCustomerProfile.total_spent / selectedCustomerProfile.visits) : selectedCustomerProfile.total_spent || 0)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Order History Section */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', marginBottom: '12px' }}>Past Order History</h4>
+                {customerOrdersHistory.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8', fontSize: '13px' }}>
+                    No settled order history records found for this customer.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {customerOrdersHistory.map((order, idx) => {
+                      const items = order.cart || order.orders || order.items || [];
+                      return (
+                        <div key={idx} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #f1f5f9' }}>
+                            <div>
+                              <span style={{ fontWeight: '800', color: '#0f172a', fontSize: '14px' }}>Order #{order.id}</span>
+                              <span style={{ fontSize: '11px', color: '#64748b', marginLeft: '10px' }}>
+                                {new Date(order.timestamp || order.created_at || Date.now()).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <div style={{ fontWeight: '900', color: '#10b981', fontSize: '15px' }}>
+                              {formatCurrency(order.grandTotal || order.totalAmount || order.grand_total || 0)}
+                            </div>
+                          </div>
+
+                          <div style={{ fontSize: '12px', color: '#475569' }}>
+                            {(items || []).map((it, iidx) => (
+                              <span key={iidx} style={{ display: 'inline-block', background: '#f1f5f9', padding: '2px 8px', borderRadius: '6px', marginRight: '6px', marginBottom: '4px', fontWeight: '600' }}>
+                                {it.qty || it.quantity || 1}x {it.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ padding: '14px 24px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', textAlign: 'right' }}>
+                <button
+                  onClick={() => setSelectedCustomerProfile(null)}
+                  style={{ padding: '8px 20px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '13px', cursor: 'pointer' }}
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ADD NEW CUSTOMER MODAL */}
+        {showAddCustomerModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <div className="animate-fade-in" style={{ background: 'white', borderRadius: '16px', width: '420px', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#1e293b', margin: 0 }}>Add New Customer to CRM</h3>
+                <button onClick={() => setShowAddCustomerModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '4px', textTransform: 'uppercase' }}>Phone Number *</label>
+                  <input
+                    type="text"
+                    placeholder="Enter 10-digit mobile number"
+                    value={newCustPhone}
+                    onChange={(e) => setNewCustPhone(e.target.value)}
+                    maxLength="10"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', fontWeight: '600', outline: 'none' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '4px', textTransform: 'uppercase' }}>Customer Name *</label>
+                  <input
+                    type="text"
+                    placeholder="Enter customer full name"
+                    value={newCustName}
+                    onChange={(e) => setNewCustName(e.target.value)}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', fontWeight: '600', outline: 'none' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                  <button
+                    onClick={() => setShowAddCustomerModal(false)}
+                    style={{ flex: 1, padding: '10px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', color: '#475569' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!newCustPhone || newCustPhone.length < 10) return alert("Please enter a valid 10-digit mobile number.");
+                      if (!newCustName) return alert("Please enter customer name.");
+                      try {
+                        await apiService.saveCustomer({ phone: newCustPhone, name: newCustName });
+                        // Refresh CRM data
+                        const res = await apiService.fetchCustomers();
+                        if (res.success) setCrmData(res.customers || []);
+                        setShowAddCustomerModal(false);
+                        setNewCustPhone('');
+                        setNewCustName('');
+                        alert("Customer saved to CRM successfully!");
+                      } catch (err) {
+                        alert("Failed to save customer: " + err.message);
+                      }
+                    }}
+                    style={{ flex: 1, padding: '10px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '13px', cursor: 'pointer' }}
+                  >
+                    Save Customer
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

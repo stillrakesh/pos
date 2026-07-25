@@ -23,6 +23,20 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
   const [printerIp, setPrinterIp] = useState('');
   const [printerPort, setPrinterPort] = useState('9100');
   const [ipSaved, setIpSaved] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+
+  const handleSaveConfig = () => {
+    if (onSave) onSave();
+    setIsSaved(true);
+    setShowToast(true);
+    setTimeout(() => {
+      setIsSaved(false);
+    }, 2500);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 3000);
+  };
 
   useEffect(() => {
     // Check if running inside Electron
@@ -144,34 +158,75 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
   return (
     <div style={{ maxWidth: '850px', margin: '20px auto', display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '30px', position: 'relative' }}>
       
-      {/* ── Save Bar (sticky, not fixed) ── */}
+      {/* ── Save Bar (sticky) with Toast Notification ── */}
       <div style={{ 
         position: 'sticky', top: 0, zIndex: 50,
-        background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)',
+        background: isSaved ? 'linear-gradient(135deg, rgba(236, 253, 245, 0.98), rgba(209, 250, 229, 0.98))' : 'rgba(255,255,255,0.95)',
+        backdropFilter: 'blur(12px)',
         borderRadius: '16px', padding: '12px 20px',
-        border: '1px solid #e2e8f0',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+        border: isSaved ? '1.5px solid #10b981' : '1px solid #e2e8f0',
+        boxShadow: isSaved ? '0 6px 24px rgba(16, 185, 129, 0.2)' : '0 4px 20px rgba(0,0,0,0.08)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
       }}>
-        <div>
-          <div style={{ fontWeight: '800', fontSize: '14px', color: '#0f172a' }}>Printer Configuration</div>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Changes will apply on next print</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div>
+            <div style={{ fontWeight: '800', fontSize: '14px', color: isSaved ? '#065f46' : '#0f172a', transition: 'color 0.3s' }}>
+              Printer Configuration
+            </div>
+            <div style={{ fontSize: '12px', color: isSaved ? '#047857' : '#64748b', fontWeight: '500', transition: 'color 0.3s' }}>
+              {isSaved ? '✓ Configuration saved and applied successfully!' : 'Changes will apply on next print'}
+            </div>
+          </div>
         </div>
-        <button 
-          onClick={onSave}
-          style={{ 
-            padding: '12px 28px', borderRadius: '12px', border: 'none',
-            background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-            color: 'white', fontWeight: '800', fontSize: '14px', cursor: 'pointer',
-            boxShadow: '0 8px 16px rgba(79, 70, 229, 0.3)',
-            display: 'flex', alignItems: 'center', gap: '8px',
-            transition: 'transform 0.2s, box-shadow 0.2s'
-          }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 20px rgba(79, 70, 229, 0.4)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 16px rgba(79, 70, 229, 0.3)'; }}
-        >
-          <Save size={16} /> Save Config
-        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {showToast && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: '#10b981', color: 'white',
+              padding: '6px 14px', borderRadius: '20px',
+              fontSize: '12px', fontWeight: '800',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+              animation: 'pulse 1.5s infinite'
+            }}>
+              <Check size={14} style={{ strokeWidth: 3 }} /> Saved!
+            </div>
+          )}
+
+          <button 
+            onClick={handleSaveConfig}
+            style={{ 
+              padding: '12px 28px', borderRadius: '12px', border: 'none',
+              background: isSaved 
+                ? 'linear-gradient(135deg, #10b981, #059669)' 
+                : 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+              color: 'white', fontWeight: '800', fontSize: '14px', cursor: 'pointer',
+              boxShadow: isSaved 
+                ? '0 8px 20px rgba(16, 185, 129, 0.4)' 
+                : '0 8px 16px rgba(79, 70, 229, 0.3)',
+              display: 'flex', alignItems: 'center', gap: '8px',
+              transform: isSaved ? 'scale(1.03)' : 'scale(1)',
+              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
+            onMouseEnter={e => { 
+              e.currentTarget.style.transform = isSaved ? 'scale(1.05)' : 'translateY(-2px)'; 
+            }}
+            onMouseLeave={e => { 
+              e.currentTarget.style.transform = isSaved ? 'scale(1.03)' : 'translateY(0)'; 
+            }}
+          >
+            {isSaved ? (
+              <>
+                <Check size={18} style={{ strokeWidth: 3 }} /> Config Saved!
+              </>
+            ) : (
+              <>
+                <Save size={16} /> Save Config
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
 

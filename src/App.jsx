@@ -5416,11 +5416,19 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   const isPickup = table?.type === 'Takeaway' || table?.type === 'Delivery';
 
   // --- CRM & ORDER INFO ---
-  const [customerPhone, setCustomerPhone] = useState(table?.phone || '');
-  const [customerName, setCustomerName] = useState(table?.customerName || '');
+  const [customerPhone, setCustomerPhone] = useState(table?.phone || table?.customerPhone || '');
+  const [customerName, setCustomerName] = useState(table?.customerName || table?.customer_name || '');
   const [customerInfo, setCustomerInfo] = useState(null);
   const [redeemedPoints, setRedeemedPoints] = useState(0);
   const [orderNote, setOrderNote] = useState(table?.note || '');
+
+  // Sync state when table prop changes
+  useEffect(() => {
+    const isVacant = !table?.status || table.status.toLowerCase() === 'vacant' || table.status.toLowerCase() === 'available';
+    setCustomerPhone(isVacant ? '' : (table?.phone || table?.customerPhone || ''));
+    setCustomerName(isVacant ? '' : (table?.customerName || table?.customer_name || ''));
+    setOrderNote(table?.note || '');
+  }, [table?.id]);
 
   // --- CRM Auto-Fetch ---
   useEffect(() => {
@@ -5574,6 +5582,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
 
     suppressLocalKotPrint.current = true;
     orderService.syncKOT(table.id, cartToSync, {
+      customerName, customerPhone, customer_name: customerName, phone: customerPhone,
       gst_enabled: applyGst, gst_rate: gstRate,
       service_charge_enabled: applyServiceCharge, service_charge_rate: serviceChargeRate,
       note: orderNote
@@ -5678,6 +5687,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
         await apiService.updateOrder(table.id, {
           items: fullCartForSync,
           status: 'KOT_PRINTED',
+          customerName, customerPhone, customer_name: customerName, phone: customerPhone,
           gst_enabled: applyGst,
           gst_rate: gstRate,
           service_charge_enabled: applyServiceCharge,
@@ -5804,8 +5814,8 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
     const isVacant = !table.status || table.status === 'vacant';
     
     setOrderNote(table.note || '');
-    setCustomerPhone(table.phone || '');
-    setCustomerName(table.customerName || '');
+    setCustomerPhone(isVacant ? '' : (table.phone || ''));
+    setCustomerName(isVacant ? '' : (table.customerName || table.customer_name || ''));
     setRedeemedPoints(0);
     setTipAmount('0');
     
@@ -6201,11 +6211,11 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       {/* Billing Panel */}
       <div className="billing-panel no-print">
         <div style={{ background: 'var(--primary)', color: 'white', padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontWeight: '900', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ fontWeight: '900', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             {displayTitle}
-            {table?.covers && <span style={{ background: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}><Users size={12} /> {table.covers}</span>}
+            {table?.covers && <span style={{ background: 'rgba(255,255,255,0.25)', padding: '3px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}><Users size={13} /> {table.covers}</span>}
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             {(String(table?.id).startsWith('TAK-') || String(table?.id).startsWith('DEL-') || String(table?.id).startsWith('TA-') || String(table?.id).startsWith('DL-')) && (
               <>
                 {(table.paymentStatus === 'PAID' || table.payment_status === 'PAID') ? (
@@ -6216,9 +6226,9 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                         onBack([]); // Close ordering view
                       }
                     }} 
-                    style={{ background: '#f97316', border: 'none', color: 'white', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}
+                    style={{ background: '#f97316', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}
                   >
-                    <XCircle size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }}/>Cancel Order
+                    <XCircle size={14} /> Cancel Order
                   </button>
                 ) : (
                   <button 
@@ -6227,59 +6237,97 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                         onSaveOrder(table.id, [], 'free'); 
                       }
                     }} 
-                    style={{ background: '#ef4444', border: 'none', color: 'white', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}
+                    style={{ background: '#ef4444', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}
                   >
-                    <Trash2 size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }}/>Delete
+                    <Trash2 size={14} /> Delete
                   </button>
                 )}
               </>
             )}
-            <button onClick={() => onBack(cart)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}>Close</button>
+            <button 
+              onClick={() => onBack(cart)} 
+              style={{ 
+                background: 'rgba(255,255,255,0.25)', 
+                border: '1px solid rgba(255,255,255,0.4)', 
+                color: 'white', 
+                padding: '6px 14px', 
+                borderRadius: '8px', 
+                fontSize: '12px', 
+                cursor: 'pointer', 
+                fontWeight: '800',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <X size={15} /> Close
+            </button>
           </div>
         </div>
 
-        <div style={{ padding: '8px 12px', display: 'flex', borderBottom: '1px solid #e5e7eb', alignItems: 'center', gap: '12px' }}>
+        <div style={{ padding: '10px 16px', display: 'flex', borderBottom: '1px solid #e2e8f0', alignItems: 'center', gap: '12px', background: '#ffffff' }}>
           {tables ? (
             <select
               value={table?.id || ''}
               onChange={(e) => {
                 if (onChangeTable && e.target.value !== String(table?.id)) {
-                  // Use the raw value (string), do NOT force Number() as IDs can be alphanumeric
                   onChangeTable(table.id, e.target.value, cart);
                 }
               }}
-              style={{ border: '1px solid var(--primary)', color: 'var(--primary)', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', outline: 'none', background: 'white' }}
+              style={{ 
+                border: '2px solid var(--primary)', 
+                color: '#0f172a', 
+                padding: '7px 12px', 
+                borderRadius: '8px', 
+                fontSize: '14px', 
+                fontWeight: '800', 
+                outline: 'none', 
+                background: '#ffffff',
+                cursor: 'pointer',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+              }}
             >
-              <option value={table?.id} disabled>{displayTitle}</option>
-              {tables.map(t => (
-                <option key={t.id} value={t.id}>{t.name} ({t.status})</option>
-              ))}
+              <option value={table?.id} disabled style={{ fontWeight: '800', color: '#0f172a', fontSize: '14px' }}>{displayTitle}</option>
+              {tables.map(t => {
+                const rawStatus = String(t.status || '').toLowerCase();
+                const statusLabel = rawStatus === 'kot_pending' || rawStatus === 'kot_printed' ? 'Running' : rawStatus === 'billed' ? 'Billed' : rawStatus === 'vacant' ? 'Vacant' : (t.status || 'Active');
+                return (
+                  <option 
+                    key={t.id} 
+                    value={t.id} 
+                    style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px', padding: '6px' }}
+                  >
+                    {t.name} ({statusLabel})
+                  </option>
+                );
+              })}
             </select>
           ) : (
-            <div style={{ border: '1px solid var(--primary)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+            <div style={{ border: '2px solid var(--primary)', color: '#0f172a', padding: '7px 12px', borderRadius: '8px', fontSize: '14px', fontWeight: '800' }}>
               {displayTitle}
             </div>
           )}
-          <button onClick={() => onBack(cart)} style={{ background: 'transparent', border: 'none', fontSize: '11px', color: '#6b7280', cursor: 'pointer', textDecoration: 'underline' }}>
+          <button onClick={() => onBack(cart)} style={{ background: 'transparent', border: 'none', fontSize: '12px', color: '#64748b', cursor: 'pointer', textDecoration: 'underline', fontWeight: '600' }}>
             {table && (String(table.id).startsWith('DEL-') || String(table.id).startsWith('TAK-') || String(table.id).startsWith('TA-') || String(table.id).startsWith('DL-')) ? 'Back to Online' : 'Back to Tables'}
           </button>
-          <div style={{ marginLeft: 'auto', background: 'var(--primary)', color: 'white', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
+          <div style={{ marginLeft: 'auto', background: 'var(--primary)', color: 'white', padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: '800', letterSpacing: '0.3px' }}>
             {table?.type === 'Delivery' ? 'Delivery' : table?.type === 'Takeaway' ? 'Takeaway' : 'Dine In'}
           </div>
         </div>
 
         {/* --- TABLE ACTIONS --- */}
         {!isPickup && IS_LOCAL && (
-          <div style={{ padding: '6px 12px', display: 'flex', gap: '8px', borderBottom: '1px solid #e5e7eb', background: '#f8fafc' }}>
+          <div style={{ padding: '8px 16px', display: 'flex', gap: '10px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
             <button 
               onClick={() => setShowMergeModal(true)}
-              style={{ flex: 1, padding: '6px', fontSize: '11px', fontWeight: 'bold', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', color: '#475569' }}
+              style={{ flex: 1, padding: '8px', fontSize: '12px', fontWeight: '700', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', color: '#334155', transition: 'all 0.15s ease' }}
             >
               Merge Table
             </button>
             <button 
               onClick={() => setShowSplitModal(true)}
-              style={{ flex: 1, padding: '6px', fontSize: '11px', fontWeight: 'bold', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', color: '#475569' }}
+              style={{ flex: 1, padding: '8px', fontSize: '12px', fontWeight: '700', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', color: '#334155', transition: 'all 0.15s ease' }}
             >
               Split Table
             </button>
@@ -6287,43 +6335,43 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
         )}
 
         {/* --- CRM & CUSTOMER INFO SECTION --- */}
-        <div style={{ padding: '10px 12px', background: isPickup ? '#faf5ff' : '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: (customerInfo || isPickup) ? '8px' : '0' }}>
+        <div style={{ padding: '12px 16px', background: isPickup ? '#faf5ff' : '#fafbfc', borderBottom: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: (customerInfo || isPickup) ? '10px' : '0' }}>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '9px', fontWeight: 'bold', color: isPickup ? 'var(--secondary)' : '#64748b', marginBottom: '2px' }}>CUSTOMER NAME (Optional)</label>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: isPickup ? 'var(--secondary)' : '#94a3b8', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Customer Name (Optional)</label>
               <input
                 type="text"
                 placeholder="Walk-In"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                style={{ width: '100%', padding: '8px', fontSize: '12px', border: '1px solid #d1d5db', borderRadius: '6px', outline: 'none', background: 'white' }}
+                style={{ width: '100%', padding: '9px 12px', fontSize: '13px', fontWeight: '600', border: '1px solid #e2e8f0', borderRadius: '8px', outline: 'none', background: 'white', color: '#1e293b' }}
               />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '9px', fontWeight: 'bold', color: isPickup ? 'var(--secondary)' : '#64748b', marginBottom: '2px' }}>PHONE NUMBER (Optional)</label>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: isPickup ? 'var(--secondary)' : '#94a3b8', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Phone Number (Optional)</label>
               <input
                 type="text"
                 placeholder="Mobile number"
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
-                style={{ width: '100%', padding: '8px', fontSize: '12px', border: '1px solid #d1d5db', borderRadius: '6px', outline: 'none', background: 'white' }}
+                style={{ width: '100%', padding: '9px 12px', fontSize: '13px', fontWeight: '600', border: '1px solid #e2e8f0', borderRadius: '8px', outline: 'none', background: 'white', color: '#1e293b' }}
                 maxLength="10"
               />
             </div>
           </div>
 
           {customerInfo && (
-            <div style={{ padding: '6px 10px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '6px', fontSize: '11px', color: '#065f46', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ padding: '10px 12px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px', fontSize: '12px', color: '#065f46', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <User size={12} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }}>
+                  <User size={14} />
                   <span>Visit #{customerInfo.visits}</span>
                 </div>
-                <span style={{ fontWeight: 'bold' }}>{customerInfo.loyalty_points} Pts Available</span>
+                <span style={{ fontWeight: '800' }}>{customerInfo.loyalty_points} Pts Available</span>
               </div>
               {customerInfo.loyalty_points > 0 && (
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', borderTop: '1px solid #a7f3d0', paddingTop: '6px' }}>
-                  <span style={{ fontSize: '10px' }}>Redeem:</span>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', borderTop: '1px solid #a7f3d0', paddingTop: '8px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: '600' }}>Redeem:</span>
                   <input
                     type="number"
                     min="0"
@@ -6333,91 +6381,142 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                       const val = Number(e.target.value);
                       setRedeemedPoints(val > customerInfo.loyalty_points ? customerInfo.loyalty_points : val);
                     }}
-                    style={{ width: '60px', padding: '4px', fontSize: '10px', border: '1px solid #a7f3d0', borderRadius: '4px', outline: 'none' }}
+                    style={{ width: '65px', padding: '5px 8px', fontSize: '12px', fontWeight: '700', border: '1px solid #a7f3d0', borderRadius: '6px', outline: 'none' }}
                   />
-                  <span style={{ fontSize: '9px', opacity: 0.8 }}>(-₹{redeemedPoints})</span>
+                  <span style={{ fontSize: '11px', fontWeight: '600', opacity: 0.7 }}>(-₹{redeemedPoints})</span>
                 </div>
               )}
             </div>
           )}
           {isPickup && (!customerName || customerPhone.length < 10) && (
-            <div style={{ fontSize: '10px', color: '#dc2626', fontWeight: 'bold', marginTop: '4px' }}>
+            <div style={{ fontSize: '11px', color: '#dc2626', fontWeight: '700', marginTop: '6px' }}>
               ⚠️ Required for pickup orders
             </div>
           )}
         </div>
         {/* --- END CRM SECTION --- */}
 
-        <div style={{ padding: '8px 12px', display: 'flex', fontSize: '10px', fontWeight: 'bold', color: '#9ca3af', borderBottom: '1px solid #e5e7eb' }}>
-          <div style={{ flex: 1 }}>ITEMS</div>
-          <div style={{ width: '80px', textAlign: 'center' }}>QTY.</div>
-          <div style={{ width: '80px', textAlign: 'right' }}>PRICE</div>
+        <div style={{ padding: '10px 16px', display: 'flex', fontSize: '10px', fontWeight: '900', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.8px', background: '#f8fafc' }}>
+          <div style={{ flex: 1 }}>Items</div>
+          <div style={{ width: '100px', textAlign: 'center' }}>Qty.</div>
+          <div style={{ width: '85px', textAlign: 'right' }}>Price</div>
         </div>
 
         {/* Cart Items */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {cart.length === 0 ? (
-            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
-              <Utensils size={48} color="#d1d5db" />
-              <div style={{ fontWeight: 'bold', fontSize: '14px', marginTop: '10px' }}>No Item Selected</div>
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.4, padding: '40px 20px' }}>
+              <Utensils size={52} color="#cbd5e1" />
+              <div style={{ fontWeight: '800', fontSize: '15px', marginTop: '12px', color: '#94a3b8' }}>No Items Added</div>
+              <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '4px' }}>Select items from the menu</div>
             </div>
           ) : (
-            cart.map(item => (
-              <div key={item.cartItemId} style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', borderBottom: '1px solid #f9fafb' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '12px' }}>{item.name}</div>
-                  {item.note && <div style={{ fontSize: '10px', color: 'var(--primary)', fontStyle: 'italic' }}>* {item.note}</div>}
-                  <div style={{ fontSize: '10px', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    ₹{item.price} /ea
-                    <button style={{ border: 'none', background: 'transparent', cursor: 'pointer', opacity: 0.6, padding: 0 }}
+            cart.map((item, idx) => (
+              <div key={item.cartItemId} style={{ 
+                padding: '12px 16px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                borderBottom: '1px solid #f1f5f9',
+                background: idx % 2 === 0 ? '#ffffff' : '#fafbfc',
+                transition: 'background 0.15s ease'
+              }}>
+                {/* Item Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b', lineHeight: '1.3', marginBottom: '3px' }}>
+                    {item.name}
+                  </div>
+                  {item.note && (
+                    <div style={{ fontSize: '11px', color: 'var(--primary)', fontStyle: 'italic', fontWeight: '600', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <MessageSquare size={10} /> {item.note}
+                    </div>
+                  )}
+                  <div style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}>
+                    <span>₹{item.price} /ea</span>
+                    <button 
+                      style={{ border: 'none', background: '#f1f5f9', cursor: 'pointer', padding: '3px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '3px', fontSize: '10px', color: '#64748b', fontWeight: '700' }}
                       onClick={() => {
                         setCustomNoteText(item.note || '');
                         setShowNoteModal(item);
-                      }}>
-                      <MessageSquare size={12} color="var(--primary)" />
+                      }}
+                    >
+                      <MessageSquare size={11} color="var(--primary)" />
+                      Note
                     </button>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '80px', justifyContent: 'center' }}>
-                  <button style={{ border: 'none', background: 'transparent', cursor: 'pointer' }} onClick={() => updateQty(item.cartItemId, -1)}><Minus size={12} /></button>
-                  <span style={{ fontSize: '12px', fontWeight: '500' }}>{item.qty}</span>
-                  <button style={{ border: 'none', background: 'transparent', cursor: 'pointer' }} onClick={() => updateQty(item.cartItemId, 1)}><Plus size={12} /></button>
+
+                {/* Qty Controls */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '100px', justifyContent: 'center' }}>
+                  <button 
+                    style={{ 
+                      width: '28px', height: '28px', borderRadius: '8px', border: '1px solid #e2e8f0', 
+                      background: '#f8fafc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.15s ease'
+                    }} 
+                    onClick={() => updateQty(item.cartItemId, -1)}
+                  >
+                    <Minus size={14} color="#64748b" />
+                  </button>
+                  <span style={{ 
+                    fontSize: '15px', fontWeight: '800', color: '#1e293b', 
+                    width: '32px', textAlign: 'center',
+                    background: '#f1f5f9', borderRadius: '6px', padding: '4px 0',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    {item.qty}
+                  </span>
+                  <button 
+                    style={{ 
+                      width: '28px', height: '28px', borderRadius: '8px', border: '1px solid #e2e8f0', 
+                      background: '#f8fafc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.15s ease'
+                    }} 
+                    onClick={() => updateQty(item.cartItemId, 1)}
+                  >
+                    <Plus size={14} color="#64748b" />
+                  </button>
                 </div>
-                <div style={{ width: '80px', textAlign: 'right', fontSize: '12px', fontWeight: 'bold' }}>₹{item.price * item.qty}</div>
+
+                {/* Line Total */}
+                <div style={{ width: '85px', textAlign: 'right', fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
+                  ₹{item.price * item.qty}
+                </div>
               </div>
             ))
           )}
         </div>
 
         {/* Financials & Footer */}
-        <div style={{ background: '#fff', borderTop: '1px solid #e5e7eb' }}>
-          <div style={{ padding: '12px', borderBottom: '1px solid #f1f5f9' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>Subtotal</span>
-              <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>₹{subtotal.toFixed(2)}</span>
+        <div style={{ background: '#fff', borderTop: '2px solid #e2e8f0' }}>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid #f1f5f9' }}>
+            {/* Subtotal */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <span style={{ fontSize: '14px', fontWeight: '700', color: '#334155' }}>Subtotal</span>
+              <span style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>₹{subtotal.toFixed(2)}</span>
             </div>
 
             {applyDiscount && discountAmt > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <span style={{ fontSize: '13px', color: '#64748b' }}>Discount ({discountRate}%)</span>
-                <span style={{ fontSize: '14px', color: '#ef4444' }}>-₹{discountAmt.toFixed(2)}</span>
+                <span style={{ fontSize: '13px', color: '#ef4444', fontWeight: '600' }}>Discount ({discountRate}%)</span>
+                <span style={{ fontSize: '14px', color: '#ef4444', fontWeight: '700' }}>-₹{discountAmt.toFixed(2)}</span>
               </div>
             )}
 
             {applyServiceCharge && serviceCharge > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <span style={{ fontSize: '13px', color: '#64748b' }}>Service Charge ({serviceChargeRate}%)</span>
-                <span style={{ fontSize: '14px', color: '#1e293b' }}>₹{serviceCharge.toFixed(2)}</span>
+                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Service Charge ({serviceChargeRate}%)</span>
+                <span style={{ fontSize: '14px', color: '#334155', fontWeight: '700' }}>₹{serviceCharge.toFixed(2)}</span>
               </div>
             )}
 
             {applyGst && gstAmount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <span style={{ fontSize: '13px', color: '#64748b' }}>GST ({gstRate}%)</span>
-                <span style={{ fontSize: '14px', color: '#1e293b' }}>₹{gstAmount.toFixed(2)}</span>
+                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>GST ({gstRate}%)</span>
+                <span style={{ fontSize: '14px', color: '#334155', fontWeight: '700' }}>₹{gstAmount.toFixed(2)}</span>
               </div>
             )}
 
+            {/* Advanced Options Toggle */}
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
               style={{
@@ -6426,15 +6525,17 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                padding: '8px',
-                marginTop: '8px',
-                background: '#f8fafc',
+                padding: '10px',
+                marginTop: '10px',
+                background: showAdvanced ? '#f1f5f9' : '#f8fafc',
                 border: '1px solid #e2e8f0',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 fontSize: '12px',
-                fontWeight: 'bold',
-                color: '#64748b',
-                cursor: 'pointer'
+                fontWeight: '800',
+                color: '#475569',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                letterSpacing: '0.3px'
               }}
             >
               {showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -6442,64 +6543,64 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
             </button>
 
             {showAdvanced && (
-              <div style={{ marginTop: '12px', padding: '12px', background: '#f1f5f9', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '10px' }} className="animate-fade-in">
+              <div style={{ marginTop: '12px', padding: '14px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '12px' }} className="animate-fade-in">
                 {/* Discount */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input type="checkbox" id="discount-toggle" checked={applyDiscount} onChange={(e) => setApplyDiscount(e.target.checked)} />
-                    <label htmlFor="discount-toggle" style={{ fontSize: '12px', fontWeight: '500', color: '#475569' }}>Discount %</label>
+                    <input type="checkbox" id="discount-toggle" checked={applyDiscount} onChange={(e) => setApplyDiscount(e.target.checked)} style={{ accentColor: 'var(--primary)' }} />
+                    <label htmlFor="discount-toggle" style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Discount %</label>
                   </div>
                   {applyDiscount && (
-                    <input type="number" value={discountRate} onChange={(e) => setDiscountRate(e.target.value)} style={{ width: '50px', padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center', fontSize: '12px' }} />
+                    <input type="number" value={discountRate} onChange={(e) => setDiscountRate(e.target.value)} style={{ width: '55px', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', textAlign: 'center', fontSize: '13px', fontWeight: '700' }} />
                   )}
                 </div>
 
                 {/* Service Charge */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input type="checkbox" id="service-toggle" checked={applyServiceCharge} onChange={(e) => setApplyServiceCharge(e.target.checked)} />
-                    <label htmlFor="service-toggle" style={{ fontSize: '12px', fontWeight: '500', color: '#475569' }}>Service Charge %</label>
+                    <input type="checkbox" id="service-toggle" checked={applyServiceCharge} onChange={(e) => setApplyServiceCharge(e.target.checked)} style={{ accentColor: 'var(--primary)' }} />
+                    <label htmlFor="service-toggle" style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Service Charge %</label>
                   </div>
                   {applyServiceCharge && (
-                    <input type="number" value={serviceChargeRate} onChange={(e) => setServiceChargeRate(parseFloat(e.target.value) || 0)} style={{ width: '50px', padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center', fontSize: '12px' }} />
+                    <input type="number" value={serviceChargeRate} onChange={(e) => setServiceChargeRate(parseFloat(e.target.value) || 0)} style={{ width: '55px', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', textAlign: 'center', fontSize: '13px', fontWeight: '700' }} />
                   )}
                 </div>
 
                 {/* GST */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input type="checkbox" id="gst-toggle" checked={applyGst} onChange={(e) => setApplyGst(e.target.checked)} />
-                    <label htmlFor="gst-toggle" style={{ fontSize: '12px', fontWeight: '500', color: '#475569' }}>GST %</label>
+                    <input type="checkbox" id="gst-toggle" checked={applyGst} onChange={(e) => setApplyGst(e.target.checked)} style={{ accentColor: 'var(--primary)' }} />
+                    <label htmlFor="gst-toggle" style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>GST %</label>
                   </div>
                   {applyGst && (
-                    <input type="number" value={gstRate} onChange={(e) => setGstRate(parseFloat(e.target.value) || 0)} style={{ width: '50px', padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center', fontSize: '12px' }} />
+                    <input type="number" value={gstRate} onChange={(e) => setGstRate(parseFloat(e.target.value) || 0)} style={{ width: '55px', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', textAlign: 'center', fontSize: '13px', fontWeight: '700' }} />
                   )}
                 </div>
 
                 {/* Split Bill */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', fontWeight: '500', color: '#475569' }}>Split Bill (Ways)</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <button style={{ border: '1px solid #cbd5e1', background: 'white', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }} onClick={() => setSplitWays(Math.max(1, splitWays - 1))}>-</button>
-                    <span style={{ fontSize: '12px', fontWeight: 'bold', width: '20px', textAlign: 'center' }}>{splitWays}</span>
-                    <button style={{ border: '1px solid #cbd5e1', background: 'white', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }} onClick={() => setSplitWays(splitWays + 1)}>+</button>
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Split Bill (Ways)</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <button style={{ width: '28px', height: '28px', border: '1px solid #cbd5e1', background: 'white', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: '700' }} onClick={() => setSplitWays(Math.max(1, splitWays - 1))}>−</button>
+                    <span style={{ fontSize: '14px', fontWeight: '800', width: '24px', textAlign: 'center' }}>{splitWays}</span>
+                    <button style={{ width: '28px', height: '28px', border: '1px solid #cbd5e1', background: 'white', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: '700' }} onClick={() => setSplitWays(splitWays + 1)}>+</button>
                   </div>
                 </div>
 
                 {/* Order Notes */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: '500', color: '#475569' }}>Order Note / Instructions</label>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Order Note / Instructions</label>
                   <textarea
                     value={orderNote}
                     onChange={(e) => setOrderNote(e.target.value)}
                     placeholder="Add general instructions for this order..."
-                    style={{ width: '100%', padding: '8px', fontSize: '12px', border: '1px solid #cbd5e1', borderRadius: '6px', minHeight: '60px', outline: 'none', resize: 'none' }}
+                    style={{ width: '100%', padding: '10px', fontSize: '13px', border: '1px solid #cbd5e1', borderRadius: '8px', minHeight: '60px', outline: 'none', resize: 'none', fontFamily: 'inherit' }}
                   />
                 </div>
 
                 {/* Loyalty Redeemed */}
                 {redeemedPoints > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444', fontSize: '12px', fontWeight: 'bold' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444', fontSize: '13px', fontWeight: '700', padding: '8px 0', borderTop: '1px dashed #fecaca' }}>
                     <span>Points Redeemed</span>
                     <span>-₹{redeemedPoints.toFixed(2)}</span>
                   </div>
@@ -6508,32 +6609,31 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
             )}
           </div>
 
-          <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff' }}>
+          {/* Grand Total & Payment */}
+          <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fafbfc', borderTop: '1px solid #e2e8f0' }}>
             <div>
-              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Total Amount</div>
-              <div style={{ fontSize: '24px', fontWeight: '900', color: 'var(--primary)' }}>₹{grandTotal.toFixed(2)}</div>
-              {splitWays > 1 && <div style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 'bold' }}>₹{(grandTotal / splitWays).toFixed(2)} / person</div>}
+              <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>Total Amount</div>
+              <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--primary)', letterSpacing: '-1px', lineHeight: '1' }}>₹{grandTotal.toFixed(2)}</div>
+              {splitWays > 1 && <div style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '700', marginTop: '4px' }}>₹{(grandTotal / splitWays).toFixed(2)} / person</div>}
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', gap: '4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: '6px' }}>
                 {['Cash', 'Card', 'UPI'].map(method => (
                   <button
                     key={method}
                     onClick={() => setPaymentMethod(method)}
                     style={{
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid',
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      border: '2px solid',
                       borderColor: paymentMethod === method ? 'var(--primary)' : '#e2e8f0',
                       background: paymentMethod === method ? '#fef2f2' : 'white',
                       color: paymentMethod === method ? 'var(--primary)' : '#64748b',
-                      fontSize: '11px',
-                      fontWeight: 'bold',
+                      fontSize: '12px',
+                      fontWeight: '800',
                       cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
+                      transition: 'all 0.15s ease'
                     }}
                   >
                     {method}
@@ -6541,17 +6641,18 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                 ))}
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                <input type="checkbox" checked={isPaid} onChange={() => setIsPaid(!isPaid)} />
-                <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569' }}>Mark as Paid</span>
+                <input type="checkbox" checked={isPaid} onChange={() => setIsPaid(!isPaid)} style={{ accentColor: 'var(--primary)' }} />
+                <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>Mark as Paid</span>
               </label>
             </div>
           </div>
 
-          <div className="footer-btn-grid" style={{ padding: '8px', gap: '8px' }}>
-            <button disabled={!IS_LOCAL || isProcessing} className="btn-maroon" onClick={handleSave} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed' }}>{isProcessing ? 'Saving...' : 'Save'}</button>
-            <button disabled={!IS_LOCAL || isProcessing} className="btn-maroon" onClick={handlePrintBill} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed' }}>Print Bill</button>
+          {/* Action Buttons */}
+          <div className="footer-btn-grid" style={{ padding: '10px', gap: '8px' }}>
+            <button disabled={!IS_LOCAL || isProcessing} className="btn-maroon" onClick={handleSave} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed' }}>{isProcessing ? 'Saving...' : 'SAVE'}</button>
+            <button disabled={!IS_LOCAL || isProcessing} className="btn-maroon" onClick={handlePrintBill} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed' }}>PRINT BILL</button>
             <button disabled={!IS_LOCAL || isProcessing} className="btn-grey" onClick={handleKOT} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed' }}>KOT</button>
-            <button disabled={!IS_LOCAL || isProcessing} className="btn-grey" style={{ background: '#374151', opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed' }} onClick={handleKOTPrint}>KOT & Print</button>
+            <button disabled={!IS_LOCAL || isProcessing} className="btn-grey" style={{ background: '#374151', opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed' }} onClick={handleKOTPrint}>KOT & PRINT</button>
           </div>
           
 
@@ -7566,13 +7667,19 @@ function MainApp() {
             gst_enabled: Boolean(t.gst_enabled),
             gst_rate: t.gst_rate,
             service_charge_enabled: Boolean(t.service_charge_enabled),
-            service_charge_rate: t.service_charge_rate
+            service_charge_rate: t.service_charge_rate,
+            customerName: t.customerName || t.customer_name || '',
+            customer_name: t.customer_name || t.customerName || '',
+            phone: t.phone || ''
           }));
 
           // 🛡️ PREVENT CLOBBERING: If we are currently editing a table, 
           // or if it was recently saved locally, do NOT let the global sync overwrite it.
           return normalized.map(newT => {
             const tid = String(newT.id);
+            const isVacantFromServer = !newT.status || newT.status.toLowerCase() === 'vacant' || newT.status.toLowerCase() === 'available';
+            // If server says table is vacant, always accept server data (clears customer info)
+            if (isVacantFromServer) return newT;
             if (selectedTableRef.current && String(selectedTableRef.current.id) === tid) {
               const localT = prev.find(t => String(t.id) === tid);
               if (localT) return { ...localT };
@@ -7610,6 +7717,7 @@ function MainApp() {
         setTables(prev => prev.map(t => {
           if (matchFn(t)) {
             const items = payload.items || [];
+            const isNowVacant = !payload.status || payload.status.toLowerCase() === 'vacant' || payload.status.toLowerCase() === 'available';
             return { 
               ...t, 
               status: payload.status, 
@@ -7619,7 +7727,10 @@ function MainApp() {
               gst_enabled: Boolean(payload.gst_enabled),
               gst_rate: payload.gst_rate,
               service_charge_enabled: Boolean(payload.service_charge_enabled),
-              service_charge_rate: payload.service_charge_rate
+              service_charge_rate: payload.service_charge_rate,
+              customerName: isNowVacant ? '' : (payload.customerName || payload.customer_name || t.customerName || ''),
+              customer_name: isNowVacant ? '' : (payload.customer_name || payload.customerName || t.customer_name || ''),
+              phone: isNowVacant ? '' : (payload.phone || t.phone || '')
             };
           }
           return t;
@@ -7867,7 +7978,7 @@ function MainApp() {
       if (isFloorTable) {
         setTables(prev => prev.map(t => {
           if (String(t.id).toUpperCase() === finalTid || String(t.table_number).toUpperCase() === finalTid) {
-            return { ...t, status: 'vacant', orders: [], items: [], total: 0 };
+            return { ...t, status: 'vacant', orders: [], items: [], total: 0, customerName: '', customer_name: '', phone: '' };
           }
           return t;
         }));
@@ -8042,6 +8153,9 @@ function MainApp() {
             status: newStatus || 'occupied', 
             orders: orderItems,
             total: total,
+            customerName: extraData.customerName || t.customerName || t.customer_name || '',
+            customer_name: extraData.customerName || t.customer_name || t.customerName || '',
+            phone: extraData.customerPhone || t.phone || '',
             gst_enabled: extraData.gst_enabled,
             gst_rate: extraData.gst_rate,
             service_charge_enabled: extraData.service_charge_enabled,
@@ -8062,6 +8176,9 @@ function MainApp() {
           table_number: finalTid,
           items: orderItems.map(i => ({ name: i.name, quantity: i.qty, price: i.price, notes: i.note || '' })),
           notes: extraData.note || '',
+          customerName: extraData.customerName || '',
+          customer_name: extraData.customerName || '',
+          phone: extraData.customerPhone || '',
           gst_enabled: extraData.gst_enabled,
           gst_rate: extraData.gst_rate,
           service_charge_enabled: extraData.service_charge_enabled,
@@ -8072,6 +8189,9 @@ function MainApp() {
         await apiService.updateOrder(finalTid, { 
           items: orderItems, 
           status: backendStatus,
+          customerName: extraData.customerName || '',
+          customer_name: extraData.customerName || '',
+          phone: extraData.customerPhone || '',
           gst_enabled: extraData.gst_enabled,
           gst_rate: extraData.gst_rate,
           service_charge_enabled: extraData.service_charge_enabled,
