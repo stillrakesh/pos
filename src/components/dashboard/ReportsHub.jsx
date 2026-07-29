@@ -7,7 +7,7 @@ import { BASE_URL } from '../../constants';
 import apiService from '../../services/apiService';
 
 
-const PALETTE = ['#a3112a','#2563eb','#10b981','#f59e0b','#8b5cf6','#06b6d4','#ef4444','#84cc16'];
+const PALETTE = ['#94161c','#2563eb','#10b981','#f59e0b','#8b5cf6','#06b6d4','#ef4444','#84cc16'];
 
 const KPICard = ({ label, value, icon: Icon, color, sub, trend }) => (
   <div style={{ background:'white', padding:'24px', borderRadius:'20px', border:'1px solid #e2e8f0', display:'flex', flexDirection:'column', gap:'12px', transition:'transform 0.2s' }}
@@ -45,15 +45,21 @@ const SectionCard = ({ title, subtitle, children, action }) => (
 );
 
 const TabBtn = ({ label, icon: Icon, active, onClick }) => (
-  <button onClick={onClick} style={{ display:'flex', alignItems:'center', gap:8, padding:'12px 4px', border:'none', background:'none', fontSize:14, fontWeight:900, cursor:'pointer', color: active?'#111827':'#94a3b8', borderBottom:`3px solid ${active?'#a3112a':'transparent'}`, transition:'all 0.2s', position:'relative', whiteSpace:'nowrap' }}>
+  <button onClick={onClick} style={{ display:'flex', alignItems:'center', gap:8, padding:'12px 4px', border:'none', background:'none', fontSize:14, fontWeight:900, cursor:'pointer', color: active?'#111827':'#94a3b8', borderBottom:`3px solid ${active?'#94161c':'transparent'}`, transition:'all 0.2s', position:'relative', whiteSpace:'nowrap' }}>
     <Icon size={17} />{label}
   </button>
 );
 
 const RANGES = ['Today','Yesterday','Last 7 Days','Last 30 Days','This Month','Last Month','Custom'];
 
-const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[], loadHistory }) => {
-  const [tab, setTab] = useState('overview');
+const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[], loadHistory, initialTab='overview' }) => {
+  const [tab, setTab] = useState(initialTab || 'overview');
+
+  useEffect(() => {
+    if (initialTab) {
+      setTab(initialTab);
+    }
+  }, [initialTab]);
   const [range, setRange] = useState('Today');
   const [custom, setCustom] = useState({ start: new Date().toISOString().split('T')[0], end: new Date().toISOString().split('T')[0] });
   const [closeHour, setCloseHour] = useState(0);
@@ -450,7 +456,7 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
     const type = o.type || o.orderType || '';
     if (type === 'Delivery' || id.startsWith('DL-') || id.startsWith('DEL-') || tableNum.startsWith('DL-') || tableNum.startsWith('DEL-')) return { label: 'Delivery', color: '#2563eb', bg: '#eff6ff' };
     if (type === 'Takeaway' || id.startsWith('TA-') || id.startsWith('TAK-') || tableNum.startsWith('TA-') || tableNum.startsWith('TAK-')) return { label: 'Takeaway', color: '#8b5cf6', bg: '#f5f3ff' };
-    return { label: 'Dine In', color: '#a3112a', bg: '#fff1f2' };
+    return { label: 'Dine In', color: '#94161c', bg: '#fff1f2' };
   };
 
   const sortIcon = (field) => {
@@ -480,7 +486,7 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
       <div style={{ background:'rgba(255,255,255,0.95)', backdropFilter:'blur(20px)', padding:'20px 28px', borderBottom:'1px solid #e2e8f0', position:'sticky', top:0, zIndex:50 }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
           <div>
-            <div style={{ fontSize:11, color:'#a3112a', fontWeight:900, textTransform:'uppercase', letterSpacing:2 }}>Business Intelligence</div>
+            <div style={{ fontSize:11, color:'#94161c', fontWeight:900, textTransform:'uppercase', letterSpacing:2 }}>Business Intelligence</div>
             <h1 style={{ fontSize:24, fontWeight:950, color:'#111827', letterSpacing:-0.5, margin:0 }}>Analytics Dashboard</h1>
           </div>
           <div style={{ display:'flex', gap:8 }}>
@@ -532,14 +538,14 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
             <div style={{ fontSize:18, fontWeight:950, color:'#111827', marginBottom:8 }}>Business Day Close Time</div>
             <div style={{ fontSize:13, color:'#64748b', marginBottom:20, lineHeight:1.6 }}>Orders before this hour are counted in the <strong>previous day's</strong> sales. Use for cafes open past midnight.</div>
             <div style={{ marginBottom:20 }}>
-              <label style={{ fontSize:12, fontWeight:800, color:'#374151', display:'block', marginBottom:8 }}>Day closes at:</label>
-              <select value={localCloseHour} onChange={e=>setLocalCloseHour(Number(e.target.value))} style={{ width:'100%', padding:10, borderRadius:10, border:'1px solid #d1d5db', fontSize:15, fontWeight:700 }}>
+              <label style={{ fontSize:12, fontWeight:800, color:'#334155', display:'block', marginBottom:8 }}>Day closes at:</label>
+              <select value={localCloseHour} onChange={e=>setLocalCloseHour(Number(e.target.value))} style={{ width:'100%', padding:10, borderRadius:10, border:'1px solid #cbd5e1', fontSize:15, fontWeight:700 }}>
                 {[0,1,2,3,4,5,6].map(h=><option key={h} value={h}>{h===0?'12:00 AM (Midnight — Standard)':`${h}:00 AM`}</option>)}
               </select>
             </div>
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={()=>setShowSettings(false)} style={{ flex:1, padding:12, borderRadius:12, border:'1px solid #e2e8f0', background:'white', fontWeight:700, cursor:'pointer', color:'#64748b' }}>Cancel</button>
-              <button onClick={saveCloseHour} style={{ flex:1, padding:12, borderRadius:12, border:'none', background:'#a3112a', color:'white', fontWeight:800, cursor:'pointer' }}>Save</button>
+              <button onClick={saveCloseHour} style={{ flex:1, padding:12, borderRadius:12, border:'none', background:'#94161c', color:'white', fontWeight:800, cursor:'pointer' }}>Save</button>
             </div>
           </div>
         </div>
@@ -551,7 +557,7 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
         {tab !== 'orders' && (
           <>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:12 }}>
-              <KPICard label="Total Revenue" value={formatCurrency(totalRevenue||0)} icon={TrendingUp} color="#a3112a" sub={`${totalOrders||0} orders`} trend={changes.revenue}/>
+              <KPICard label="Total Revenue" value={formatCurrency(totalRevenue||0)} icon={TrendingUp} color="#94161c" sub={`${totalOrders||0} orders`} trend={changes.revenue}/>
               <KPICard label="Net Sales (Base)" value={formatCurrency(netSales||0)} icon={DollarSign} color="#059669" sub="Excl. GST/SC" trend={changes.netSales}/>
               <KPICard label="Avg Order Value" value={formatCurrency(avgOrderValue||0)} icon={CreditCard} color="#8b5cf6" sub="per bill" trend={changes.aov}/>
               <KPICard label="Items Sold" value={totalItems||0} icon={ShoppingBag} color="#2563eb" sub={`${totalOrders>0?(totalItems/totalOrders).toFixed(1):0} per order`} trend={changes.items}/>
@@ -566,7 +572,7 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
                   <div style={{ fontSize:22, fontWeight:950, color:'#111827' }}>{formatCurrency(sourceBreakdown['Dine In'])}</div>
                   <div style={{ fontSize:11, color:'#94a3b8', fontWeight:700 }}>{sourceCounts['Dine In']} orders</div>
                 </div>
-                <div style={{ padding:10, borderRadius:12, background:'#fef2f2' }}><ShoppingBag size={20} color="#a3112a"/></div>
+                <div style={{ padding:10, borderRadius:12, background:'#fef2f2' }}><ShoppingBag size={20} color="#94161c"/></div>
               </div>
               <div style={{ background:'white', padding:20, borderRadius:16, border:'1px solid #e2e8f0', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                 <div>
@@ -613,7 +619,7 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
                   value={orderSearch}
                   onChange={e => setOrderSearch(e.target.value)}
                   style={{ width:'100%', padding:'11px 14px 11px 42px', borderRadius:12, border:'1.5px solid #e2e8f0', fontSize:14, fontWeight:600, outline:'none', boxSizing:'border-box', transition:'border 0.2s' }}
-                  onFocus={e=>e.target.style.borderColor='#a3112a'}
+                  onFocus={e=>e.target.style.borderColor='#94161c'}
                   onBlur={e=>e.target.style.borderColor='#e2e8f0'}
                 />
                 {orderSearch && (
@@ -627,7 +633,7 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
               <div style={{ display:'flex', gap:10, flexWrap:'wrap', alignItems:'center' }}>
                 <span style={{ fontSize:12, fontWeight:800, color:'#64748b', display:'flex', alignItems:'center', gap:4 }}><Filter size={13}/> Type:</span>
                 {orderTypeFilters.map(f => (
-                  <button key={f} onClick={()=>setOrderTypeFilter(f)} style={{ padding:'5px 14px', borderRadius:20, fontSize:12, fontWeight:800, border:`1.5px solid ${orderTypeFilter===f?'#a3112a':'#e2e8f0'}`, background: orderTypeFilter===f?'#a3112a':'white', color: orderTypeFilter===f?'white':'#475569', cursor:'pointer', transition:'all 0.15s' }}>{f}</button>
+                  <button key={f} onClick={()=>setOrderTypeFilter(f)} style={{ padding:'5px 14px', borderRadius:20, fontSize:12, fontWeight:800, border:`1.5px solid ${orderTypeFilter===f?'#94161c':'#e2e8f0'}`, background: orderTypeFilter===f?'#94161c':'white', color: orderTypeFilter===f?'white':'#475569', cursor:'pointer', transition:'all 0.15s' }}>{f}</button>
                 ))}
                 <span style={{ fontSize:12, fontWeight:800, color:'#64748b', marginLeft:8, display:'flex', alignItems:'center', gap:4 }}><CreditCard size={13}/> Payment:</span>
                 {orderPayFilters.map(f => (
@@ -640,9 +646,9 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 4px' }}>
               <div style={{ fontSize:13, fontWeight:800, color:'#64748b' }}>
                 {searchedOrders.length === 0 ? 'No orders found' : `Showing ${searchedOrders.length} order${searchedOrders.length !== 1 ? 's' : ''}`}
-                {orderSearch && <span style={{ color:'#a3112a' }}> matching "{orderSearch}"</span>}
+                {orderSearch && <span style={{ color:'#94161c' }}> matching "{orderSearch}"</span>}
               </div>
-              <div style={{ fontSize:13, fontWeight:700, color:'#a3112a' }}>
+              <div style={{ fontSize:13, fontWeight:700, color:'#94161c' }}>
                 Total: {formatCurrency(searchedOrders.reduce((s,o) => s + (o.grandTotal || o.grand_total || 0), 0))}
               </div>
             </div>
@@ -695,7 +701,7 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
                       <div style={{ fontSize:12, color:'#64748b', fontWeight:700 }}>
                         {o.timestamp ? new Date(o.timestamp).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:true }) : '—'}
                       </div>
-                      <div style={{ fontSize:12, fontWeight:800, color:'#374151', fontFamily:'monospace' }}>
+                      <div style={{ fontSize:12, fontWeight:800, color:'#334155', fontFamily:'monospace' }}>
                         #{String(o.id || '').slice(0, 10)}
                       </div>
                       <div>
@@ -726,9 +732,9 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
               {/* Pagination */}
               {totalSearchedPages > 1 && (
                 <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:8, padding:'16px', borderTop:'1px solid #f1f5f9' }}>
-                  <button onClick={()=>setOrderPage(p=>Math.max(1,p-1))} disabled={orderPage===1} style={{ padding:'6px 14px', borderRadius:8, border:'1px solid #e2e8f0', background:'white', fontWeight:700, cursor: orderPage===1 ? 'default' : 'pointer', color: orderPage===1 ? '#cbd5e1' : '#374151' }}>← Prev</button>
+                  <button onClick={()=>setOrderPage(p=>Math.max(1,p-1))} disabled={orderPage===1} style={{ padding:'6px 14px', borderRadius:8, border:'1px solid #e2e8f0', background:'white', fontWeight:700, cursor: orderPage===1 ? 'default' : 'pointer', color: orderPage===1 ? '#cbd5e1' : '#334155' }}>← Prev</button>
                   <span style={{ fontSize:13, fontWeight:700, color:'#64748b' }}>Page {orderPage} of {totalSearchedPages}</span>
-                  <button onClick={()=>setOrderPage(p=>Math.min(totalSearchedPages,p+1))} disabled={orderPage===totalSearchedPages} style={{ padding:'6px 14px', borderRadius:8, border:'1px solid #e2e8f0', background:'white', fontWeight:700, cursor: orderPage===totalSearchedPages ? 'default' : 'pointer', color: orderPage===totalSearchedPages ? '#cbd5e1' : '#374151' }}>Next →</button>
+                  <button onClick={()=>setOrderPage(p=>Math.min(totalSearchedPages,p+1))} disabled={orderPage===totalSearchedPages} style={{ padding:'6px 14px', borderRadius:8, border:'1px solid #e2e8f0', background:'white', fontWeight:700, cursor: orderPage===totalSearchedPages ? 'default' : 'pointer', color: orderPage===totalSearchedPages ? '#cbd5e1' : '#334155' }}>Next →</button>
                 </div>
               )}
             </div>
@@ -757,12 +763,12 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
                 <div style={{ height:300 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={trend}>
-                      <defs><linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#a3112a" stopOpacity={0.15}/><stop offset="95%" stopColor="#a3112a" stopOpacity={0}/></linearGradient></defs>
+                      <defs><linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#94161c" stopOpacity={0.15}/><stop offset="95%" stopColor="#94161c" stopOpacity={0}/></linearGradient></defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
                       <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize:11, fill:'#94a3b8', fontWeight:700 }}/>
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize:11, fill:'#94a3b8', fontWeight:700 }} tickFormatter={v=>`₹${v>=1000?`${(v/1000).toFixed(1)}k`:v}`}/>
                       <RechartsTooltip formatter={v=>[formatCurrency(v),'Revenue']} labelStyle={{ fontWeight:700 }}/>
-                      <Area type="monotone" dataKey="revenue" stroke="#a3112a" strokeWidth={3} fill="url(#revGrad)" dot={{ r:3, fill:'#a3112a' }}/>
+                      <Area type="monotone" dataKey="revenue" stroke="#94161c" strokeWidth={3} fill="url(#revGrad)" dot={{ r:3, fill:'#94161c' }}/>
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -796,7 +802,7 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
               </div>
               <div>
                 <div style={{ fontSize: 12, fontWeight: 900, color: '#9a3412', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>Staff Incentives (Tips)</div>
-                <div style={{ fontSize: 28, fontWeight: 950, color: '#111827', letterSpacing: '-0.5px' }}>{formatCurrency(totalTips)}</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: '#111827', letterSpacing: '-0.5px' }}>{formatCurrency(totalTips)}</div>
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
@@ -852,7 +858,7 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
                         <td style={{ padding:12, fontSize:14, fontWeight:800, color:'#1e293b' }}>{c.name}</td>
                         <td style={{ padding:12, textAlign:'right', fontSize:13, fontWeight:700, color:'#64748b' }}>{c.orders}</td>
                         <td style={{ padding:12, textAlign:'right', fontSize:13, fontWeight:700, color:'#10b981' }}>{formatCurrency(c.tips)}</td>
-                        <td style={{ padding:12, textAlign:'right', fontSize:14, fontWeight:900, color:'#a3112a' }}>{formatCurrency(c.revenue)}</td>
+                        <td style={{ padding:12, textAlign:'right', fontSize:14, fontWeight:900, color:'#94161c' }}>{formatCurrency(c.revenue)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -873,14 +879,14 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
                     <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#94a3b8', fontWeight:700 }}/>
                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#94a3b8' }} tickFormatter={v=>`₹${v>=1000?`${(v/1000).toFixed(1)}k`:v}`}/>
                     <RechartsTooltip formatter={v=>[formatCurrency(v),'Revenue']}/>
-                    <Bar dataKey="revenue" fill="#a3112a" radius={[4,4,0,0]}>
-                      {hourlyBuckets.map((h,i)=><Cell key={i} fill={h.key===peakHour.key?'#a3112a':'#e2e8f0'}/>)}
+                    <Bar dataKey="revenue" fill="#94161c" radius={[4,4,0,0]}>
+                      {hourlyBuckets.map((h,i)=><Cell key={i} fill={h.key===peakHour.key?'#94161c':'#e2e8f0'}/>)}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
               {peakHour.revenue>0 && (
-                <div style={{ marginTop:12, padding:'10px 16px', background:'#fef2f2', borderRadius:10, fontSize:13, color:'#a3112a', fontWeight:700 }}>
+                <div style={{ marginTop:12, padding:'10px 16px', background:'#fef2f2', borderRadius:10, fontSize:13, color:'#94161c', fontWeight:700 }}>
                   🔥 Peak: {peakHour.key} — {formatCurrency(peakHour.revenue)} revenue, {peakHour.orders} orders
                 </div>
               )}
@@ -896,7 +902,7 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
                       <YAxis yAxisId="rev" axisLine={false} tickLine={false} tick={{ fontSize:11, fill:'#94a3b8' }} tickFormatter={v=>`₹${v>=1000?`${(v/1000).toFixed(1)}k`:v}`}/>
                       <YAxis yAxisId="ord" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize:11, fill:'#94a3b8' }}/>
                       <RechartsTooltip formatter={(v,n)=>n==='revenue'?[formatCurrency(v),'Revenue']:[v,'Orders']}/>
-                      <Bar yAxisId="rev" dataKey="revenue" fill="#a3112a" radius={[4,4,0,0]} opacity={0.85}/>
+                      <Bar yAxisId="rev" dataKey="revenue" fill="#94161c" radius={[4,4,0,0]} opacity={0.85}/>
                       <Bar yAxisId="ord" dataKey="orders" fill="#2563eb" radius={[4,4,0,0]} opacity={0.7}/>
                     </BarChart>
                   </ResponsiveContainer>
@@ -908,7 +914,7 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
                   <ResponsiveContainer width="100%" height="100%">
                     <RechartsPieChart>
                       <Pie data={sourceData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value">
-                        <Cell fill="#a3112a" stroke="none"/>
+                        <Cell fill="#94161c" stroke="none"/>
                         <Cell fill="#2563eb" stroke="none"/>
                       </Pie>
                       <RechartsTooltip formatter={v=>[formatCurrency(v),'Revenue']}/>
@@ -919,7 +925,7 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
                   {sourceData.map((d,i)=>(
                     <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 12px', background:'#f8fafc', borderRadius:10 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                        <div style={{ width:10, height:10, borderRadius:3, background: i===0?'#a3112a':'#2563eb' }}/>
+                        <div style={{ width:10, height:10, borderRadius:3, background: i===0?'#94161c':'#2563eb' }}/>
                         <span style={{ fontSize:12, fontWeight:800, color:'#1e293b' }}>{d.name}</span>
                       </div>
                       <span style={{ fontSize:13, fontWeight:950, color:'#111827' }}>{formatCurrency(d.value)}</span>
@@ -1025,7 +1031,7 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
             <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
               <SectionCard title="Revenue Summary">
                 <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-                  {[{ label:'Total Revenue', val: totalRevenue||0, color:'#a3112a' },{ label:'GST Collected', val: totalGst||0, color:'#f59e0b' },{ label:'Service Charge', val: totalSC||0, color:'#10b981' }].map((row,i)=>(
+                  {[{ label:'Total Revenue', val: totalRevenue||0, color:'#94161c' },{ label:'GST Collected', val: totalGst||0, color:'#f59e0b' },{ label:'Service Charge', val: totalSC||0, color:'#10b981' }].map((row,i)=>(
                     <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'12px 16px', background:`${row.color}08`, borderRadius:12, border:`1px solid ${row.color}20` }}>
                       <span style={{ fontSize:13, fontWeight:700, color:'#1e293b' }}>{row.label}</span>
                       <span style={{ fontSize:15, fontWeight:950, color:row.color }}>{formatCurrency(row.val)}</span>
@@ -1046,7 +1052,7 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
                     const amt = payBreakdown[m]||0;
                     return (
                       <div key={m} style={{ display:'flex', justifyContent:'space-between', padding:'10px 14px', background:'#f8fafc', borderRadius:10 }}>
-                        <span style={{ fontSize:13, fontWeight:800, color:'#374151' }}>{m}</span>
+                        <span style={{ fontSize:13, fontWeight:800, color:'#334155' }}>{m}</span>
                         <span style={{ fontSize:14, fontWeight:950, color: amt>0?'#111827':'#94a3b8' }}>{formatCurrency(amt)}</span>
                       </div>
                     );
@@ -1077,23 +1083,23 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 2fr 1.5fr auto', gap:10, alignItems:'flex-end' }}>
                 <div>
                   <label style={{ fontSize:11, fontWeight:800, color:'#64748b', display:'block', marginBottom:6 }}>AMOUNT (₹)</label>
-                  <input type="number" placeholder="0.00" value={newExp.amount} onChange={e=>setNewExp(p=>({...p,amount:e.target.value}))} style={{ width:'100%', padding:'10px 12px', borderRadius:10, border:'1px solid #d1d5db', fontSize:14, fontWeight:800, outline:'none' }}/>
+                  <input type="number" placeholder="0.00" value={newExp.amount} onChange={e=>setNewExp(p=>({...p,amount:e.target.value}))} style={{ width:'100%', padding:'10px 12px', borderRadius:10, border:'1px solid #cbd5e1', fontSize:14, fontWeight:800, outline:'none' }}/>
                 </div>
                 <div>
                   <label style={{ fontSize:11, fontWeight:800, color:'#64748b', display:'block', marginBottom:6 }}>CATEGORY</label>
-                  <select value={newExp.category} onChange={e=>setNewExp(p=>({...p,category:e.target.value}))} style={{ width:'100%', padding:'10px 12px', borderRadius:10, border:'1px solid #d1d5db', fontSize:13, fontWeight:700, outline:'none' }}>
+                  <select value={newExp.category} onChange={e=>setNewExp(p=>({...p,category:e.target.value}))} style={{ width:'100%', padding:'10px 12px', borderRadius:10, border:'1px solid #cbd5e1', fontSize:13, fontWeight:700, outline:'none' }}>
                     {['Staff','Supplies','Utilities','Rent','Other'].map(c=><option key={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
                   <label style={{ fontSize:11, fontWeight:800, color:'#64748b', display:'block', marginBottom:6 }}>NOTE</label>
-                  <input placeholder="Description..." value={newExp.note} onChange={e=>setNewExp(p=>({...p,note:e.target.value}))} style={{ width:'100%', padding:'10px 12px', borderRadius:10, border:'1px solid #d1d5db', fontSize:13, outline:'none' }}/>
+                  <input placeholder="Description..." value={newExp.note} onChange={e=>setNewExp(p=>({...p,note:e.target.value}))} style={{ width:'100%', padding:'10px 12px', borderRadius:10, border:'1px solid #cbd5e1', fontSize:13, outline:'none' }}/>
                 </div>
                 <div>
                   <label style={{ fontSize:11, fontWeight:800, color:'#64748b', display:'block', marginBottom:6 }}>DATE</label>
-                  <input type="date" value={newExp.date} onChange={e=>setNewExp(p=>({...p,date:e.target.value}))} style={{ width:'100%', padding:'10px 12px', borderRadius:10, border:'1px solid #d1d5db', fontSize:13, fontWeight:700, outline:'none' }}/>
+                  <input type="date" value={newExp.date} onChange={e=>setNewExp(p=>({...p,date:e.target.value}))} style={{ width:'100%', padding:'10px 12px', borderRadius:10, border:'1px solid #cbd5e1', fontSize:13, fontWeight:700, outline:'none' }}/>
                 </div>
-                <button onClick={addExpense} style={{ display:'flex', alignItems:'center', gap:6, padding:'10px 18px', borderRadius:10, border:'none', background:'#a3112a', color:'white', fontSize:13, fontWeight:800, cursor:'pointer', whiteSpace:'nowrap' }}><Plus size={16}/>Add</button>
+                <button onClick={addExpense} style={{ display:'flex', alignItems:'center', gap:6, padding:'10px 18px', borderRadius:10, border:'none', background:'#94161c', color:'white', fontSize:13, fontWeight:800, cursor:'pointer', whiteSpace:'nowrap' }}><Plus size={16}/>Add</button>
               </div>
             </SectionCard>
 
@@ -1217,7 +1223,7 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
                               </div>
                               <div>
                                 <div>{c.name || 'Guest'}</div>
-                                <span style={{ background: tierBg, color: tierColor, fontSize: '10px', fontWeight: '800', padding: '1px 6px', borderRadius: '8px' }}>
+                                <span style={{ background: tierBg, color: tierColor, fontSize: '11px', fontWeight: '800', padding: '1px 6px', borderRadius: '8px' }}>
                                   {tier}
                                 </span>
                               </div>
@@ -1278,19 +1284,19 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
               {/* Stats Bar */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', padding: '16px 24px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                 <div style={{ background: 'white', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Visits</div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Visits</div>
                   <div style={{ fontSize: '18px', fontWeight: '900', color: '#1e293b', marginTop: '2px' }}>{selectedCustomerProfile.visits || 1}</div>
                 </div>
                 <div style={{ background: 'white', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Total Spent</div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Total Spent</div>
                   <div style={{ fontSize: '18px', fontWeight: '900', color: '#10b981', marginTop: '2px' }}>{formatCurrency(selectedCustomerProfile.total_spent || 0)}</div>
                 </div>
                 <div style={{ background: 'white', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Loyalty Pts</div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Loyalty Pts</div>
                   <div style={{ fontSize: '18px', fontWeight: '900', color: '#8b5cf6', marginTop: '2px' }}>✨ {selectedCustomerProfile.loyalty_points || 0}</div>
                 </div>
                 <div style={{ background: 'white', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Avg Order</div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Avg Order</div>
                   <div style={{ fontSize: '18px', fontWeight: '900', color: '#0284c7', marginTop: '2px' }}>
                     {formatCurrency(selectedCustomerProfile.visits > 0 ? (selectedCustomerProfile.total_spent / selectedCustomerProfile.visits) : selectedCustomerProfile.total_spent || 0)}
                   </div>
@@ -1317,7 +1323,7 @@ const ReportsHub = ({ orderHistory=[], menuItems=[], tables=[], nonTableOrders=[
                                 {new Date(order.timestamp || order.created_at || Date.now()).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </div>
-                            <div style={{ fontWeight: '900', color: '#10b981', fontSize: '15px' }}>
+                            <div style={{ fontWeight: '900', color: '#10b981', fontSize: '14px' }}>
                               {formatCurrency(order.grandTotal || order.totalAmount || order.grand_total || 0)}
                             </div>
                           </div>

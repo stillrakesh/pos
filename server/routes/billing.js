@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { statements } from '../db.js';
+import { runSyncCycle } from '../syncWorker.js';
 import { clearShiftForTable } from '../shifts.js';
 import { normalizeTable } from '../utils/normalization.js';
 
@@ -128,16 +129,43 @@ router.post('/settle', (req, res) => {
 
     // Enqueue for cloud sync (one-way, local → cloud)
     try {
+      const phone = order_details?.phone || order_details?.customerPhone || (table && table.phone) || '';
+      const name = order_details?.customerName || order_details?.customer_name || (table && table.customer_name) || '';
+      
+      const uniqueOrderId = (activeOrders[0]?.id && typeof activeOrders[0].id === 'number' && activeOrders[0].id > 10000) 
+        ? activeOrders[0].id 
+        : Date.now();
+
       statements.enqueueSyncItem({
-        type: 'payment_done',
+        type: 'order_settled',
         payload: {
-          table_id,
-          table_number: table ? table.table_number : table_id,
-          payment_mode: payment_mode || 'unknown',
-          order_details: order_details || {},
-          settled_at: new Date().toISOString()
+          local_order_id: uniqueOrderId,
+          table_number: table ? table.table_number : String(table_id),
+          payment_method: paymentMethod || 'Cash',
+          grand_total: grandTotal,
+          items: itemsToSave,
+          customer_name: name,
+          phone: phone,
+          gst_amount: gstAmount,
+          service_charge: serviceCharge,
+          discount_amount: order_details?.discountAmt || 0,
+          tip_amount: tipAmount,
+          type: order_details?.type || order_details?.orderType || (table && (table.type || table.zone)) || (isVirtual ? 'Takeaway' : 'Dine In'),
+          split_payments: order_details?.splitPayments || [],
+          subtotal: order_details?.subtotal || 0,
+          created_at: new Date().toISOString()
         }
       });
+
+      if (phone && phone.length >= 10) {
+        statements.enqueueSyncItem({
+          type: 'customer_updated',
+          payload: { name, phone, amount_spent: grandTotal }
+        });
+      }
+
+      // Trigger instant cloud push immediately after settlement
+      runSyncCycle().catch(err => console.warn('Instant sync trigger warning:', err.message));
     } catch (syncErr) {
       console.warn('  ⚠️  Failed to enqueue sync item:', syncErr.message);
     }

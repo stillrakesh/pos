@@ -204,7 +204,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <h2 style={{ fontSize: '22px', fontWeight: '950', letterSpacing: '-0.5px', margin: 0 }}>
+              <h2 style={{ fontSize: '22px', fontWeight: '800', letterSpacing: '-0.5px', margin: 0 }}>
                 Captain Control Panel
               </h2>
 
@@ -226,7 +226,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
               {isOnline ? 'Connected to API — polling & real-time socket ready' : 'API server offline — retrying...'}
               {isOnline && (
                 <span style={{ 
-                  fontSize: '10px', fontWeight: '900', padding: '2px 8px', borderRadius: '6px',
+                  fontSize: '11px', fontWeight: '900', padding: '2px 8px', borderRadius: '6px',
                   background: printMethod === 'electron' ? 'rgba(99, 102, 241, 0.15)' : printMethod === 'web-serial' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
                   color: printMethod === 'electron' ? '#818cf8' : printMethod === 'web-serial' ? '#f59e0b' : '#ef4444'
                 }}>
@@ -396,7 +396,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
           {/* QR Code Container */}
           <div style={{ background: 'white', padding: '14px', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
             <QRCodeSVG value={activeUrl} size={130} />
-            <span style={{ fontSize: '11px', color: '#0f172a', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <span style={{ fontSize: '11px', color: '#0f172a', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Scan Mobile Camera
             </span>
           </div>
@@ -435,14 +435,14 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
                 }}>
                   <div style={{ padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                     <div>
-                      <div style={{ fontSize: '20px', fontWeight: '950', color: 'white' }}>Table {order.table_number}</div>
+                      <div style={{ fontSize: '20px', fontWeight: '800', color: 'white' }}>Table {order.table_number}</div>
                       <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '800' }}>ORDER #{order.id} • {timeAgo(order.timestamp)}</div>
                     </div>
                   </div>
                   <div style={{ padding: '16px 24px' }}>
                     {order.items.map((item, idx) => (
                       <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: idx < order.items.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                        <div style={{ fontWeight: '700', fontSize: '15px' }}>
+                        <div style={{ fontWeight: '700', fontSize: '14px' }}>
                           <span style={{ color: '#fca5a5', fontWeight: '900', marginRight: '8px' }}>{item.quantity}×</span>
                           {item.name}
                         </div>
@@ -453,7 +453,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
                     <button onClick={() => handleManualPrint(order)} style={{ 
                       width: '100%', padding: '16px', borderRadius: '18px', border: 'none', 
                       background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', 
-                      fontWeight: '950', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' 
+                      fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' 
                     }}>
                       <Printer size={18} /> PRINT KOT NOW
                     </button>
@@ -510,7 +510,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
             }}>
               <Wifi size={48} color={isOnline ? '#818cf8' : '#64748b'} className={isOnline ? 'animate-pulse' : ''} />
             </div>
-            <h3 style={{ fontSize: '28px', fontWeight: '950', color: '#e2e8f0', marginBottom: '12px' }}>
+            <h3 style={{ fontSize: '28px', fontWeight: '800', color: '#e2e8f0', marginBottom: '12px' }}>
               {isOnline ? 'All Caught Up' : 'Offline Mode'}
             </h3>
             <p style={{ color: '#64748b', fontSize: '16px', fontWeight: '700', maxWidth: '440px', lineHeight: 1.6 }}>
@@ -555,7 +555,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
                   <Activity size={22} color="#38bdf8" />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '950', color: 'white', margin: 0 }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'white', margin: 0 }}>
                     Captain App Network & Connection Diagnostics
                   </h3>
                   <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '700' }}>
@@ -576,34 +576,34 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
                 
                 <div style={{ background: '#0f172a', padding: '16px', borderRadius: '16px', border: '1px solid #334155' }}>
                   <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Server Listening</div>
-                  <div style={{ fontSize: '15px', fontWeight: '950', color: '#10b981', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#10b981', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <CheckSquare size={16} /> 0.0.0.0:3101
                   </div>
-                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>All Network Interfaces</div>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>All Network Interfaces</div>
                 </div>
 
                 <div style={{ background: '#0f172a', padding: '16px', borderRadius: '16px', border: '1px solid #334155' }}>
                   <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Connected Devices</div>
-                  <div style={{ fontSize: '15px', fontWeight: '950', color: '#38bdf8', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#38bdf8', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Smartphone size={16} /> {connectedDeviceCount} Active
                   </div>
-                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>Socket.IO Real-time</div>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Socket.IO Real-time</div>
                 </div>
 
                 <div style={{ background: '#0f172a', padding: '16px', borderRadius: '16px', border: '1px solid #334155' }}>
                   <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Local Domain</div>
-                  <div style={{ fontSize: '15px', fontWeight: '950', color: '#a5b4fc', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#a5b4fc', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Globe size={16} /> {diagnostics?.localDomain || 'localhost'}
                   </div>
-                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>mDNS Network Name</div>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>mDNS Network Name</div>
                 </div>
 
                 <div style={{ background: '#0f172a', padding: '16px', borderRadius: '16px', border: '1px solid #334155' }}>
                   <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Detected Adapters</div>
-                  <div style={{ fontSize: '15px', fontWeight: '950', color: '#f59e0b', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#f59e0b', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Monitor size={16} /> {diagnostics?.interfaces?.length || 1} Interfaces
                   </div>
-                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>IPv4 Addresses</div>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>IPv4 Addresses</div>
                 </div>
 
               </div>
@@ -620,7 +620,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
                       <div>
                         <div style={{ fontWeight: '800', fontSize: '14px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span>{iface.name}</span>
-                          <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: iface.isVirtual ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)', color: iface.isVirtual ? '#f59e0b' : '#34d399', fontWeight: '900' }}>
+                          <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', background: iface.isVirtual ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)', color: iface.isVirtual ? '#f59e0b' : '#34d399', fontWeight: '900' }}>
                             {iface.isVirtual ? 'VIRTUAL (Hyper-V/WSL)' : 'PHYSICAL LAN'}
                           </span>
                         </div>
@@ -642,7 +642,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
 
               {/* STEP-BY-STEP TROUBLESHOOTING GUIDE FOR "SITE CAN'T BE REACHED" */}
               <div>
-                <div style={{ fontWeight: '950', fontSize: '16px', color: '#f8fafc', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ fontWeight: '800', fontSize: '16px', color: '#f8fafc', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <ShieldAlert size={20} color="#ef4444" /> Fix "This site can't be reached" on Mobile Devices:
                 </div>
 
@@ -650,7 +650,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
                   
                   {/* CHECK 1 */}
                   <div style={{ padding: '16px 20px', borderRadius: '16px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-                    <div style={{ fontWeight: '900', fontSize: '15px', color: '#fca5a5', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ fontWeight: '900', fontSize: '14px', color: '#fca5a5', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       1. Change Windows Network Profile to "PRIVATE" (MOST COMMON FIX)
                     </div>
                     <div style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.6 }}>
@@ -667,7 +667,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
 
                   {/* CHECK 2 */}
                   <div style={{ padding: '16px 20px', borderRadius: '16px', background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
-                    <div style={{ fontWeight: '900', fontSize: '15px', color: '#38bdf8', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ fontWeight: '900', fontSize: '14px', color: '#38bdf8', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       2. Add Windows Firewall Inbound Rule for Port 3101
                     </div>
                     <div style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.6 }}>
@@ -686,7 +686,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
 
                   {/* CHECK 3 */}
                   <div style={{ padding: '16px 20px', borderRadius: '16px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-                    <div style={{ fontWeight: '900', fontSize: '15px', color: '#f59e0b', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ fontWeight: '900', fontSize: '14px', color: '#f59e0b', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       3. Verify Same Wi-Fi Network & Router "AP Isolation"
                     </div>
                     <div style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.6 }}>
@@ -697,12 +697,12 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
 
                   {/* CHECK 4 */}
                   <div style={{ padding: '16px 20px', borderRadius: '16px', background: 'rgba(168, 85, 247, 0.1)', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
-                    <div style={{ fontWeight: '900', fontSize: '15px', color: '#c084fc', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ fontWeight: '900', fontSize: '14px', color: '#c084fc', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       4. Try Hostname Link instead of IP Address
                     </div>
                     <div style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.6 }}>
                       On iPhone (Safari) and Android (Chrome), you can type the local hostname directly:
-                      <div style={{ fontSize: '15px', fontWeight: '950', color: '#c084fc', margin: '6px 0', fontFamily: 'monospace' }}>
+                      <div style={{ fontSize: '14px', fontWeight: '800', color: '#c084fc', margin: '6px 0', fontFamily: 'monospace' }}>
                         http://{diagnostics?.localDomain || 'rakesh-pc.local'}:3101/captain/
                       </div>
                       mDNS allows your phone to discover the PC even if the IP address changes!
@@ -741,3 +741,4 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
 };
 
 export default CaptainOrders;
+

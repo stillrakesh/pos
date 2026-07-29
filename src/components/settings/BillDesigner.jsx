@@ -220,7 +220,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
             >
               <div style={{ position: 'absolute', top: '2px', left: section.visible ? '18px' : '2px', width: '20px', height: '20px', borderRadius: '50%', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'all 0.3s' }} />
             </button>
-            <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#1e293b', textTransform: 'capitalize' }}>
+            <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '800', color: '#1e293b', textTransform: 'capitalize' }}>
               {section.type.replace(/([A-Z])/g, ' $1').trim()}
             </h4>
           </div>
@@ -379,10 +379,10 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                 <div>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px' }}>Column Widths (chars)</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px' }}>
-                    <div><span style={{ fontSize: '10px', color: '#94a3b8' }}>Qty Width</span><input type="number" value={section.data.colQty || 4} onChange={(e) => updateSectionData(index, 'colQty', parseInt(e.target.value))} style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
-                    <div><span style={{ fontSize: '10px', color: '#94a3b8' }}>Note Width</span><input type="number" value={section.data.colNote || 15} onChange={(e) => updateSectionData(index, 'colNote', parseInt(e.target.value))} style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
-                    <div><span style={{ fontSize: '10px', color: '#94a3b8' }}>Price Width</span><input type="number" value={section.data.colPrice || 8} onChange={(e) => updateSectionData(index, 'colPrice', parseInt(e.target.value))} style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
-                    <div><span style={{ fontSize: '10px', color: '#94a3b8' }}>Total Width</span><input type="number" value={section.data.colTotal || 8} onChange={(e) => updateSectionData(index, 'colTotal', parseInt(e.target.value))} style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                    <div><span style={{ fontSize: '11px', color: '#94a3b8' }}>Qty Width</span><input type="number" value={section.data.colQty || 4} onChange={(e) => updateSectionData(index, 'colQty', parseInt(e.target.value))} style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                    <div><span style={{ fontSize: '11px', color: '#94a3b8' }}>Note Width</span><input type="number" value={section.data.colNote || 15} onChange={(e) => updateSectionData(index, 'colNote', parseInt(e.target.value))} style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                    <div><span style={{ fontSize: '11px', color: '#94a3b8' }}>Price Width</span><input type="number" value={section.data.colPrice || 8} onChange={(e) => updateSectionData(index, 'colPrice', parseInt(e.target.value))} style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                    <div><span style={{ fontSize: '11px', color: '#94a3b8' }}>Total Width</span><input type="number" value={section.data.colTotal || 8} onChange={(e) => updateSectionData(index, 'colTotal', parseInt(e.target.value))} style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
                   </div>
                 </div>
               </>
@@ -568,7 +568,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                         {section.data.showPrice && <div style={{ width: `${(section.data.colPrice || 8)*8}px`, textAlign: 'right' }}>{item.price.toFixed(2)}</div>}
                         {section.data.showTotal && <div style={{ width: `${(section.data.colTotal || 8)*8}px`, textAlign: 'right' }}>{item.total.toFixed(2)}</div>}
                       </div>
-                      {section.data.showNotes !== false && item.note && <div style={{ fontSize: '0.85em', color: '#4b5563', paddingLeft: '8px' }}>Note: {item.note}</div>}
+                      {section.data.showNotes !== false && item.note && <div style={{ fontSize: '0.85em', color: '#475569', paddingLeft: '8px' }}>Note: {item.note}</div>}
                     </div>
                   ))}
                 </div>
@@ -830,7 +830,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                         <option value="sans-serif">Sans Serif</option>
                         <option value="serif">Serif</option>
                       </select>
-                      <span style={{ fontSize: '10px', color: '#ef4444', display: 'block', marginTop: '4px' }}>*Only visible if printer supports graphical printing</span>
+                      <span style={{ fontSize: '11px', color: '#ef4444', display: 'block', marginTop: '4px' }}>*Only visible if printer supports graphical printing</span>
                     </div>
                   </div>
                 </div>

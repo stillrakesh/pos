@@ -2,26 +2,27 @@
  * Cloud Sync Worker
  * ─────────────────
  * Runs on a configurable interval, picks up pending items from sync_queue,
- * and pushes them to the cloud backend (one-way: local → cloud only).
+ * and pushes them to the cloud dashboard API (one-way: local → cloud).
  *
  * Works completely offline — the queue persists in SQLite and retries
- * automatically on the next cycle when the connection is restored.
+ * automatically on the next cycle when internet connection is restored.
  */
 
 import { statements } from './db.js';
 
-const CLOUD_URL = process.env.CLOUD_URL || 'https://restaurant-cloud-backend.onrender.com';
-const SYNC_INTERVAL_MS = parseInt(process.env.SYNC_INTERVAL_MS) || 30_000; // 30s default
-const BATCH_SIZE = 20;
+const DEFAULT_CLOUD_URL = process.env.CLOUD_URL || 'https://tyde-dashboard-tan.vercel.app';
+const SYNC_INTERVAL_MS = parseInt(process.env.SYNC_INTERVAL_MS) || 15_000; // 15s default
+const BATCH_SIZE = 50;
 
 let _running = false;
 
 /**
  * Start the background sync worker.
- * Safe to call multiple times — only one instance runs at a time.
  */
 export function startSyncWorker() {
-  console.log(`  🔄 Cloud Sync Worker → ${CLOUD_URL} (every ${SYNC_INTERVAL_MS / 1000}s)`);
+  const syncCfg = statements.getConfig({ key: 'cloud_sync_config' }) || {};
+  const targetUrl = syncCfg.cloudUrl || DEFAULT_CLOUD_URL;
+  console.log(`  🔄 Cloud Sync Worker active → ${targetUrl} (every ${SYNC_INTERVAL_MS / 1000}s)`);
 
   // Run once immediately after startup (2s delay for DB to settle)
   setTimeout(() => runSyncCycle(), 2000);
@@ -36,27 +37,68 @@ export function startSyncWorker() {
 }
 
 /**
- * One sync cycle — process all pending items in batches.
+ * One sync cycle — process pending items in batches.
  */
-async function runSyncCycle() {
-  if (_running) return; // Prevent overlap
+export async function runSyncCycle() {
+  if (_running) return;
   _running = true;
 
   try {
+    const syncCfg = statements.getConfig({ key: 'cloud_sync_config' }) || {};
+    const targetUrl = (syncCfg.cloudUrl || DEFAULT_CLOUD_URL).replace(/\/$/, '');
+    const apiKey = syncCfg.apiKey || process.env.CLOUD_API_KEY || '';
+
     const pending = statements.getPendingSyncItems({ limit: BATCH_SIZE });
     if (!pending.length) return;
 
-    console.log(`  ☁️  Syncing ${pending.length} item(s) to cloud...`);
-    let successCount = 0;
+    const events = pending.map(item => {
+      let payload;
+      try { payload = JSON.parse(item.payload); } catch (e) { payload = item.payload; }
+      return {
+        local_id: item.id,
+        type: item.type,
+        payload
+      };
+    });
 
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+      headers['x-api-key'] = apiKey;
+    }
+
+    // Try batch ingestion endpoint first
+    try {
+      const res = await fetch(`${targetUrl}/api/sync/ingest`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ events }),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (res.ok) {
+        pending.forEach(item => statements.markSyncComplete({ id: item.id }));
+        statements.setConfig({
+          key: 'cloud_sync_status',
+          value: { lastSyncAt: new Date().toISOString(), status: 'connected', syncedCount: pending.length }
+        });
+        console.log(`  ☁️  Cloud batch synced ${pending.length} event(s)`);
+        return;
+      }
+    } catch (batchErr) {
+      // Fallback to item-by-item sync if batch endpoint is unavailable
+    }
+
+    // Fallback item-by-item sync
+    let successCount = 0;
     for (const item of pending) {
       try {
         let payload;
         try { payload = JSON.parse(item.payload); } catch (e) { payload = item.payload; }
 
-        const res = await fetch(`${CLOUD_URL}/sync-event`, {
+        const res = await fetch(`${targetUrl}/sync-event`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({ type: item.type, payload, local_id: item.id }),
           signal: AbortSignal.timeout(8000)
         });
@@ -64,22 +106,31 @@ async function runSyncCycle() {
         if (res.ok) {
           statements.markSyncComplete({ id: item.id });
           successCount++;
+        } else if (res.status === 401 || res.status === 403) {
+          console.warn(`  ⚠️ Cloud sync rejected: Invalid API Key`);
+          statements.setConfig({
+            key: 'cloud_sync_status',
+            value: { lastSyncAt: new Date().toISOString(), status: 'auth_error', error: 'Invalid API Key' }
+          });
+          break;
         } else {
-          console.warn(`  ⚠️  Cloud rejected sync item #${item.id}: HTTP ${res.status}`);
           statements.markSyncFailed({ id: item.id });
         }
       } catch (err) {
-        // Network error — leave as 'pending' so it retries next cycle
-        console.warn(`  ⚠️  Sync item #${item.id} deferred: ${err.message}`);
+        // Network deferred
       }
     }
 
     if (successCount > 0) {
-      console.log(`  ✅ Cloud synced ${successCount}/${pending.length} items`);
+      statements.setConfig({
+        key: 'cloud_sync_status',
+        value: { lastSyncAt: new Date().toISOString(), status: 'connected', syncedCount: successCount }
+      });
     }
   } catch (err) {
-    console.warn('  ⚠️  Sync worker cycle error:', err.message);
+    console.warn('  ⚠️ Cloud sync cycle warning:', err.message);
   } finally {
     _running = false;
   }
 }
+

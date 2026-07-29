@@ -5,6 +5,7 @@
  */
 import { Router } from 'express';
 import { statements } from '../db.js';
+import { startSyncWorker, runSyncCycle } from '../syncWorker.js';
 
 const router = Router();
 
@@ -55,6 +56,54 @@ router.post('/config', (req, res) => {
   } catch (err) {
     console.error('[POST /analytics/config]', err);
     res.status(500).json({ error: 'Failed to save config' });
+  }
+});
+
+// ─── GET /api/analytics/cloud-sync ─────────────────────────────
+router.get('/cloud-sync', (req, res) => {
+  try {
+    const config = statements.getConfig({ key: 'cloud_sync_config' }) || {};
+    const status = statements.getConfig({ key: 'cloud_sync_status' }) || {};
+    res.json({ success: true, config, status });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── POST /api/analytics/cloud-sync ────────────────────────────
+router.post('/cloud-sync', async (req, res) => {
+  try {
+    const { apiKey, cloudUrl } = req.body;
+    const existing = statements.getConfig({ key: 'cloud_sync_config' }) || {};
+    const newConfig = {
+      ...existing,
+      apiKey: apiKey !== undefined ? String(apiKey).trim() : (existing.apiKey || ''),
+      cloudUrl: cloudUrl !== undefined ? String(cloudUrl).trim() : (existing.cloudUrl || 'http://localhost:3000')
+    };
+    statements.setConfig({ key: 'cloud_sync_config', value: newConfig });
+    
+    // Trigger sync cycle immediately upon saving config
+    runSyncCycle().catch(err => console.warn('Manual sync trigger error:', err));
+    
+    res.json({ success: true, config: newConfig });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── POST /api/analytics/cloud-sync/trigger ─────────────────────
+router.post('/cloud-sync/trigger', async (req, res) => {
+  try {
+    const config = statements.getConfig({ key: 'cloud_sync_config' }) || {};
+    if (!config.apiKey) {
+      return res.status(400).json({ success: false, error: 'Please enter your Cloud API Key in Settings → Server tab first.' });
+    }
+    
+    await runSyncCycle();
+    const status = statements.getConfig({ key: 'cloud_sync_status' }) || {};
+    res.json({ success: true, status });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

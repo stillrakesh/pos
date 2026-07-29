@@ -37,7 +37,7 @@ export const QuickPrintModal = ({ table, settings, onClose, onPrint }) => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
           <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
             <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>Subtotal</div>
-            <div style={{ fontSize: '24px', fontWeight: '950', color: '#111827' }}>{formatCurrency(subtotal)}</div>
+            <div style={{ fontSize: '24px', fontWeight: '800', color: '#111827' }}>{formatCurrency(subtotal)}</div>
           </div>
 
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -97,13 +97,13 @@ export const QuickPrintModal = ({ table, settings, onClose, onPrint }) => {
 
           <div style={{ borderTop: '2px dashed #f1f5f9', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '800' }}>PAYABLE AMOUNT</div>
-            <div style={{ fontSize: '24px', fontWeight: '950', color: '#94161c' }}>{formatCurrency(grandTotal)}</div>
+            <div style={{ fontSize: '24px', fontWeight: '800', color: '#94161c' }}>{formatCurrency(grandTotal)}</div>
           </div>
         </div>
 
         <button 
           onClick={() => onPrint(discountAmt, service, gstAmount, grandTotal, discountType === 'percent' ? parseFloat(discountVal) : 0, serviceChargeEnabled, gstEnabled)}
-          style={{ width: '100%', padding: '16px', background: '#a3112a', color: 'white', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '950', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+          style={{ width: '100%', padding: '16px', background: '#94161c', color: 'white', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
         >
           <Printer size={20} /> PRINT BILL
         </button>
@@ -149,11 +149,11 @@ export const QuickSettleModal = ({ table, settings, onClose, onSettle }) => {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
       <div className="animate-fade-in" style={{ background: 'white', padding: '32px', borderRadius: '24px', width: '440px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <h3 style={{ fontSize: '20px', fontWeight: '950', color: '#1f2937' }}>Settle: {table.name}</h3>
+          <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1e293b' }}>Settle: {table.name}</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
         </div>
         
-        <div style={{ fontSize: '32px', fontWeight: '950', color: '#a3112a', marginBottom: '4px' }}>{formatCurrency(grandTotal)}</div>
+        <div style={{ fontSize: '32px', fontWeight: '800', color: '#94161c', marginBottom: '4px' }}>{formatCurrency(grandTotal)}</div>
         
         {/* Breakdown Summary */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '20px', padding: '12px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
@@ -197,7 +197,7 @@ export const QuickSettleModal = ({ table, settings, onClose, onSettle }) => {
             onClick={() => onSettle([{ method: 'Cash', amount: grandTotal }], 0, grandTotal, service, gst, subtotal, parseFloat(tipAmount) || 0)}
             style={{ 
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              padding: '16px', borderRadius: '16px', border: '1px solid #d1fae5', background: '#ecfdf5', color: '#047857', fontWeight: '950', cursor: 'pointer' 
+              padding: '16px', borderRadius: '16px', border: '1px solid #d1fae5', background: '#ecfdf5', color: '#047857', fontWeight: '800', cursor: 'pointer' 
             }}
           >
             <Banknote size={18} /> Cash Exact
@@ -206,7 +206,7 @@ export const QuickSettleModal = ({ table, settings, onClose, onSettle }) => {
             onClick={() => onSettle([{ method: 'UPI', amount: grandTotal }], 0, grandTotal, service, gst, subtotal, parseFloat(tipAmount) || 0)}
             style={{ 
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              padding: '16px', borderRadius: '16px', border: '1px solid #ebf5ff', background: '#eff6ff', color: '#2563eb', fontWeight: '950', cursor: 'pointer' 
+              padding: '16px', borderRadius: '16px', border: '1px solid #ebf5ff', background: '#eff6ff', color: '#2563eb', fontWeight: '800', cursor: 'pointer' 
             }}
           >
             <Smartphone size={18} /> UPI Exact
@@ -237,9 +237,9 @@ export const QuickSettleModal = ({ table, settings, onClose, onSettle }) => {
                 onClick={() => setMethod(m)}
                 style={{ 
                   flex: 1, padding: '12px', borderRadius: '12px', fontWeight: '900', fontSize: '13px', 
-                  border: `2px solid ${method === m ? '#a3112a' : '#f1f5f9'}`, 
+                  border: `2px solid ${method === m ? '#94161c' : '#f1f5f9'}`, 
                   background: method === m ? '#fff1f2' : 'white', 
-                  color: method === m ? '#a3112a' : '#64748b', cursor: 'pointer' 
+                  color: method === m ? '#94161c' : '#64748b', cursor: 'pointer' 
                 }}
               >
                 {m}
@@ -253,7 +253,7 @@ export const QuickSettleModal = ({ table, settings, onClose, onSettle }) => {
               value={amountPaidStr}
               onChange={(e) => setAmountPaidStr(e.target.value)}
               placeholder="Amount Received..."
-              style={{ boxSizing: 'border-box', flex: 1, padding: '16px', borderRadius: '16px', border: '2px solid #f1f5f9', background: '#f8fafc', fontSize: '18px', fontWeight: '950', outline: 'none' }}
+              style={{ boxSizing: 'border-box', flex: 1, padding: '16px', borderRadius: '16px', border: '2px solid #f1f5f9', background: '#f8fafc', fontSize: '18px', fontWeight: '800', outline: 'none' }}
             />
             <button 
               onClick={handleAddPayment}
@@ -277,7 +277,7 @@ export const QuickSettleModal = ({ table, settings, onClose, onSettle }) => {
               {!showTipEntry ? (
                 <button 
                   onClick={() => setShowTipEntry(true)}
-                  style={{ background: 'none', border: 'none', color: tipAmount > 0 ? '#047857' : '#f59e0b', fontSize: '12px', fontWeight: '950', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 0' }}
+                  style={{ background: 'none', border: 'none', color: tipAmount > 0 ? '#047857' : '#f59e0b', fontSize: '12px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 0' }}
                 >
                   <Plus size={14} /> {tipAmount > 0 ? `STAFF TIP: ${formatCurrency(tipAmount)} (Tap to Edit)` : 'ADD STAFF TIP'}
                 </button>
@@ -286,13 +286,13 @@ export const QuickSettleModal = ({ table, settings, onClose, onSettle }) => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Zap size={14} color="#f59e0b"/>
-                      <span style={{ fontSize: '13px', fontWeight: '950', color: '#9a3412' }}>STAFF TIP</span>
+                      <span style={{ fontSize: '13px', fontWeight: '800', color: '#9a3412' }}>STAFF TIP</span>
                     </div>
                     <button onClick={() => { setShowTipEntry(false); setTipAmount(''); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={14} /></button>
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <div style={{ position: 'relative', flex: 1 }}>
-                      <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontWeight: '950', color: '#94a3b8' }}>₹</span>
+                      <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontWeight: '800', color: '#94a3b8' }}>₹</span>
                       <input
                         autoFocus
                         type="number"
@@ -300,12 +300,12 @@ export const QuickSettleModal = ({ table, settings, onClose, onSettle }) => {
                         onChange={(e) => setTipAmount(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && setShowTipEntry(false)}
                         placeholder="0.00"
-                        style={{ boxSizing: 'border-box', width: '100%', padding: '12px 12px 12px 32px', borderRadius: '12px', border: '1.5px solid #fed7aa', background: 'white', fontSize: '16px', fontWeight: '950', outline: 'none', color: '#9a3412' }}
+                        style={{ boxSizing: 'border-box', width: '100%', padding: '12px 12px 12px 32px', borderRadius: '12px', border: '1.5px solid #fed7aa', background: 'white', fontSize: '16px', fontWeight: '800', outline: 'none', color: '#9a3412' }}
                       />
                     </div>
                     <button 
                       onClick={() => setShowTipEntry(false)}
-                      style={{ padding: '0 16px', borderRadius: '12px', background: '#10b981', color: 'white', border: 'none', fontWeight: '950', cursor: 'pointer' }}
+                      style={{ padding: '0 16px', borderRadius: '12px', background: '#10b981', color: 'white', border: 'none', fontWeight: '800', cursor: 'pointer' }}
                     >
                       <CheckCircle size={18} />
                     </button>
@@ -327,8 +327,8 @@ export const QuickSettleModal = ({ table, settings, onClose, onSettle }) => {
               onSettle(finalPayments.length > 0 ? finalPayments : [{ method: 'Cash', amount: grandTotal }], changeDue, grandTotal, service, gst, subtotal, parseFloat(tipAmount) || 0);
             }} 
             style={{ 
-              flex: 1.5, padding: '16px', background: isExactPaid ? '#a3112a' : '#cbd5e1', 
-              color: 'white', border: 'none', borderRadius: '16px', fontWeight: '950', cursor: isExactPaid ? 'pointer' : 'not-allowed' 
+              flex: 1.5, padding: '16px', background: isExactPaid ? '#94161c' : '#cbd5e1', 
+              color: 'white', border: 'none', borderRadius: '16px', fontWeight: '800', cursor: isExactPaid ? 'pointer' : 'not-allowed' 
             }}
           >
             Settle Bill

@@ -1036,6 +1036,13 @@ async function start() {
   loadSigningFiles();
   startSyncWorker();
 
+  try {
+    statements.reconcileCustomerStats();
+    console.log('  👤 CRM: Customer statistics reconciled with database orders');
+  } catch (crmRecErr) {
+    console.warn('  ⚠️  CRM: Startup reconciliation warning:', crmRecErr.message);
+  }
+
   httpServer.listen(PORT, '0.0.0.0', () => {
     const ip = getLocalIP();
 

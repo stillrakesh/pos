@@ -343,6 +343,90 @@ export const statements = {
     persistToFile();
   },
 
+  registerCustomerContact(phone, name) {
+    if (!phone || String(phone).trim().length < 10) return;
+    const cleanPhone = String(phone).trim();
+    const cleanName = (name && name.trim() !== 'Walk-In' && name.trim() !== 'Guest') ? name.trim() : '';
+    const existingResult = db.exec(`SELECT * FROM customers WHERE phone = ?`, [cleanPhone]);
+    
+    if (existingResult.length > 0 && existingResult[0].values.length > 0) {
+      if (cleanName) {
+        db.run(`UPDATE customers SET name = ? WHERE phone = ?`, [cleanName, cleanPhone]);
+      }
+    } else {
+      db.run(
+        `INSERT INTO customers (name, phone, visits, total_spent, loyalty_points, last_visit)
+         VALUES (?, ?, 0, 0, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
+        [cleanName || 'Guest', cleanPhone]
+      );
+    }
+    persistToFile();
+  },
+
+  reconcileCustomerStats() {
+    try {
+      const custResult = db.exec(`SELECT id, name, phone FROM customers`);
+      if (custResult.length === 0 || custResult[0].values.length === 0) return;
+      
+      const customers = custResult[0].values;
+
+      for (const [id, name, phone] of customers) {
+        if (!phone || String(phone).trim().length < 10) continue;
+        const cleanPhone = String(phone).trim();
+        const cleanName = String(name || '').trim();
+
+        // Query completed / paid orders for this customer
+        const orderRes = db.exec(
+          `SELECT grand_total, created_at, items 
+           FROM orders 
+           WHERE (phone = ? OR (customer_name = ? AND customer_name != '' AND customer_name != 'Guest' AND customer_name != 'Walk-In'))
+             AND status IN ('COMPLETED', 'PAID', 'PRINTED')`,
+          [cleanPhone, cleanName]
+        );
+
+        let visits = 0;
+        let totalSpent = 0;
+        let lastVisit = null;
+
+        if (orderRes.length > 0 && orderRes[0].values.length > 0) {
+          const rows = orderRes[0].values;
+          visits = rows.length;
+          for (const row of rows) {
+            let orderTotal = Number(row[0] || 0);
+            if (!orderTotal && row[2]) {
+              try {
+                const items = JSON.parse(row[2]);
+                if (Array.isArray(items)) {
+                  orderTotal = items.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.qty || item.quantity || 1)), 0);
+                }
+              } catch(e){}
+            }
+            totalSpent += orderTotal;
+            const createdAt = row[1];
+            if (!lastVisit || (createdAt && createdAt > lastVisit)) {
+              lastVisit = createdAt;
+            }
+          }
+        }
+
+        const loyaltyPoints = Math.floor(totalSpent / 100);
+
+        db.run(
+          `UPDATE customers SET 
+            visits = ?,
+            total_spent = ?,
+            loyalty_points = ?,
+            last_visit = COALESCE(?, last_visit)
+           WHERE id = ?`,
+          [visits, totalSpent, loyaltyPoints, lastVisit, id]
+        );
+      }
+      persistToFile();
+    } catch (err) {
+      console.warn("⚠️ [reconcileCustomerStats] Warning:", err.message);
+    }
+  },
+
   upsertCustomer(phone, name, amount_spent, points_redeemed) {
     if (!phone || String(phone).trim().length < 10) return;
     const cleanPhone = String(phone).trim();
@@ -769,7 +853,7 @@ export const statements = {
 
   getPendingSyncItems({ limit = 20 } = {}) {
     const result = db.exec(
-      `SELECT * FROM sync_queue WHERE status = 'pending' ORDER BY created_at ASC LIMIT ?`,
+      `SELECT * FROM sync_queue WHERE status IN ('pending', 'failed') ORDER BY created_at ASC LIMIT ?`,
       [limit]
     );
     return rowsToObjects(result);

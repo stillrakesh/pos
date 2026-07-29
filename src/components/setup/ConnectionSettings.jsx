@@ -72,7 +72,7 @@ const ConnectionSettings = ({ onSaved, isSetup = false }) => {
       }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{ 
-            width: '64px', height: '64px', borderRadius: '20px', background: '#a3112a', 
+            width: '64px', height: '64px', borderRadius: '20px', background: '#94161c', 
             display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' 
           }}>
             <Globe size={32} color="white" />
@@ -149,7 +149,7 @@ const ConnectionSettings = ({ onSaved, isSetup = false }) => {
               padding: '16px',
               borderRadius: '16px',
               border: 'none',
-              background: '#a3112a',
+              background: '#94161c',
               color: 'white',
               fontWeight: '800',
               cursor: 'pointer',
@@ -172,15 +172,7 @@ const ConnectionSettings = ({ onSaved, isSetup = false }) => {
         )}
       </div>
 
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
-      `}</style>
+
     </div>
   );
 };

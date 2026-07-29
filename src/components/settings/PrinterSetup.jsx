@@ -136,7 +136,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
     background: 'rgba(255, 255, 255, 0.8)', 
     backdropFilter: 'blur(10px)',
     padding: '24px', 
-    borderRadius: '24px', 
+    borderRadius: '20px', 
     border: '1px solid rgba(226, 232, 240, 0.5)',
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)'
   };
@@ -246,7 +246,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
             transition: 'all 0.2s'
           }} onClick={() => toggleSetting('separateKotStations')}>
             <div>
-              <div style={{ fontWeight: '800', fontSize: '15px', color: '#1e293b' }}>Station-Wise KOT Printing</div>
+              <div style={{ fontWeight: '800', fontSize: '14px', color: '#1e293b' }}>Station-Wise KOT Printing</div>
               <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Enable this to print separate KOT slips per Station (Bar, Kitchen, etc.)</div>
             </div>
             <div style={{
@@ -299,7 +299,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
                 placeholder="e.g. 192.168.1.100"
                 value={printerIp}
                 onChange={e => { setPrinterIp(e.target.value); setIpSaved(false); }}
-                style={{ width: '100%', padding: '14px 16px', borderRadius: '14px', border: '1.5px solid #e2e8f0', fontSize: '15px', fontWeight: '700', outline: 'none', fontFamily: 'monospace', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '14px 16px', borderRadius: '16px', border: '1.5px solid #e2e8f0', fontSize: '14px', fontWeight: '700', outline: 'none', fontFamily: 'monospace', boxSizing: 'border-box' }}
                 onFocus={e => e.target.style.borderColor = '#16a34a'}
                 onBlur={e => e.target.style.borderColor = '#e2e8f0'}
               />
@@ -311,7 +311,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
                 type="number"
                 value={printerPort}
                 onChange={e => { setPrinterPort(e.target.value); setIpSaved(false); }}
-                style={{ width: '100%', padding: '14px 16px', borderRadius: '14px', border: '1.5px solid #e2e8f0', fontSize: '15px', fontWeight: '700', outline: 'none', fontFamily: 'monospace', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '14px 16px', borderRadius: '16px', border: '1.5px solid #e2e8f0', fontSize: '14px', fontWeight: '700', outline: 'none', fontFamily: 'monospace', boxSizing: 'border-box' }}
                 onFocus={e => e.target.style.borderColor = '#16a34a'}
                 onBlur={e => e.target.style.borderColor = '#e2e8f0'}
               />
@@ -319,7 +319,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
             <button
               id="save-printer-ip-btn"
               onClick={handleSaveIp}
-              style={{ padding: '14px 24px', borderRadius: '14px', border: 'none', background: ipSaved ? '#16a34a' : '#0f172a', color: 'white', fontWeight: '900', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'background 0.3s', whiteSpace: 'nowrap' }}
+              style={{ padding: '14px 24px', borderRadius: '16px', border: 'none', background: ipSaved ? '#16a34a' : '#0f172a', color: 'white', fontWeight: '900', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'background 0.3s', whiteSpace: 'nowrap' }}
             >
               {ipSaved ? <><Check size={16} /> Saved!</> : <><Save size={16} /> Save IP</>}
             </button>
@@ -343,7 +343,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
         </div>
         
         <div style={{ 
-          display: 'flex', alignItems: 'center', gap: '16px', padding: '24px', borderRadius: '24px',
+          display: 'flex', alignItems: 'center', gap: '16px', padding: '24px', borderRadius: '20px',
           background: connected 
             ? 'rgba(16, 185, 129, 0.03)' 
             : 'rgba(239, 68, 68, 0.03)',
@@ -378,7 +378,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
                 {qzPrinters.length > 0 ? `${qzPrinters.length} Printers Found` : 'Scan for local USB/Network printers'}
               </div>
             </div>
-            <button onClick={handleDetect} disabled={detecting} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '14px', border: '1px solid #e2e8f0', background: detecting ? '#f8fafc' : 'white', color: '#334155', cursor: detecting ? 'wait' : 'pointer', fontWeight: '800', fontSize: '13px' }}>
+            <button onClick={handleDetect} disabled={detecting} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '16px', border: '1px solid #e2e8f0', background: detecting ? '#f8fafc' : 'white', color: '#334155', cursor: detecting ? 'wait' : 'pointer', fontWeight: '800', fontSize: '13px' }}>
               <RefreshCw size={16} className={detecting ? 'animate-spin' : ''} />
               {detecting ? 'Scanning...' : 'Detect'}
             </button>
@@ -422,10 +422,10 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
         <div style={{ ...cardStyle, border: '1px dashed #e2e8f0', background: 'rgba(255,255,255,0.4)' }}>
            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ fontWeight: '900', fontSize: '15px', color: '#1e293b' }}>Troubleshooting</div>
+                <div style={{ fontWeight: '900', fontSize: '14px', color: '#1e293b' }}>Troubleshooting</div>
                 <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Send a formatting test to <strong>{selectedName}</strong></div>
               </div>
-              <button onClick={handleTestPrint} style={{ padding: '12px 24px', borderRadius: '14px', border: 'none', background: '#0f172a', color: 'white', fontWeight: '900', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button onClick={handleTestPrint} style={{ padding: '12px 24px', borderRadius: '16px', border: 'none', background: '#0f172a', color: 'white', fontWeight: '900', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <TestTube size={16} /> Test Formatting
               </button>
            </div>
@@ -448,7 +448,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
         </button>
       </div>
 
-      <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '10px', color: '#94a3b8', fontWeight: 'bold' }}>
+      <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '11px', color: '#94a3b8', fontWeight: 'bold' }}>
         BRIDGE VERSION: 1.3 (PRO)
       </div>
     </div>
@@ -501,49 +501,52 @@ const KOTStationSettings = ({ settings, setSettings, categories = [] }) => {
   };
 
   return (
-    <div style={{ background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(10px)', padding: '32px', borderRadius: '32px', border: '1px solid rgba(226, 232, 240, 0.5)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.05)' }}>
+    <div style={{ background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)', padding: '32px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-        <div style={{ padding: '8px', background: '#e0f2fe', borderRadius: '12px' }}>
-          <LayoutGrid size={20} color="#0ea5e9" />
+        <div style={{ padding: '10px', background: '#fff1f2', borderRadius: '12px' }}>
+          <LayoutGrid size={20} color="#94161c" />
         </div>
-        <span style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a' }}>KOT Station Routing</span>
+        <div>
+          <span style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>KOT Station Routing</span>
+          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginTop: '2px' }}>Route specific food & beverage categories to separate kitchen or bar thermal printers</div>
+        </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '28px' }}>
         <div style={{ flex: 1, position: 'relative' }}>
           <input 
-            placeholder="Station Name (e.g. BAR, KITCHEN)" 
+            placeholder="Station Name (e.g. BAR, KITCHEN, PANTRY)" 
             value={newStationName} 
             onChange={e => setNewStationName(e.target.value)}
-            style={{ width: '100%', padding: '16px 20px', borderRadius: '16px', border: '1px solid #e2e8f0', fontSize: '14px', fontWeight: '700', outline: 'none', transition: 'border-color 0.2s' }}
-            onFocus={e => e.target.style.borderColor = '#0ea5e9'}
-            onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+            style={{ width: '100%', padding: '14px 18px', borderRadius: '12px', border: '1.5px solid #e2e8f0', fontSize: '14px', fontWeight: '600', outline: 'none', transition: 'all 0.2s', background: '#f8fafc' }}
+            onFocus={e => { e.target.style.borderColor = '#94161c'; e.target.style.background = '#ffffff'; e.target.style.boxShadow = '0 0 0 3px rgba(148, 22, 28, 0.08)'; }}
+            onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.background = '#f8fafc'; e.target.style.boxShadow = 'none'; }}
           />
         </div>
-        <button onClick={addStation} style={{ padding: '0 32px', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '16px', fontWeight: '900', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button onClick={addStation} style={{ padding: '0 28px', background: 'linear-gradient(135deg, #94161c, #7b1217)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(148, 22, 28, 0.25)', transition: 'all 0.2s' }}>
           <Plus size={18} /> Add Station
         </button>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {stations.map(station => (
-          <div key={station.id} style={{ padding: '24px', borderRadius: '24px', background: 'white', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div key={station.id} style={{ padding: '20px', borderRadius: '16px', background: 'white', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0ea5e9' }} />
-                 <div style={{ fontWeight: '950', fontSize: '16px', color: '#0f172a' }}>{station.name}</div>
+                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#94161c' }} />
+                 <div style={{ fontWeight: '800', fontSize: '15px', color: '#0f172a' }}>{station.name}</div>
               </div>
-              <button onClick={() => removeStation(station.id)} style={{ padding: '8px 12px', background: '#fff1f2', color: '#e11d48', border: 'none', borderRadius: '10px', fontSize: '11px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Trash2 size={14} /> REMOVE
+              <button onClick={() => removeStation(station.id)} style={{ padding: '6px 12px', background: '#fff1f2', color: '#94161c', border: '1px solid #fecdd3', borderRadius: '8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}>
+                <Trash2 size={13} /> REMOVE
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {categories.map(cat => {
                 const catName = typeof cat === 'object' ? cat.name : cat;
                 const isChecked = (station.categories || []).includes(catName);
                 return (
-                  <button key={catName} onClick={() => toggleCategoryInStation(station.id, catName)} style={{ padding: '10px 18px', borderRadius: '14px', fontSize: '13px', fontWeight: '800', cursor: 'pointer', background: isChecked ? '#0ea5e9' : '#f8fafc', color: isChecked ? 'white' : '#64748b', border: isChecked ? 'none' : '1px solid #f1f5f9', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <button key={catName} onClick={() => toggleCategoryInStation(station.id, catName)} style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', background: isChecked ? '#94161c' : '#f8fafc', color: isChecked ? 'white' : '#475569', border: isChecked ? 'none' : '1px solid #e2e8f0', boxShadow: isChecked ? '0 2px 8px rgba(148, 22, 28, 0.25)' : 'none', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     {isChecked && <Check size={14} />} {catName}
                   </button>
                 );
@@ -553,9 +556,9 @@ const KOTStationSettings = ({ settings, setSettings, categories = [] }) => {
         ))}
 
         {stations.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '48px', color: '#94a3b8', fontSize: '14px', fontWeight: '700', border: '2px dashed #e2e8f0', borderRadius: '24px', background: '#f8fafc' }}>
-             No stations defined yet. <br />
-             <span style={{ fontSize: '12px', fontWeight: '600', opacity: 0.7 }}>Define areas like BAR or PANTRY to organize your KOT slips.</span>
+          <div style={{ textAlign: 'center', padding: '40px', color: '#64748b', fontSize: '14px', fontWeight: '600', border: '2px dashed #cbd5e1', borderRadius: '16px', background: '#f8fafc' }}>
+             No KOT stations defined yet. <br />
+             <span style={{ fontSize: '12px', fontWeight: '500', opacity: 0.8 }}>Define station areas like BAR, KITCHEN, or PANTRY to direct item slips to dedicated printers.</span>
           </div>
         )}
       </div>
@@ -580,14 +583,14 @@ const KOTExclusionSettings = ({ settings, setSettings, categories = [] }) => {
   };
 
   return (
-    <div style={{ background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(10px)', padding: '32px', borderRadius: '32px', border: '1px solid rgba(226, 232, 240, 0.5)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.05)' }}>
+    <div style={{ background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)', padding: '32px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-        <div style={{ padding: '8px', background: '#fff7ed', borderRadius: '12px' }}>
-          <WifiOff size={20} color="#ea580c" />
+        <div style={{ padding: '10px', background: '#fff7ed', borderRadius: '12px' }}>
+          <WifiOff size={20} color="#c2410c" />
         </div>
         <div>
-          <span style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a' }}>KOT Printing Exclusions</span>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Select categories that should NEVER be printed on KOT slips (e.g. Water, Soda)</div>
+          <span style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>KOT Printing Exclusions</span>
+          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginTop: '2px' }}>Select categories that should NEVER be printed on KOT slips (e.g. Water, Soda, Packed Items)</div>
         </div>
       </div>
 
@@ -600,23 +603,24 @@ const KOTExclusionSettings = ({ settings, setSettings, categories = [] }) => {
               key={catName} 
               onClick={() => toggleExclusion(catName)} 
               style={{ 
-                padding: '12px 20px', borderRadius: '16px', fontSize: '14px', fontWeight: '800', cursor: 'pointer', 
-                background: isExcluded ? '#ea580c' : '#f8fafc', 
-                color: isExcluded ? 'white' : '#64748b', 
-                border: isExcluded ? 'none' : '1px solid #f1f5f9', 
+                padding: '10px 18px', borderRadius: '12px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', 
+                background: isExcluded ? '#fff7ed' : '#f8fafc', 
+                color: isExcluded ? '#c2410c' : '#475569', 
+                border: isExcluded ? '1.5px solid #ffedd5' : '1px solid #e2e8f0', 
+                boxShadow: isExcluded ? '0 2px 8px rgba(194, 65, 12, 0.15)' : 'none',
                 transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '8px' 
               }}
             >
-              {isExcluded ? <WifiOff size={16} /> : <Check size={16} style={{ opacity: 0.3 }} />} 
+              {isExcluded ? <WifiOff size={15} color="#c2410c" /> : <Check size={15} style={{ opacity: 0.3 }} />} 
               {catName}
-              {isExcluded && <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.2)', padding: '2px 6px', borderRadius: '4px' }}>EXCLUDED</span>}
+              {isExcluded && <span style={{ fontSize: '10px', background: '#ffedd5', color: '#c2410c', padding: '2px 6px', borderRadius: '6px', fontWeight: '800' }}>EXCLUDED</span>}
             </button>
           );
         })}
       </div>
 
       {categories.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8', fontSize: '13px', fontWeight: '600' }}>
+        <div style={{ textAlign: 'center', padding: '24px', color: '#64748b', fontSize: '13px', fontWeight: '500' }}>
           No categories found. Add categories to your menu first.
         </div>
       )}

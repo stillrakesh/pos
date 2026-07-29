@@ -533,11 +533,11 @@ router.put('/:tableId', (req, res) => {
         phone: custPhone
       });
 
-      // Auto-save/upsert customer to CRM database if phone is provided
+      // Auto-save customer contact to CRM database if phone is provided
       if (custPhone && custPhone.length >= 10) {
         try {
-          statements.upsertCustomer(custPhone, custName, total, req.body.redeemedPoints || 0);
-          console.log(`👤 Customer ${custName} (${custPhone}) auto-saved to CRM`);
+          statements.registerCustomerContact(custPhone, custName);
+          console.log(`👤 Customer contact ${custName} (${custPhone}) registered in CRM`);
         } catch (crmErr) {
           console.warn("CRM auto-save warning:", crmErr.message);
         }

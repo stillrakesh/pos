@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDb } from '../db.js';
+import { getDb, statements } from '../db.js';
 
 const router = Router();
 
@@ -9,6 +9,13 @@ router.get('/', (req, res) => {
   try {
     const { phone } = req.query;
     const db = getDb();
+
+    // Reconcile customer visits/total_spent with actual completed orders in DB
+    try {
+      statements.reconcileCustomerStats();
+    } catch (recErr) {
+      console.warn('Customer reconciliation warning:', recErr.message);
+    }
     
     if (phone) {
       const stmt = db.prepare('SELECT * FROM customers WHERE phone = ?');

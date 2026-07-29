@@ -147,7 +147,7 @@ const InventoryManager = ({ menuItems = [] }) => {
                   <input 
                     placeholder="Search materials..." 
                     value={search} onChange={e => setSearch(e.target.value)}
-                    style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: 8, border: '1px solid #d1d5db', outline: 'none' }}
+                    style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: 8, border: '1px solid #cbd5e1', outline: 'none' }}
                   />
                 </div>
                 <button 
@@ -292,30 +292,30 @@ const InventoryManager = ({ menuItems = [] }) => {
             <form onSubmit={handleSaveItem} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 800, color: '#64748b', display: 'block', marginBottom: 6 }}>NAME</label>
-                <input name="name" defaultValue={editingItem?.name} required placeholder="e.g. Tomato Sauce" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #d1d5db', outline: 'none' }} />
+                <input name="name" defaultValue={editingItem?.name} required placeholder="e.g. Tomato Sauce" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }} />
               </div>
               <div style={{ display: 'flex', gap: 12 }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: 12, fontWeight: 800, color: '#64748b', display: 'block', marginBottom: 6 }}>UNIT (e.g. Kg, L, Pcs)</label>
-                  <input name="unit" defaultValue={editingItem?.unit} required placeholder="kg" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #d1d5db', outline: 'none' }} />
+                  <input name="unit" defaultValue={editingItem?.unit} required placeholder="kg" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: 12, fontWeight: 800, color: '#64748b', display: 'block', marginBottom: 6 }}>COST PER UNIT (₹)</label>
-                  <input name="cost_per_unit" type="number" step="0.01" defaultValue={editingItem?.cost_per_unit} required style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #d1d5db', outline: 'none' }} />
+                  <input name="cost_per_unit" type="number" step="0.01" defaultValue={editingItem?.cost_per_unit} required style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }} />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 12 }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: 12, fontWeight: 800, color: '#64748b', display: 'block', marginBottom: 6 }}>CURRENT STOCK</label>
-                  <input name="current_stock" type="number" step="0.01" defaultValue={editingItem?.current_stock} required style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #d1d5db', outline: 'none' }} />
+                  <input name="current_stock" type="number" step="0.01" defaultValue={editingItem?.current_stock} required style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: 12, fontWeight: 800, color: '#64748b', display: 'block', marginBottom: 6 }}>LOW STOCK THRESHOLD</label>
-                  <input name="low_stock_threshold" type="number" step="0.01" defaultValue={editingItem?.low_stock_threshold} required style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #d1d5db', outline: 'none' }} />
+                  <input name="low_stock_threshold" type="number" step="0.01" defaultValue={editingItem?.low_stock_threshold} required style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }} />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-                <button type="button" onClick={() => setShowItemModal(false)} style={{ flex: 1, padding: 12, borderRadius: 10, border: '1px solid #d1d5db', background: 'white', fontWeight: 800, cursor: 'pointer' }}>Cancel</button>
+                <button type="button" onClick={() => setShowItemModal(false)} style={{ flex: 1, padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: 'white', fontWeight: 800, cursor: 'pointer' }}>Cancel</button>
                 <button type="submit" style={{ flex: 1, padding: 12, borderRadius: 10, border: 'none', background: '#10b981', color: 'white', fontWeight: 800, cursor: 'pointer' }}>Save Material</button>
               </div>
             </form>
@@ -331,19 +331,19 @@ const InventoryManager = ({ menuItems = [] }) => {
             <form onSubmit={handleSaveRecipe} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 800, color: '#64748b', display: 'block', marginBottom: 6 }}>SELECT MATERIAL</label>
-                <select name="inventory_item_id" required style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #d1d5db', outline: 'none' }}>
+                <select name="inventory_item_id" required style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }}>
                   <option value="">-- Choose Material --</option>
                   {items.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
                 </select>
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 800, color: '#64748b', display: 'block', marginBottom: 6 }}>QUANTITY REQUIRED PER PORTION</label>
-                <input name="quantity_required" type="number" step="0.001" required placeholder="e.g. 0.15 for 150g" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #d1d5db', outline: 'none' }} />
+                <input name="quantity_required" type="number" step="0.001" required placeholder="e.g. 0.15 for 150g" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }} />
                 <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>Must match the unit of the material.</p>
               </div>
               
               <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-                <button type="button" onClick={() => setShowRecipeModal(false)} style={{ flex: 1, padding: 12, borderRadius: 10, border: '1px solid #d1d5db', background: 'white', fontWeight: 800, cursor: 'pointer' }}>Cancel</button>
+                <button type="button" onClick={() => setShowRecipeModal(false)} style={{ flex: 1, padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: 'white', fontWeight: 800, cursor: 'pointer' }}>Cancel</button>
                 <button type="submit" style={{ flex: 1, padding: 12, borderRadius: 10, border: 'none', background: '#3b82f6', color: 'white', fontWeight: 800, cursor: 'pointer' }}>Link to Recipe</button>
               </div>
             </form>

@@ -4,7 +4,7 @@ import {
   Menu, Search, Store, Monitor, LayoutGrid, Clock, Bell, User, Users, Wifi,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Info, CreditCard, Banknote, Printer, Eye, Plus,
   Minus, X, Utensils, Smartphone, BarChart3, TrendingUp, PieChart, AlertTriangle, Truck, ShoppingBag, ChefHat, MessageSquare, CheckSquare, Sunset, Trash2, Package, XCircle,
-  Settings2, ReceiptText, RefreshCw, RotateCcw, Percent, CheckCircle, Lock, Shield, Maximize2, Move, ArrowRightLeft, Zap
+  Settings2, ReceiptText, RefreshCw, RotateCcw, Percent, CheckCircle, Lock, Shield, Maximize2, Move, ArrowRightLeft, Zap, Cloud
 } from 'lucide-react';
 import './index.css';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, LineChart, Line } from 'recharts';
@@ -111,10 +111,10 @@ async function syncToCloud() {
 const MENU_VERSION = '2';
 
 const GlobalStyles = ({ settings }) => {
-  const primaryColor = settings?.accentColor || '#a3112a';
+  const primaryColor = settings?.accentColor || '#94161c';
   const secondaryColor = settings?.secondaryColor || '#7c3aed';
-  const bgColor = settings?.bgColor || '#f9fafb';
-  const textColor = settings?.textColor || '#1f2937';
+  const bgColor = settings?.bgColor || '#f8fafc';
+  const textColor = settings?.textColor || '#1e293b';
   const radius = settings?.borderRadius || '12';
   const font = settings?.globalFont || 'Outfit';
   const baseWeight = settings?.fontBaseWeight || 'normal';
@@ -231,24 +231,24 @@ const AppSidebar = ({ activeView, onViewChange, stats, isConnected, isSyncing, o
   return (
     <div className="no-print" style={{ width: 'var(--sidebar-width)', background: 'linear-gradient(180deg, #131a28 0%, #0f172a 100%)', borderRight: '1px solid rgba(148, 163, 184, 0.08)', display: 'flex', flexDirection: 'column', height: '100vh', flexShrink: 0, color: 'white', transition: 'width 0.3s ease' }}>
       <div style={{ padding: 'clamp(16px, 2vw, 24px) clamp(12px, 1.5vw, 22px) 18px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div style={{ background: 'linear-gradient(135deg, #a3112a 0%, #f97316 100%)', color: 'white', padding: 'clamp(6px, 0.8vw, 10px)', borderRadius: '12px', boxShadow: '0 10px 20px rgba(163, 17, 42, 0.2)' }}>
+        <div style={{ background: 'linear-gradient(135deg, #94161c 0%, #f97316 100%)', color: 'white', padding: 'clamp(6px, 0.8vw, 10px)', borderRadius: '12px', boxShadow: '0 10px 20px rgba(163, 17, 42, 0.2)' }}>
           <Store size={18} />
         </div>
         <div style={{ overflow: 'hidden' }}>
-          <div style={{ fontWeight: '950', fontSize: 'clamp(14px, 1.2vw, 18px)', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>TYDE POS</div>
+          <div style={{ fontWeight: '800', fontSize: 'clamp(14px, 1.2vw, 18px)', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>TYDE POS</div>
           <div style={{ fontSize: 'clamp(9px, 0.75vw, 11px)', color: '#94a3b8', fontWeight: '700', letterSpacing: '0.2px', whiteSpace: 'nowrap' }}>Management Console</div>
         </div>
       </div>
 
-      <div style={{ margin: '0 18px 18px', padding: '16px', borderRadius: '18px', background: 'linear-gradient(135deg, rgba(163, 17, 42, 0.32), rgba(249, 115, 22, 0.18))', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div style={{ margin: '0 18px 18px', padding: '16px', borderRadius: '16px', background: 'linear-gradient(135deg, rgba(163, 17, 42, 0.32), rgba(249, 115, 22, 0.18))', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{ fontSize: '11px', fontWeight: '900', color: '#fecaca', textTransform: 'uppercase', letterSpacing: '1.4px', marginBottom: '12px' }}>Shift Snapshot</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <div>
-            <div style={{ fontSize: '24px', fontWeight: '950' }}>{stats.liveOrders}</div>
+            <div style={{ fontSize: '24px', fontWeight: '800' }}>{stats.liveOrders}</div>
             <div style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: '700' }}>Live Orders</div>
           </div>
           <div>
-            <div style={{ fontSize: '24px', fontWeight: '950' }}>{formatCurrency(stats.liveRevenue)}</div>
+            <div style={{ fontSize: '24px', fontWeight: '800' }}>{formatCurrency(stats.liveRevenue)}</div>
             <div style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: '700' }}>Open Value</div>
           </div>
         </div>
@@ -257,14 +257,14 @@ const AppSidebar = ({ activeView, onViewChange, stats, isConnected, isSyncing, o
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 12px 12px' }}>
         {menuGroups.map((group, idx) => (
           <div key={idx} style={{ marginBottom: '28px' }}>
-            <div style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.3px', marginBottom: '12px', paddingLeft: '12px' }}>{group.title}</div>
+            <div style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.3px', marginBottom: '12px', paddingLeft: '12px' }}>{group.title}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {group.items.map(item => (
                 <button
                   key={item.id}
                   onClick={() => onViewChange(item.id)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '14px',
+                    display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '16px',
                     border: activeView === item.id ? '1px solid rgba(249, 115, 22, 0.28)' : '1px solid transparent',
                     background: activeView === item.id ? 'linear-gradient(135deg, rgba(163, 17, 42, 0.26), rgba(249, 115, 22, 0.12))' : 'transparent',
                     color: activeView === item.id ? '#fff7ed' : '#cbd5e1',
@@ -287,12 +287,12 @@ const AppSidebar = ({ activeView, onViewChange, stats, isConnected, isSyncing, o
 
       {IS_LOCAL && lanUrl && (
         <div style={{ padding: '0 18px 16px' }}>
-          <div style={{ padding: '12px 14px', borderRadius: '18px', background: 'rgba(30, 41, 59, 0.5)', border: '1px solid rgba(148, 163, 184, 0.12)' }}>
-             <div style={{ fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ padding: '12px 14px', borderRadius: '16px', background: 'rgba(30, 41, 59, 0.5)', border: '1px solid rgba(148, 163, 184, 0.12)' }}>
+             <div style={{ fontSize: '11px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Wifi size={10} color="#10b981" /> Captain LAN Mode
              </div>
              <div style={{ fontSize: '11px', color: '#f8fafc', fontWeight: '800', wordBreak: 'break-all', fontFamily: 'monospace' }}>{lanUrl}</div>
-             <div style={{ fontSize: '9px', color: '#64748b', marginTop: '6px' }}>Open this URL on any mobile device on the same WiFi.</div>
+             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px' }}>Open this URL on any mobile device on the same WiFi.</div>
           </div>
         </div>
       )}
@@ -346,7 +346,7 @@ const TimeElapsed = ({ createdAt }) => {
   if (!elapsed) return null;
   return (
     <div style={{ 
-      fontSize: '10px', 
+      fontSize: '11px', 
       fontWeight: '900', 
       color: '#b45309', 
       background: '#fef3c7', 
@@ -379,10 +379,10 @@ const AppTopNavbar = ({ globalSearch, onSearchChange, onToggleSidebar, onViewCha
     gap: '20px' 
   }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-      <button onClick={onToggleSidebar} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'pointer', padding: '10px', color: '#1f2937', borderRadius: '10px' }}><Menu size={20} /></button>
+      <button onClick={onToggleSidebar} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'pointer', padding: '10px', color: '#1e293b', borderRadius: '10px' }}><Menu size={20} /></button>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontWeight: '950', fontSize: '20px', color: '#0f172a', letterSpacing: '-0.5px' }}>TYDE POS</span>
+          <span style={{ fontWeight: '800', fontSize: '20px', color: '#0f172a', letterSpacing: '-0.5px' }}>TYDE POS</span>
         </div>
         <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700' }}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}</span>
       </div>
@@ -407,7 +407,7 @@ const AppTopNavbar = ({ globalSearch, onSearchChange, onToggleSidebar, onViewCha
       <div style={{ display: 'flex', gap: '8px' }}>
         <button 
           onClick={() => onViewChange('tables')} 
-          style={{ border: '1px solid #e2e8f0', color: '#1f2937', background: 'white', padding: '8px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+          style={{ border: '1px solid #e2e8f0', color: '#1e293b', background: 'white', padding: '8px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
         >
           <LayoutGrid size={16} /> TABLES
         </button>
@@ -422,11 +422,11 @@ const AppTopNavbar = ({ globalSearch, onSearchChange, onToggleSidebar, onViewCha
       <div style={{ display: 'flex', gap: '12px', borderLeft: '1px solid #e2e8f0', paddingLeft: '16px' }}>
         <div onClick={() => onViewChange('dayclose')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
           <Sunset size={18} color="#64748b" />
-          <span style={{ fontSize: '9px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Day End</span>
+          <span style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Day End</span>
         </div>
         <div onClick={() => onViewChange('kds')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
           <ChefHat size={18} color="#64748b" />
-          <span style={{ fontSize: '9px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Queue</span>
+          <span style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Queue</span>
         </div>
       </div>
 
@@ -663,7 +663,7 @@ const OrderHistoryView = ({ orderHistory, onSelectActive, globalSearch, loadHist
         {/* Title, Search, Export */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a', letterSpacing: '-0.8px', margin: 0 }}>Billing & Transaction History</h2>
+            <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.8px', margin: 0 }}>Billing & Transaction History</h2>
             <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px', margin: 0 }}>Professional sales tracking, invoice management and reporting system</p>
           </div>
           
@@ -787,28 +787,28 @@ const OrderHistoryView = ({ orderHistory, onSelectActive, globalSearch, loadHist
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
           
           {/* Revenue & General Stats */}
-          <div style={{ background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: '14px', padding: '16px' }}>
-            <div style={{ fontSize: '10px', fontWeight: '900', color: '#166534', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Total Revenue</div>
-            <div style={{ fontSize: '26px', fontWeight: '950', color: '#15803d' }}>₹{stats.revenue.toLocaleString('en-IN')}</div>
+          <div style={{ background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: '16px', padding: '16px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '900', color: '#166534', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Total Revenue</div>
+            <div style={{ fontSize: '26px', fontWeight: '800', color: '#15803d' }}>₹{stats.revenue.toLocaleString('en-IN')}</div>
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', fontWeight: '700' }}>Active filtered sales volume</div>
           </div>
 
-          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
-            <div style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Completed / Cancelled</div>
-            <div style={{ fontSize: '26px', fontWeight: '950', color: '#0f172a' }}>
+          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Completed / Cancelled</div>
+            <div style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a' }}>
               {stats.completedCount} <span style={{ fontSize: '14px', color: '#ef4444', fontWeight: '800' }}>/ {stats.cancelledCount} voided</span>
             </div>
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', fontWeight: '700' }}>Transaction breakdown counts</div>
           </div>
 
-          <div style={{ background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: '14px', padding: '16px' }}>
-            <div style={{ fontSize: '10px', fontWeight: '900', color: '#1e40af', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Average Ticket</div>
-            <div style={{ fontSize: '26px', fontWeight: '950', color: '#1d4ed8' }}>₹{stats.avgTicket.toLocaleString('en-IN')}</div>
+          <div style={{ background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: '16px', padding: '16px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '900', color: '#1e40af', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Average Ticket</div>
+            <div style={{ fontSize: '26px', fontWeight: '800', color: '#1d4ed8' }}>₹{stats.avgTicket.toLocaleString('en-IN')}</div>
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', fontWeight: '700' }}>Grand total average per order</div>
           </div>
 
           {/* Payment Type Split Breakdown */}
-          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '6px', justifyContent: 'center' }}>
+          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '6px', justifyContent: 'center' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: '800' }}>
               <span style={{ color: '#d97706' }}>💵 CASH:</span>
               <span style={{ fontWeight: '900', color: '#0f172a' }}>₹{stats.cashTotal.toLocaleString('en-IN')}</span>
@@ -841,7 +841,7 @@ const OrderHistoryView = ({ orderHistory, onSelectActive, globalSearch, loadHist
               key={tab.id} 
               onClick={() => { setActiveTab(tab.id); setVisibleCount(50); setExpandedOrderId(null); }} 
               style={{
-                padding: '8px 18px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '800', transition: 'all 0.15s',
+                padding: '8px 18px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '800', transition: 'all 0.15s',
                 background: activeTab === tab.id ? '#ffffff' : 'transparent',
                 color: activeTab === tab.id ? '#0f172a' : '#64748b',
                 boxShadow: activeTab === tab.id ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
@@ -862,7 +862,7 @@ const OrderHistoryView = ({ orderHistory, onSelectActive, globalSearch, loadHist
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px' }} className="no-scrollbar">
         {filteredOrders.length === 0 ? (
           <div style={{ padding: '80px 20px', textAlign: 'center' }}>
-            <div style={{ width: '80px', height: '80px', background: '#ffffff', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '1px solid #cbd5e1' }}>
+            <div style={{ width: '80px', height: '80px', background: '#ffffff', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '1px solid #cbd5e1' }}>
               <ShoppingBag size={32} color="#cbd5e1" />
             </div>
             <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>No history records found</h3>
@@ -903,7 +903,7 @@ const OrderHistoryView = ({ orderHistory, onSelectActive, globalSearch, loadHist
 
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                            <span style={{ fontWeight: '900', fontSize: '15px', color: '#0f172a' }}>
+                            <span style={{ fontWeight: '900', fontSize: '14px', color: '#0f172a' }}>
                               {order.customerName || (order.table_number ? `Table ${order.table_number}` : 'Walk-In')}
                             </span>
                             
@@ -913,18 +913,18 @@ const OrderHistoryView = ({ orderHistory, onSelectActive, globalSearch, loadHist
                             </span>
 
                             {/* Order type badge */}
-                            <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '20px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>
+                            <span style={{ fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '20px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>
                               {order.orderType || order.type || 'Dine In'}
                             </span>
 
                             {/* Payment Method */}
                             {order.status === 'completed' && (
-                              <span style={{ fontSize: '10px', fontWeight: '800', padding: '2px 8px', borderRadius: '20px', background: 'rgba(34,197,94,0.08)', color: '#16a34a', border: '1px solid rgba(34,197,94,0.15)' }}>
+                              <span style={{ fontSize: '11px', fontWeight: '800', padding: '2px 8px', borderRadius: '20px', background: 'rgba(34,197,94,0.08)', color: '#16a34a', border: '1px solid rgba(34,197,94,0.15)' }}>
                                 💳 {String(order.paymentMethod).toUpperCase()}
                               </span>
                             )}
                             {order.status === 'cancelled' && (
-                              <span style={{ fontSize: '10px', fontWeight: '800', padding: '2px 8px', borderRadius: '20px', background: 'rgba(239,68,68,0.08)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.15)' }}>
+                              <span style={{ fontSize: '11px', fontWeight: '800', padding: '2px 8px', borderRadius: '20px', background: 'rgba(239,68,68,0.08)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.15)' }}>
                                 VOIDED
                               </span>
                             )}
@@ -939,7 +939,7 @@ const OrderHistoryView = ({ orderHistory, onSelectActive, globalSearch, loadHist
 
                         {/* Amount & Quick Actions */}
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                          <div style={{ fontSize: '20px', fontWeight: '950', color: status === 'cancelled' ? '#94a3b8' : '#0f172a', textDecoration: status === 'cancelled' ? 'line-through' : 'none' }}>
+                          <div style={{ fontSize: '20px', fontWeight: '800', color: status === 'cancelled' ? '#94a3b8' : '#0f172a', textDecoration: status === 'cancelled' ? 'line-through' : 'none' }}>
                             ₹{Number(total).toLocaleString('en-IN', { minimumFractionDigits: 0 })}
                           </div>
                           
@@ -984,15 +984,15 @@ const OrderHistoryView = ({ orderHistory, onSelectActive, globalSearch, loadHist
                         <div style={{ padding: '20px 24px', background: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '20px' }}>
                             <div style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                              <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date & Time</div>
+                              <div style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date & Time</div>
                               <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>{time}</div>
                             </div>
                             <div style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                              <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Billing Type</div>
+                              <div style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Billing Type</div>
                               <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>{order.orderType || order.type || 'Dine In'}</div>
                             </div>
                             <div style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', position: 'relative' }}>
-                              <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Payment Mode</div>
+                              <div style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Payment Mode</div>
                               {editingPaymentId === order.id ? (
                                 <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
                                   <select 
@@ -1023,7 +1023,7 @@ const OrderHistoryView = ({ orderHistory, onSelectActive, globalSearch, loadHist
                               )}
                             </div>
                             <div style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                              <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Customer Phone</div>
+                              <div style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Customer Phone</div>
                               <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>{order.phone || 'N/A'}</div>
                             </div>
                           </div>
@@ -1042,7 +1042,7 @@ const OrderHistoryView = ({ orderHistory, onSelectActive, globalSearch, loadHist
                                 return (
                                   <div key={i} style={{ padding: '12px 16px', display: 'flex', borderBottom: i < items.length - 1 ? '1px solid #f1f5f9' : 'none', alignItems: 'center' }}>
                                     <div style={{ flex: 1, fontSize: '13px', fontWeight: '800', color: '#334155' }}>{item.name}</div>
-                                    <div style={{ width: '80px', textAlign: 'center', fontSize: '13px', fontWeight: '950', color: '#d97706' }}>x{qty}</div>
+                                    <div style={{ width: '80px', textAlign: 'center', fontSize: '13px', fontWeight: '800', color: '#d97706' }}>x{qty}</div>
                                     <div style={{ width: '100px', textAlign: 'right', fontSize: '13px', fontWeight: '700', color: '#64748b' }}>₹{Number(item.price || 0).toLocaleString()}</div>
                                     <div style={{ width: '120px', textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#0f172a' }}>₹{(Number(item.price || 0) * qty).toLocaleString()}</div>
                                   </div>
@@ -1099,7 +1099,7 @@ const OrderHistoryView = ({ orderHistory, onSelectActive, globalSearch, loadHist
                                 ) : null;
                               })()}
 
-                              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '8px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: '950', color: '#0f172a' }}>
+                              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '8px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
                                 <span>Grand Total:</span>
                                 <span style={{ color: '#16a34a' }}>₹{Number(total).toLocaleString()}</span>
                               </div>
@@ -1123,7 +1123,7 @@ const OrderHistoryView = ({ orderHistory, onSelectActive, globalSearch, loadHist
                   padding: '14px',
                   background: '#ffffff',
                   border: '1px solid #cbd5e1',
-                  borderRadius: '14px',
+                  borderRadius: '16px',
                   color: '#475569',
                   fontSize: '13px',
                   fontWeight: '800',
@@ -1208,24 +1208,24 @@ const RetailProductSetupView = ({ categories, setCategories, menuItems, setMenuI
   };
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: '#f9fafb' }} className="animate-fade-in no-scrollbar">
+    <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: '#f8fafc' }} className="animate-fade-in no-scrollbar">
       <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', color: '#1f2937', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Package size={28} color="#3b82f6" /> Retail Product Setup
         </h2>
 
         {/* Categories Section */}
         <div style={{ background: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '24px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: '#374151' }}>Retail Categories</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: '#334155' }}>Retail Categories</h3>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
-            <input type="text" placeholder="New Category Name" value={newCat} onChange={e => setNewCat(e.target.value)} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }} />
+            <input type="text" placeholder="New Category Name" value={newCat} onChange={e => setNewCat(e.target.value)} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
             <button onClick={addCategory} className="btn-pp btn-pp-primary">Add</button>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {categories.map(cat => {
               const name = typeof cat === 'object' ? cat.name : cat;
               return (
-                <div key={name} style={{ background: '#f3f4f6', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div key={name} style={{ background: '#f1f5f9', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {name} <button onClick={() => deleteCategory(name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><X size={14} /></button>
                 </div>
               );
@@ -1235,12 +1235,12 @@ const RetailProductSetupView = ({ categories, setCategories, menuItems, setMenuI
 
         {/* Inventory Items Section */}
         <div style={{ background: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: '#374151' }}>Product Inventory</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: '#334155' }}>Product Inventory</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1.5fr auto', gap: '10px', alignItems: 'center', marginBottom: '24px' }}>
-            <input type="text" placeholder="Product Name" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }} />
-            <input type="number" placeholder="Price (₹)" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: e.target.value })} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }} />
-            <input type="number" placeholder="Stock Qty" value={newItem.stockQuantity} onChange={e => setNewItem({ ...newItem, stockQuantity: e.target.value })} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }} />
-            <select value={newItem.cat} onChange={e => setNewItem({ ...newItem, cat: e.target.value })} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white' }}>
+            <input type="text" placeholder="Product Name" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+            <input type="number" placeholder="Price (₹)" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: e.target.value })} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+            <input type="number" placeholder="Stock Qty" value={newItem.stockQuantity} onChange={e => setNewItem({ ...newItem, stockQuantity: e.target.value })} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+            <select value={newItem.cat} onChange={e => setNewItem({ ...newItem, cat: e.target.value })} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white' }}>
               {categories.map(cat => {
                 const name = typeof cat === 'object' ? cat.name : cat;
                 return <option key={name} value={name}>{name}</option>
@@ -1249,24 +1249,24 @@ const RetailProductSetupView = ({ categories, setCategories, menuItems, setMenuI
             <button onClick={addItem} className="btn-pp btn-pp-primary" style={{ padding: '10px 20px', background: '#3b82f6' }}>Add</button>
           </div>
 
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: '#374151', borderTop: '1px solid #e5e7eb', paddingTop: '24px' }}>Current Stock</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: '#334155', borderTop: '1px solid #e2e8f0', paddingTop: '24px' }}>Current Stock</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {menuItems.map(item => (
-              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px', background: item.inStock ? 'white' : '#fef2f2' }}>
+              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', background: item.inStock ? 'white' : '#fef2f2' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ width: '12px', height: '12px', borderRadius: '2px', background: '#3b82f6' }}></div>
-                  <div style={{ fontWeight: 'bold', color: '#1f2937' }}>{item.name}</div>
-                  <div style={{ color: '#6b7280', fontSize: '13px' }}>{typeof item.cat === 'object' ? item.cat.name : item.cat}</div>
+                  <div style={{ fontWeight: 'bold', color: '#1e293b' }}>{item.name}</div>
+                  <div style={{ color: '#64748b', fontSize: '13px' }}>{typeof item.cat === 'object' ? item.cat.name : item.cat}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <div style={{ fontWeight: 'bold', color: '#94161c' }}>₹{item.price}</div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ fontSize: '12px', color: '#64748b' }}>Qty:</span>
-                    <input type="number" value={item.stockQuantity} onChange={e => updateQuantity(item.id, e.target.value)} style={{ width: '60px', padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center' }} />
+                    <input type="number" value={item.stockQuantity} onChange={e => updateQuantity(item.id, e.target.value)} style={{ width: '60px', padding: '4px', border: '1px solid #cbd5e1', borderRadius: '6px', textAlign: 'center' }} />
                   </div>
 
-                  <button onClick={() => toggleStock(item.id)} style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', background: item.inStock ? '#ecfdf5' : 'transparent', color: item.inStock ? '#10b981' : '#ef4444', borderColor: item.inStock ? '#10b981' : '#ef4444' }}>
+                  <button onClick={() => toggleStock(item.id)} style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', background: item.inStock ? '#ecfdf5' : 'transparent', color: item.inStock ? '#10b981' : '#ef4444', borderColor: item.inStock ? '#10b981' : '#ef4444' }}>
                     {item.inStock ? 'In Stock' : 'Out of Stock'}
                   </button>
                   <button onClick={() => deleteItem(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px' }}><X size={18} /></button>
@@ -1326,35 +1326,35 @@ const ModsEditorModal = ({ modifierGroups, setModifierGroups, addOns, setAddOns,
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div className="animate-fade-in" style={{ background: 'white', padding: '24px', borderRadius: '12px', width: '500px', maxHeight: '85vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h3 style={{ fontWeight: 'bold', fontSize: '18px', color: '#1f2937' }}>Modifiers & Add-ons</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}><X size={20} /></button>
+          <h3 style={{ fontWeight: 'bold', fontSize: '18px', color: '#1e293b' }}>Modifiers & Add-ons</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
         </div>
 
         {/* MODIFIER GROUPS */}
         <div style={{ marginBottom: '24px' }}>
-          <h4 style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '8px', color: '#4b5563' }}>Modifier Groups (e.g. Size, Spice Level)</h4>
+          <h4 style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '8px', color: '#475569' }}>Modifier Groups (e.g. Size, Spice Level)</h4>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-            <input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="New Group Name" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #d1d5db' }} />
-            <button onClick={addGroup} style={{ padding: '8px 12px', background: '#3b82f6', color: 'white', borderRadius: '4px', border: 'none', cursor: 'pointer' }}>Add Group</button>
+            <input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="New Group Name" style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+            <button onClick={addGroup} style={{ padding: '8px 12px', background: '#3b82f6', color: 'white', borderRadius: '6px', border: 'none', cursor: 'pointer' }}>Add Group</button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {modifierGroups.map((grp, gIdx) => (
-              <div key={gIdx} style={{ padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#f9fafb' }}>
+              <div key={gIdx} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#f8fafc' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <strong style={{ fontSize: '13px' }}>{grp.name}</strong>
                   <button onClick={() => removeGroup(gIdx)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px' }}>Remove Group</button>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
                   {grp.options.map((opt, oIdx) => (
-                    <div key={oIdx} style={{ fontSize: '12px', background: 'white', border: '1px solid #d1d5db', padding: '4px 8px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div key={oIdx} style={{ fontSize: '12px', background: 'white', border: '1px solid #cbd5e1', padding: '4px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span>{opt.name} {opt.priceDelta ? `(+₹${opt.priceDelta})` : ''}</span>
-                      <X size={12} style={{ cursor: 'pointer', color: '#9ca3af' }} onClick={() => removeGroupOption(gIdx, oIdx)} />
+                      <X size={12} style={{ cursor: 'pointer', color: '#94a3b8' }} onClick={() => removeGroupOption(gIdx, oIdx)} />
                     </div>
                   ))}
                 </div>
                 <div style={{ display: 'flex', gap: '6px' }}>
-                  <input id={`opt-name-${gIdx}`} placeholder="Option Name" style={{ flex: 1, padding: '6px', fontSize: '12px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
-                  <input id={`opt-price-${gIdx}`} type="number" placeholder="+₹ Price" style={{ width: '80px', padding: '6px', fontSize: '12px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                  <input id={`opt-name-${gIdx}`} placeholder="Option Name" style={{ flex: 1, padding: '6px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                  <input id={`opt-price-${gIdx}`} type="number" placeholder="+₹ Price" style={{ width: '80px', padding: '6px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
                   <button 
                     onClick={() => {
                       const nInput = document.getElementById(`opt-name-${gIdx}`);
@@ -1362,7 +1362,7 @@ const ModsEditorModal = ({ modifierGroups, setModifierGroups, addOns, setAddOns,
                       addGroupOption(gIdx, nInput.value, pInput.value);
                       nInput.value = ''; pInput.value = '';
                     }}
-                    style={{ padding: '6px 10px', fontSize: '12px', background: '#e2e8f0', color: '#475569', borderRadius: '4px', border: 'none', cursor: 'pointer' }}>
+                    style={{ padding: '6px 10px', fontSize: '12px', background: '#e2e8f0', color: '#475569', borderRadius: '6px', border: 'none', cursor: 'pointer' }}>
                     Add
                   </button>
                 </div>
@@ -1373,15 +1373,15 @@ const ModsEditorModal = ({ modifierGroups, setModifierGroups, addOns, setAddOns,
 
         {/* ADD-ONS */}
         <div>
-          <h4 style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '8px', color: '#4b5563' }}>Optional Add-ons</h4>
+          <h4 style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '8px', color: '#475569' }}>Optional Add-ons</h4>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-            <input value={newAddOnName} onChange={e => setNewAddOnName(e.target.value)} placeholder="Add-on Name" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #d1d5db' }} />
-            <input value={newAddOnPrice} onChange={e => setNewAddOnPrice(e.target.value)} type="number" placeholder="+₹ Price" style={{ width: '100px', padding: '8px', borderRadius: '4px', border: '1px solid #d1d5db' }} />
-            <button onClick={addAddOn} style={{ padding: '8px 12px', background: '#3b82f6', color: 'white', borderRadius: '4px', border: 'none', cursor: 'pointer' }}>Add</button>
+            <input value={newAddOnName} onChange={e => setNewAddOnName(e.target.value)} placeholder="Add-on Name" style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+            <input value={newAddOnPrice} onChange={e => setNewAddOnPrice(e.target.value)} type="number" placeholder="+₹ Price" style={{ width: '100px', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+            <button onClick={addAddOn} style={{ padding: '8px 12px', background: '#3b82f6', color: 'white', borderRadius: '6px', border: 'none', cursor: 'pointer' }}>Add</button>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {addOns.map((addon, aIdx) => (
-              <div key={aIdx} style={{ fontSize: '12px', background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', padding: '6px 10px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div key={aIdx} style={{ fontSize: '12px', background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', padding: '6px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span>{addon.name} (+₹{addon.priceDelta})</span>
                 <X size={14} style={{ cursor: 'pointer', color: '#10b981' }} onClick={() => removeAddOn(aIdx)} />
               </div>
@@ -1464,24 +1464,24 @@ const RichModifierModal = ({ item, onAddToCart, onClose }) => {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div className="animate-fade-in" style={{ background: 'white', padding: '24px', borderRadius: '12px', width: '400px', maxHeight: '85vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h3 style={{ fontWeight: 'bold', fontSize: '18px', color: '#1f2937' }}>Customize {item.name}</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}><X size={20} /></button>
+          <h3 style={{ fontWeight: 'bold', fontSize: '18px', color: '#1e293b' }}>Customize {item.name}</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
         </div>
 
         {/* Legacy Modifiers */}
         {item.modifiers && item.modifiers.length > 0 && (
           <div style={{ marginBottom: '20px' }}>
-            <h4 style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '12px', color: '#4b5563' }}>Select Option</h4>
+            <h4 style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '12px', color: '#475569' }}>Select Option</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {item.modifiers.map(mod => (
-                <label key={mod} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: selectedLegacyModifier === mod ? '#ecfdf5' : '#f9fafb', padding: '12px', borderRadius: '8px', border: `1px solid ${selectedLegacyModifier === mod ? '#10b981' : '#e5e7eb'}` }}>
+                <label key={mod} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: selectedLegacyModifier === mod ? '#ecfdf5' : '#f8fafc', padding: '12px', borderRadius: '8px', border: `1px solid ${selectedLegacyModifier === mod ? '#10b981' : '#e2e8f0'}` }}>
                   <input type="radio" name="legacyMod" checked={selectedLegacyModifier === mod} onChange={() => setSelectedLegacyModifier(mod)} />
-                  <span style={{ fontSize: '14px', fontWeight: selectedLegacyModifier === mod ? 'bold' : '500', color: selectedLegacyModifier === mod ? '#065f46' : '#374151' }}>{mod}</span>
+                  <span style={{ fontSize: '14px', fontWeight: selectedLegacyModifier === mod ? 'bold' : '500', color: selectedLegacyModifier === mod ? '#065f46' : '#334155' }}>{mod}</span>
                 </label>
               ))}
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: selectedLegacyModifier === 'Regular' ? '#ecfdf5' : '#f9fafb', padding: '12px', borderRadius: '8px', border: `1px solid ${selectedLegacyModifier === 'Regular' ? '#10b981' : '#e5e7eb'}` }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: selectedLegacyModifier === 'Regular' ? '#ecfdf5' : '#f8fafc', padding: '12px', borderRadius: '8px', border: `1px solid ${selectedLegacyModifier === 'Regular' ? '#10b981' : '#e2e8f0'}` }}>
                 <input type="radio" name="legacyMod" checked={selectedLegacyModifier === 'Regular'} onChange={() => setSelectedLegacyModifier('Regular')} />
-                <span style={{ fontSize: '14px', fontWeight: selectedLegacyModifier === 'Regular' ? 'bold' : '500', color: selectedLegacyModifier === 'Regular' ? '#065f46' : '#374151' }}>Regular (No Mods)</span>
+                <span style={{ fontSize: '14px', fontWeight: selectedLegacyModifier === 'Regular' ? 'bold' : '500', color: selectedLegacyModifier === 'Regular' ? '#065f46' : '#334155' }}>Regular (No Mods)</span>
               </label>
             </div>
           </div>
@@ -1490,13 +1490,13 @@ const RichModifierModal = ({ item, onAddToCart, onClose }) => {
         {/* Rich Modifier Groups */}
         {item.modifier_groups && item.modifier_groups.map((grp, gIdx) => (
           <div key={gIdx} style={{ marginBottom: '20px' }}>
-            <h4 style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '12px', color: '#4b5563' }}>{grp.name}</h4>
+            <h4 style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '12px', color: '#475569' }}>{grp.name}</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {grp.options.map((opt, oIdx) => (
-                <label key={oIdx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: selectedGroups[gIdx] === opt.name ? '#ecfdf5' : '#f9fafb', padding: '12px', borderRadius: '8px', border: `1px solid ${selectedGroups[gIdx] === opt.name ? '#10b981' : '#e5e7eb'}` }}>
+                <label key={oIdx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: selectedGroups[gIdx] === opt.name ? '#ecfdf5' : '#f8fafc', padding: '12px', borderRadius: '8px', border: `1px solid ${selectedGroups[gIdx] === opt.name ? '#10b981' : '#e2e8f0'}` }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <input type="radio" name={`grp-${gIdx}`} checked={selectedGroups[gIdx] === opt.name} onChange={() => setSelectedGroups({...selectedGroups, [gIdx]: opt.name})} />
-                    <span style={{ fontSize: '14px', fontWeight: selectedGroups[gIdx] === opt.name ? 'bold' : '500', color: selectedGroups[gIdx] === opt.name ? '#065f46' : '#374151' }}>{opt.name}</span>
+                    <span style={{ fontSize: '14px', fontWeight: selectedGroups[gIdx] === opt.name ? 'bold' : '500', color: selectedGroups[gIdx] === opt.name ? '#065f46' : '#334155' }}>{opt.name}</span>
                   </div>
                   {opt.priceDelta > 0 && <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#059669' }}>+₹{opt.priceDelta}</span>}
                 </label>
@@ -1508,13 +1508,13 @@ const RichModifierModal = ({ item, onAddToCart, onClose }) => {
         {/* Rich Add-ons */}
         {item.add_ons && item.add_ons.length > 0 && (
           <div style={{ marginBottom: '20px' }}>
-            <h4 style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '12px', color: '#4b5563' }}>Optional Add-ons</h4>
+            <h4 style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '12px', color: '#475569' }}>Optional Add-ons</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {item.add_ons.map((addon, aIdx) => (
-                <label key={aIdx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: selectedAddOns[aIdx] ? '#eff6ff' : '#f9fafb', padding: '12px', borderRadius: '8px', border: `1px solid ${selectedAddOns[aIdx] ? '#3b82f6' : '#e5e7eb'}` }}>
+                <label key={aIdx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: selectedAddOns[aIdx] ? '#eff6ff' : '#f8fafc', padding: '12px', borderRadius: '8px', border: `1px solid ${selectedAddOns[aIdx] ? '#3b82f6' : '#e2e8f0'}` }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <input type="checkbox" checked={!!selectedAddOns[aIdx]} onChange={(e) => setSelectedAddOns({...selectedAddOns, [aIdx]: e.target.checked})} />
-                    <span style={{ fontSize: '14px', fontWeight: selectedAddOns[aIdx] ? 'bold' : '500', color: selectedAddOns[aIdx] ? '#1e40af' : '#374151' }}>{addon.name}</span>
+                    <span style={{ fontSize: '14px', fontWeight: selectedAddOns[aIdx] ? 'bold' : '500', color: selectedAddOns[aIdx] ? '#1e40af' : '#334155' }}>{addon.name}</span>
                   </div>
                   {addon.priceDelta > 0 && <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#2563eb' }}>+₹{addon.priceDelta}</span>}
                 </label>
@@ -1523,7 +1523,7 @@ const RichModifierModal = ({ item, onAddToCart, onClose }) => {
           </div>
         )}
 
-        <button onClick={handleAdd} style={{ marginTop: '12px', width: '100%', padding: '14px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px' }}>
+        <button onClick={handleAdd} style={{ marginTop: '12px', width: '100%', padding: '14px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px' }}>
           Add to Order
         </button>
       </div>
@@ -1705,22 +1705,22 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
   }, {});
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: '#f9fafb' }} className="animate-fade-in no-scrollbar">
+    <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: '#f8fafc' }} className="animate-fade-in no-scrollbar">
       <div style={{ maxWidth: '850px', margin: '0 auto' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', color: '#1f2937', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Utensils size={28} color="#10b981" /> Menu & Inventory Setup
         </h2>
 
         {/* Categories Section */}
         <div style={{ background: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '24px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: '#374151' }}>Categories</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: '#334155' }}>Categories</h3>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
             <input
               type="text"
               placeholder="New Category Name (e.g. Desserts)"
               value={newCat}
               onChange={e => setNewCat(e.target.value)}
-              style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
+              style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
             />
             <button onClick={addCategory} className="btn-pp btn-pp-primary" style={{ background: '#10b981', padding: '10px 20px' }}>Add Category</button>
           </div>
@@ -1728,7 +1728,7 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
             {categories.map(cat => {
               const catName = getCatStr(cat);
               return (
-                <div key={catName} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f3f4f6', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', color: '#4b5563' }}>
+                <div key={catName} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>
                   {catName}
                   <button onClick={() => deleteCategory(catName)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: '#ef4444' }}>
                     <X size={14} />
@@ -1742,7 +1742,7 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
         {/* Menu Items Section */}
         <div style={{ background: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#374151' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#334155' }}>
               {editingId ? "Edit Menu Item" : "Add Menu Item"}
             </h3>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -1791,38 +1791,38 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
               </button>
             </div>
           </div>
-          <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '16px' }}>Add new items or manage current inventory stock below.</p>
+          <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '16px' }}>Add new items or manage current inventory stock below.</p>
           
           {/* Clean 2-Row Form Layout */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: '#f9fafb', padding: '16px', borderRadius: '10px', border: '1px solid #e5e7eb', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
             {/* Row 1: Primary Inputs */}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.2fr 1fr', gap: '10px' }}>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#4b5563', display: 'block', marginBottom: '4px' }}>Item Name *</label>
+                <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>Item Name *</label>
                 <input
                   type="text"
                   placeholder="e.g. Cold Coffee"
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', background: 'white' }}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: 'white' }}
                 />
               </div>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#4b5563', display: 'block', marginBottom: '4px' }}>Price (₹) *</label>
+                <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>Price (₹) *</label>
                 <input
                   type="number"
                   placeholder="Price"
                   value={price}
                   onChange={e => setPrice(e.target.value)}
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', background: 'white' }}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: 'white' }}
                 />
               </div>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#4b5563', display: 'block', marginBottom: '4px' }}>Category *</label>
+                <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>Category *</label>
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white', fontSize: '13px' }}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', fontSize: '13px' }}
                 >
                   <option value="">Select Category</option>
                   {categories.map((cat, i) => {
@@ -1836,11 +1836,11 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#4b5563', display: 'block', marginBottom: '4px' }}>Type</label>
+                <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>Type</label>
                 <select
                   value={type}
                   onChange={e => setType(e.target.value)}
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white', fontSize: '13px' }}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', fontSize: '13px' }}
                 >
                   <option value="Veg">🟢 Veg</option>
                   <option value="Non-Veg">🔴 Non-Veg</option>
@@ -1852,17 +1852,17 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '10px' }}>
               <div style={{ display: 'flex', gap: '10px', flex: 1 }}>
                 <div style={{ flex: 1, maxWidth: '180px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#4b5563', display: 'block', marginBottom: '4px' }}>Short Code</label>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>Short Code</label>
                   <input
                     type="text"
                     placeholder="e.g. cc"
                     value={shortCode}
                     onChange={e => setShortCode(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', background: 'white' }}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: 'white' }}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#4b5563', display: 'block', marginBottom: '4px' }}>Modifiers</label>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>Modifiers</label>
                   <button 
                     type="button"
                     onClick={(e) => {
@@ -1873,10 +1873,10 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
                     style={{ 
                       padding: '9px 14px', 
                       borderRadius: '6px', 
-                      border: '1px solid #d1d5db', 
+                      border: '1px solid #cbd5e1', 
                       background: (modifierGroups.length > 0 || addOns.length > 0) ? '#f0fdf4' : 'white', 
-                      color: (modifierGroups.length > 0 || addOns.length > 0) ? '#166534' : '#374151',
-                      borderColor: (modifierGroups.length > 0 || addOns.length > 0) ? '#bbf7d0' : '#d1d5db',
+                      color: (modifierGroups.length > 0 || addOns.length > 0) ? '#166534' : '#334155',
+                      borderColor: (modifierGroups.length > 0 || addOns.length > 0) ? '#bbf7d0' : '#cbd5e1',
                       cursor: 'pointer', 
                       fontSize: '13px',
                       fontWeight: '600' 
@@ -1895,7 +1895,7 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
                       setName(""); setPrice(""); setShortCode("");
                       setModifierGroups([]); setAddOns([]);
                     }} 
-                    style={{ padding: '9px 16px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', color: '#4b5563' }}
+                    style={{ padding: '9px 16px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', color: '#475569' }}
                   >
                     Cancel
                   </button>
@@ -1921,10 +1921,10 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
           </div>
 
           {/* Current Menu Header & Search Bar */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
             <div>
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#374151', margin: 0 }}>Current Menu</h3>
-              <span style={{ fontSize: '12px', color: '#6b7280' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#334155', margin: 0 }}>Current Menu</h3>
+              <span style={{ fontSize: '12px', color: '#64748b' }}>
                 Showing {filteredMenuItems.length} of {menuItems.length} items
               </span>
             </div>
@@ -1935,7 +1935,7 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
                 placeholder="Search menu items..." 
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                style={{ padding: '7px 12px 7px 30px', borderRadius: '20px', border: '1px solid #d1d5db', fontSize: '12px', outline: 'none', width: '220px' }}
+                style={{ padding: '7px 12px 7px 30px', borderRadius: '20px', border: '1px solid #cbd5e1', fontSize: '12px', outline: 'none', width: '220px' }}
               />
             </div>
           </div>
@@ -1952,9 +1952,9 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
                 fontWeight: 'bold',
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
-                background: activeCategoryTab === "All" ? '#10b981' : '#f3f4f6',
-                color: activeCategoryTab === "All" ? 'white' : '#4b5563',
-                borderColor: activeCategoryTab === "All" ? '#10b981' : '#e5e7eb'
+                background: activeCategoryTab === "All" ? '#10b981' : '#f1f5f9',
+                color: activeCategoryTab === "All" ? 'white' : '#475569',
+                borderColor: activeCategoryTab === "All" ? '#10b981' : '#e2e8f0'
               }}
             >
               All ({menuItems.length})
@@ -1976,9 +1976,9 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
                     fontWeight: 'bold',
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
-                    background: isActive ? '#10b981' : '#f3f4f6',
-                    color: isActive ? 'white' : '#4b5563',
-                    borderColor: isActive ? '#10b981' : '#e5e7eb'
+                    background: isActive ? '#10b981' : '#f1f5f9',
+                    color: isActive ? 'white' : '#475569',
+                    borderColor: isActive ? '#10b981' : '#e2e8f0'
                   }}
                 >
                   {catName} ({count})
@@ -1989,7 +1989,7 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
 
           {/* Grouped Menu List */}
           {Object.keys(groupedMenu).length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#9ca3af', fontSize: '14px', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8', fontSize: '14px', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
               No menu items found. Add items above to get started!
             </div>
           ) : (
@@ -1998,7 +1998,7 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
                 <div key={catName} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {/* Category Header */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '8px', borderBottom: '2px solid #e2e8f0', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.2px' }}>
+                    <span style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.2px' }}>
                       {catName}
                     </span>
                     <span style={{ background: '#e0e7ff', color: '#3730a3', fontSize: '11px', fontWeight: '800', padding: '2px 10px', borderRadius: '12px' }}>
@@ -2033,7 +2033,7 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
                             <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: String(item.type || '').toLowerCase() === 'veg' ? '#10b981' : '#ef4444' }}></div>
                           </div>
                           
-                          <div style={{ fontWeight: '700', color: '#1e293b', fontSize: '15px', marginRight: '4px' }}>
+                          <div style={{ fontWeight: '700', color: '#1e293b', fontSize: '14px', marginRight: '4px' }}>
                             {item.name}
                           </div>
 
@@ -2059,7 +2059,7 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
                           <div style={{ 
                             fontWeight: '800', 
                             color: '#94161c', 
-                            fontSize: '15px', 
+                            fontSize: '14px', 
                             background: '#fff5f5', 
                             padding: '4px 12px', 
                             borderRadius: '8px', 
@@ -2570,14 +2570,14 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
 
   // Side tab label style helper
   const sTab = (id) => ({
-    flex: 1, padding: '8px 4px', borderRadius: '8px', fontSize: '10px', fontWeight: '900', border: 'none', cursor: 'pointer', transition: 'all 0.15s', letterSpacing: '0.3px',
+    flex: 1, padding: '8px 4px', borderRadius: '8px', fontSize: '11px', fontWeight: '900', border: 'none', cursor: 'pointer', transition: 'all 0.15s', letterSpacing: '0.3px',
     background: activeSideTab === id ? '#7c3aed' : 'transparent',
     color: activeSideTab === id ? 'white' : '#64748b'
   });
 
   // ── ALIGNMENT BUTTON helper
   const AlignBtn = ({ label, title: tt, onClick: oc, icon }) => (
-    <button onClick={oc} title={tt} style={{ flex: 1, padding: '8px 4px', borderRadius: '8px', fontSize: '10px', fontWeight: '900', border: '1px solid #e2e8f0', background: 'white', color: '#334155', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', transition: 'all 0.15s' }}
+    <button onClick={oc} title={tt} style={{ flex: 1, padding: '8px 4px', borderRadius: '8px', fontSize: '11px', fontWeight: '900', border: '1px solid #e2e8f0', background: 'white', color: '#334155', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', transition: 'all 0.15s' }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.color = '#7c3aed'; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#334155'; }}
     >
@@ -2595,7 +2595,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
         <div style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <LayoutGrid size={20} color="#7c3aed" />
           <div>
-            <div style={{ fontSize: '15px', fontWeight: '950', color: '#0f172a' }}>Floor Designer</div>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>Floor Designer</div>
             <div style={{ fontSize: '11px', color: '#64748b' }}>Advanced Layout Editor</div>
           </div>
         </div>
@@ -2631,7 +2631,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
                       <span style={{ fontSize: '22px', width: '28px', textAlign: 'center' }}>{icon}</span>
                       <div>
                         <div style={{ fontSize: '12px', fontWeight: '800', color: '#1e293b' }}>{label}</div>
-                        <div style={{ fontSize: '10px', color: '#64748b' }}>{sub} · {shape}</div>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>{sub} · {shape}</div>
                       </div>
                     </button>
                   ))}
@@ -2642,18 +2642,18 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
                 <div style={{ fontSize: '11px', fontWeight: '900', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '10px' }}>Canvas Settings</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151' }}>Grid Snap</label>
-                    <button onClick={() => setGridSnap(!gridSnap)} style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '900', border: 'none', cursor: 'pointer', background: gridSnap ? '#ecfdf5' : '#f1f5f9', color: gridSnap ? '#059669' : '#6b7280' }}>
+                    <label style={{ fontSize: '12px', fontWeight: '700', color: '#334155' }}>Grid Snap</label>
+                    <button onClick={() => setGridSnap(!gridSnap)} style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '900', border: 'none', cursor: 'pointer', background: gridSnap ? '#ecfdf5' : '#f1f5f9', color: gridSnap ? '#059669' : '#64748b' }}>
                       {gridSnap ? 'ON' : 'OFF'}
                     </button>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151', whiteSpace: 'nowrap' }}>Grid Size: {gridSize}px</label>
+                    <label style={{ fontSize: '12px', fontWeight: '700', color: '#334155', whiteSpace: 'nowrap' }}>Grid Size: {gridSize}px</label>
                     <input type="range" min="5" max="50" step="5" value={gridSize} onChange={e => setGridSize(Number(e.target.value))} style={{ flex: 1, accentColor: '#7c3aed', cursor: 'pointer' }} />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151' }}>Snap to Tables</label>
-                    <button onClick={() => setSnapToTables(!snapToTables)} style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '900', border: 'none', cursor: 'pointer', background: snapToTables ? '#eff6ff' : '#f1f5f9', color: snapToTables ? '#2563eb' : '#6b7280' }}>
+                    <label style={{ fontSize: '12px', fontWeight: '700', color: '#334155' }}>Snap to Tables</label>
+                    <button onClick={() => setSnapToTables(!snapToTables)} style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '900', border: 'none', cursor: 'pointer', background: snapToTables ? '#eff6ff' : '#f1f5f9', color: snapToTables ? '#2563eb' : '#64748b' }}>
                       {snapToTables ? 'ON' : 'OFF'}
                     </button>
                   </div>
@@ -2684,21 +2684,21 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
                     <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Position (X, Y)</label>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                       <div>
-                        <label style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>X (Left)</label>
+                        <label style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>X (Left)</label>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '2px 8px' }}>
-                          <span style={{ fontSize: '10px', color: '#7c3aed', fontWeight: '900' }}>X</span>
+                          <span style={{ fontSize: '11px', color: '#7c3aed', fontWeight: '900' }}>X</span>
                           <input type="number" value={Math.round(selectedTable.pos?.x || 0)} onChange={e => handlePropertyChange('pos.x', e.target.value)}
                             style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '13px', fontWeight: '900', padding: '6px 0', outline: 'none', width: '100%' }} />
-                          <span style={{ fontSize: '10px', color: '#94a3b8' }}>px</span>
+                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>px</span>
                         </div>
                       </div>
                       <div>
-                        <label style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>Y (Top)</label>
+                        <label style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>Y (Top)</label>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '2px 8px' }}>
-                          <span style={{ fontSize: '10px', color: '#7c3aed', fontWeight: '900' }}>Y</span>
+                          <span style={{ fontSize: '11px', color: '#7c3aed', fontWeight: '900' }}>Y</span>
                           <input type="number" value={Math.round(selectedTable.pos?.y || 0)} onChange={e => handlePropertyChange('pos.y', e.target.value)}
                             style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '13px', fontWeight: '900', padding: '6px 0', outline: 'none', width: '100%' }} />
-                          <span style={{ fontSize: '10px', color: '#94a3b8' }}>px</span>
+                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>px</span>
                         </div>
                       </div>
                     </div>
@@ -2710,7 +2710,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <button onClick={() => handlePropertyChange('seats', Math.max(1, selectedTable.seats - 1))}
                         style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>−</button>
-                      <span style={{ flex: 1, textAlign: 'center', fontSize: '18px', fontWeight: '950' }}>{selectedTable.seats}</span>
+                      <span style={{ flex: 1, textAlign: 'center', fontSize: '18px', fontWeight: '800' }}>{selectedTable.seats}</span>
                       <button onClick={() => handlePropertyChange('seats', selectedTable.seats + 1)}
                         style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>+</button>
                     </div>
@@ -2734,7 +2734,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
                     <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Size: {(selectedTable.scale || 1.0).toFixed(1)}×</label>
                     <input type="range" min="0.6" max="2.5" step="0.1" value={selectedTable.scale || 1.0} onChange={e => handlePropertyChange('scale', e.target.value)}
                       style={{ width: '100%', accentColor: '#7c3aed', cursor: 'pointer' }} />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#94a3b8', fontWeight: '700', marginTop: '2px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8', fontWeight: '700', marginTop: '2px' }}>
                       <span>Tiny</span><span>Normal</span><span>Massive</span>
                     </div>
                   </div>
@@ -2754,7 +2754,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
                   </button>
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '28px 16px', border: '1.5px dashed #cbd5e1', borderRadius: '14px', color: '#94a3b8', fontSize: '12px', fontWeight: '700' }}>
+                <div style={{ textAlign: 'center', padding: '28px 16px', border: '1.5px dashed #cbd5e1', borderRadius: '16px', color: '#94a3b8', fontSize: '12px', fontWeight: '700' }}>
                   <div style={{ fontSize: '28px', marginBottom: '8px' }}>👆</div>
                   Click any table on the canvas to inspect and edit its properties.
                   <div style={{ marginTop: '10px', fontSize: '11px', color: '#b0bec5' }}>Hold Shift to multi-select</div>
@@ -2769,7 +2769,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
               <div>
                 <div style={{ fontSize: '11px', fontWeight: '900', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '10px' }}>
                   Alignment
-                  <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '700', textTransform: 'none', marginLeft: '6px' }}>
+                  <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', textTransform: 'none', marginLeft: '6px' }}>
                     {selectedIds.size > 1 ? `(${selectedIds.size} selected)` : '(all in zone)'}
                   </span>
                 </div>
@@ -2828,9 +2828,9 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
                   {sections.map(sec => (
                     <button key={sec} onClick={() => { setActiveZone(sec); setSelectedIds(new Set()); }}
-                      style={{ padding: '10px 14px', borderRadius: '10px', border: `2px solid ${activeZone === sec ? '#7c3aed' : '#e2e8f0'}`, background: activeZone === sec ? '#f5f3ff' : 'white', color: activeZone === sec ? '#7c3aed' : '#374151', cursor: 'pointer', fontWeight: '900', fontSize: '12px', textAlign: 'left', display: 'flex', justifyContent: 'space-between' }}>
+                      style={{ padding: '10px 14px', borderRadius: '10px', border: `2px solid ${activeZone === sec ? '#7c3aed' : '#e2e8f0'}`, background: activeZone === sec ? '#f5f3ff' : 'white', color: activeZone === sec ? '#7c3aed' : '#334155', cursor: 'pointer', fontWeight: '900', fontSize: '12px', textAlign: 'left', display: 'flex', justifyContent: 'space-between' }}>
                       {sec}
-                      <span style={{ background: '#e2e8f0', borderRadius: '20px', padding: '1px 8px', fontSize: '10px', color: '#475569' }}>
+                      <span style={{ background: '#e2e8f0', borderRadius: '20px', padding: '1px 8px', fontSize: '11px', color: '#475569' }}>
                         {tables.filter(t => t.type === sec).length}
                       </span>
                     </button>
@@ -2909,7 +2909,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
 
             {/* ── MARQUEE SELECTION BOX ── */}
             {isMarqueeSelecting && marquee && Math.abs(marquee.endX - marquee.startX) > 5 && (
-              <div style={{ position: 'absolute', left: `${Math.min(marquee.startX, marquee.endX)}px`, top: `${Math.min(marquee.startY, marquee.endY)}px`, width: `${Math.abs(marquee.endX - marquee.startX)}px`, height: `${Math.abs(marquee.endY - marquee.startY)}px`, border: '1.5px dashed #7c3aed', background: 'rgba(124, 58, 237, 0.07)', pointerEvents: 'none', zIndex: 98, borderRadius: '4px' }} />
+              <div style={{ position: 'absolute', left: `${Math.min(marquee.startX, marquee.endX)}px`, top: `${Math.min(marquee.startY, marquee.endY)}px`, width: `${Math.abs(marquee.endX - marquee.startX)}px`, height: `${Math.abs(marquee.endY - marquee.startY)}px`, border: '1.5px dashed #7c3aed', background: 'rgba(124, 58, 237, 0.07)', pointerEvents: 'none', zIndex: 98, borderRadius: '6px' }} />
             )}
 
             {/* ── TABLE ELEMENTS ── */}
@@ -2938,13 +2938,13 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
                   {/* Table body */}
                   <div style={{ width: '100%', height: '100%', background: isSelected ? '#f5f3ff' : '#ffffff', border: `2.5px solid ${isSelected ? '#7c3aed' : '#1e293b'}`, borderRadius: table.shape === 'circle' ? '50%' : table.shape === 'square' ? '10px' : '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: isSelected ? '0 0 0 0 transparent' : '0 4px 10px rgba(0,0,0,0.08)', position: 'relative', zIndex: 2, boxSizing: 'border-box', padding: '4px' }}>
                     <div style={{ width: '38%', height: '38%', borderRadius: '50%', border: '1.5px dashed #e2e8f0', position: 'absolute', opacity: 0.4 }} />
-                    <span style={{ fontSize: `${Math.max(10, 13 * (table.scale || 1))}px`, fontWeight: '950', color: '#0f172a', zIndex: 3, textAlign: 'center', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', width: '88%' }}>{table.name}</span>
+                    <span style={{ fontSize: `${Math.max(10, 13 * (table.scale || 1))}px`, fontWeight: '800', color: '#0f172a', zIndex: 3, textAlign: 'center', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', width: '88%' }}>{table.name}</span>
                     <span style={{ fontSize: `${Math.max(8, 9 * (table.scale || 1))}px`, fontWeight: '800', color: '#64748b', zIndex: 3 }}>{table.seats}p</span>
                   </div>
 
                   {/* Live XY coordinate badge while dragging */}
                   {draggedTableId === table.id && draggingPos && (
-                    <div style={{ position: 'absolute', bottom: '-26px', left: '50%', transform: 'translateX(-50%)', background: '#0f172a', color: 'white', fontSize: '10px', fontWeight: '900', padding: '3px 8px', borderRadius: '6px', whiteSpace: 'nowrap', zIndex: 200, pointerEvents: 'none' }}>
+                    <div style={{ position: 'absolute', bottom: '-26px', left: '50%', transform: 'translateX(-50%)', background: '#0f172a', color: 'white', fontSize: '11px', fontWeight: '900', padding: '3px 8px', borderRadius: '6px', whiteSpace: 'nowrap', zIndex: 200, pointerEvents: 'none' }}>
                       {draggingPos.x}, {draggingPos.y}
                     </div>
                   )}
@@ -2958,11 +2958,11 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
       {/* ── DELETE MODAL ── */}
       {tableToDelete && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-          <div className="animate-fade-in" style={{ background: 'white', padding: '32px', borderRadius: '24px', width: '360px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+          <div className="animate-fade-in" style={{ background: 'white', padding: '32px', borderRadius: '20px', width: '360px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
             <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
               <Trash2 size={26} color="#dc2626" />
             </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '950', color: '#0f172a', marginBottom: '8px' }}>Delete {tableToDelete.name}?</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>Delete {tableToDelete.name}?</h3>
             <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '22px', lineHeight: '1.5' }}>This permanently removes the table from the floor layout.</p>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button onClick={() => setTableToDelete(null)} style={{ flex: 1, padding: '12px', background: '#f1f5f9', border: 'none', color: '#475569', borderRadius: '10px', fontWeight: '900', cursor: 'pointer' }}>Cancel</button>
@@ -2984,6 +2984,45 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
   const [localSettings, setLocalSettings] = useState(settings);
   const [notification, setNotification] = useState(null);
 
+  const [cloudDashboardUrl, setCloudDashboardUrl] = useState('https://tyde-dashboard-tan.vercel.app');
+  const [cloudApiKey, setCloudApiKey] = useState('');
+  const [cloudSyncStatus, setCloudSyncStatus] = useState(null);
+  const [syncingCloud, setSyncingCloud] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/analytics/cloud-sync')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          if (data.config?.cloudUrl) setCloudDashboardUrl(data.config.cloudUrl);
+          if (data.config?.apiKey) setCloudApiKey(data.config.apiKey);
+          if (data.status) setCloudSyncStatus(data.status);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveCloudSyncConfig = async () => {
+    setSyncingCloud(true);
+    try {
+      const res = await fetch('/api/analytics/cloud-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: cloudApiKey, cloudUrl: cloudDashboardUrl })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showNotification('Cloud Dashboard API key saved! Live sync active.');
+      } else {
+        showNotification(data.error || 'Failed to save cloud sync config', 'error');
+      }
+    } catch (err) {
+      showNotification('Error saving cloud sync settings', 'error');
+    } finally {
+      setSyncingCloud(false);
+    }
+  };
+
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
@@ -3002,7 +3041,7 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
   return (
     <div className="view-container animate-fade-in no-scrollbar" style={{ padding: 0 }}>
       {/* Settings Navigation */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', background: 'white', padding: '0 16px', overflowX: 'auto', flexShrink: 0 }} className="no-scrollbar">
+      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: 'white', padding: '0 16px', overflowX: 'auto', flexShrink: 0 }} className="no-scrollbar">
         {[
           { id: 'design', label: 'Design', icon: <Monitor size={16} /> },
           { id: 'billing', label: 'Bill', icon: <ReceiptText size={16} /> },
@@ -3031,44 +3070,44 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
       <div style={{ padding: '32px' }}>
         {activeTab === 'design' && (
           <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px', color: '#1f2937' }}>
+            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px', color: '#1e293b' }}>
                 <Monitor size={20} color="var(--primary)" /> Color Theme Control
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Primary / Highlight Color</label>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '8px' }}>Primary / Highlight Color</label>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <input type="color" name="accentColor" value={localSettings.accentColor} onChange={handleChange} style={{ width: '40px', height: '40px', border: 'none', background: 'none', cursor: 'pointer' }} />
-                    <input type="text" name="accentColor" value={localSettings.accentColor} onChange={handleChange} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', color: '#111827' }} />
+                    <input type="text" name="accentColor" value={localSettings.accentColor} onChange={handleChange} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', color: '#111827' }} />
                   </div>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Secondary Color</label>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '8px' }}>Secondary Color</label>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <input type="color" name="secondaryColor" value={localSettings.secondaryColor || '#7c3aed'} onChange={handleChange} style={{ width: '40px', height: '40px', border: 'none', background: 'none', cursor: 'pointer' }} />
-                    <input type="text" name="secondaryColor" value={localSettings.secondaryColor || '#7c3aed'} onChange={handleChange} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', color: '#111827' }} />
+                    <input type="text" name="secondaryColor" value={localSettings.secondaryColor || '#7c3aed'} onChange={handleChange} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', color: '#111827' }} />
                   </div>
                 </div>
               </div>
 
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px', color: '#1f2937' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px', color: '#1e293b' }}>
                 <LayoutGrid size={20} color="var(--primary)" /> Floor Plan & Shapes
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Corner Styling</label>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '8px' }}>Corner Styling</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     {['0', '8', '24'].map(r => (
-                      <button key={r} onClick={() => setLocalSettings(prev => ({ ...prev, borderRadius: r }))} style={{ flex: 1, padding: '10px', borderRadius: `${r}px`, border: `2px solid ${localSettings.borderRadius === r ? localSettings.accentColor : '#e5e7eb'}`, background: localSettings.borderRadius === r ? `${localSettings.accentColor}10` : 'white', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>{r === '0' ? 'Square' : r === '24' ? 'Pill' : `${r}px`}</button>
+                      <button key={r} onClick={() => setLocalSettings(prev => ({ ...prev, borderRadius: r }))} style={{ flex: 1, padding: '10px', borderRadius: `${r}px`, border: `2px solid ${localSettings.borderRadius === r ? localSettings.accentColor : '#e2e8f0'}`, background: localSettings.borderRadius === r ? `${localSettings.accentColor}10` : 'white', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>{r === '0' ? 'Square' : r === '24' ? 'Pill' : `${r}px`}</button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Table Geometry</label>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '8px' }}>Table Geometry</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     {['square', 'circle'].map(shape => (
-                      <button key={shape} onClick={() => setLocalSettings(prev => ({ ...prev, tableShape: shape }))} style={{ flex: 1, padding: '10px', borderRadius: shape === 'circle' ? '50px' : '4px', border: `2px solid ${localSettings.tableShape === shape ? localSettings.accentColor : '#e5e7eb'}`, background: localSettings.tableShape === shape ? `${localSettings.accentColor}10` : 'white', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', textTransform: 'capitalize' }}>{shape}</button>
+                      <button key={shape} onClick={() => setLocalSettings(prev => ({ ...prev, tableShape: shape }))} style={{ flex: 1, padding: '10px', borderRadius: shape === 'circle' ? '50px' : '4px', border: `2px solid ${localSettings.tableShape === shape ? localSettings.accentColor : '#e2e8f0'}`, background: localSettings.tableShape === shape ? `${localSettings.accentColor}10` : 'white', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', textTransform: 'capitalize' }}>{shape}</button>
                     ))}
                   </div>
                 </div>
@@ -3106,9 +3145,60 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
 
         {activeTab === 'connection' && (
           <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#1f2937' }}>
+            {/* Cloud Dashboard API Sync Box */}
+            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#1e293b' }}>
+                  <Cloud size={20} color="var(--primary)" /> Cloud Dashboard API Sync Configuration
+                </h3>
+                <span style={{ fontSize: '11px', fontWeight: '900', padding: '4px 10px', borderRadius: '8px', background: '#f0fdf4', color: '#16a34a' }}>
+                  {cloudSyncStatus?.status === 'connected' ? 'LIVE SYNC ACTIVE' : 'READY TO CONNECT'}
+                </span>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+                  Cloud Dashboard URL
+                </label>
+                <input
+                  type="text"
+                  value={cloudDashboardUrl}
+                  onChange={(e) => setCloudDashboardUrl(e.target.value)}
+                  placeholder="https://tyde-dashboard-tan.vercel.app"
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '600', background: '#f8fafc' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+                  Cloud API Key (From your Vercel Dashboard → API & Settings tab)
+                </label>
+                <input
+                  type="text"
+                  value={cloudApiKey}
+                  onChange={(e) => setCloudApiKey(e.target.value)}
+                  placeholder="Paste key here (e.g. tyde_live_...)"
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '700', fontFamily: 'monospace', background: '#f8fafc' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
+                  {cloudSyncStatus?.lastSyncAt ? `Last Synced: ${new Date(cloudSyncStatus.lastSyncAt).toLocaleString()}` : 'Enter your API key and click Save & Sync Now'}
+                </div>
+                <button
+                  onClick={handleSaveCloudSyncConfig}
+                  disabled={syncingCloud}
+                  style={{ padding: '12px 24px', borderRadius: '10px', background: 'var(--primary)', color: 'white', fontWeight: '800', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <Cloud size={16} /> {syncingCloud ? 'Syncing...' : 'Save & Sync Now'}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#1e293b' }}>
                    <Wifi size={20} color={isConnected ? '#10b981' : '#64748b'} /> Global Backend Configuration
                 </h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -3153,9 +3243,9 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
 
         {activeTab === 'taxes' && (
           <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#1f2937' }}>
+            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#1e293b' }}>
                    <Percent size={20} color="var(--primary)" /> Global Taxes & Charges
                 </h3>
                 <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>Default Rules</span>
@@ -3219,12 +3309,12 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
 
         {activeTab === 'devices' && (
           <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#1f2937' }}>
+            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#1e293b' }}>
                   <Smartphone size={20} color="var(--primary)" /> Linked Captain Terminals
                 </h3>
-                <span style={{ fontSize: '11px', background: '#f3f4f6', padding: '4px 10px', borderRadius: '12px', color: '#64748b', fontWeight: 'bold' }}>{devices.length} Total</span>
+                <span style={{ fontSize: '11px', background: '#f1f5f9', padding: '4px 10px', borderRadius: '12px', color: '#64748b', fontWeight: 'bold' }}>{devices.length} Total</span>
               </div>
               
               {devices.length === 0 ? (
@@ -3248,7 +3338,7 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
                       
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <span style={{ 
-                          fontSize: '10px', fontWeight: '900', padding: '4px 8px', borderRadius: '6px',
+                          fontSize: '11px', fontWeight: '900', padding: '4px 8px', borderRadius: '6px',
                           background: device.status === 'APPROVED' ? '#dcfce7' : device.status === 'BLOCKED' ? '#fee2e2' : '#fef9c3',
                           color: device.status === 'APPROVED' ? '#166534' : device.status === 'BLOCKED' ? '#991b1b' : '#854d0e'
                         }}>
@@ -3275,14 +3365,14 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
 
         {activeTab === 'security' && (
           <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px', color: '#1f2937' }}>
+            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px', color: '#1e293b' }}>
                 <Shield size={20} color="#0ea5e9" /> Data Security & Privacy
               </h3>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <div>
-                  <div style={{ fontWeight: '800', color: '#1f2937' }}>Enable PIN Lock</div>
+                  <div style={{ fontWeight: '800', color: '#1e293b' }}>Enable PIN Lock</div>
                   <div style={{ fontSize: '12px', color: '#64748b' }}>Require a PIN to access Dashboard, Settlement, and Reports.</div>
                 </div>
                 <button 
@@ -3303,7 +3393,7 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fade-in 0.3s' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '20px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Security PIN (4 Digits)</label>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '8px' }}>Security PIN (4 Digits)</label>
                       <input 
                         type="text" 
                         maxLength={4}
@@ -3311,18 +3401,18 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
                         value={localSettings.securityPin || ''} 
                         onChange={handleChange}
                         placeholder="0000"
-                        style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #d1d5db', fontSize: '18px', fontWeight: '900', letterSpacing: '4px', textAlign: 'center' }}
+                        style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '18px', fontWeight: '900', letterSpacing: '4px', textAlign: 'center' }}
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Recovery Mobile Number</label>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '8px' }}>Recovery Mobile Number</label>
                       <input 
                         type="text" 
                         name="securityPhone" 
                         value={localSettings.securityPhone || ''} 
                         onChange={handleChange}
                         placeholder="For PIN recovery"
-                        style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #d1d5db', fontSize: '14px' }}
+                        style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px' }}
                       />
                     </div>
                   </div>
@@ -3340,14 +3430,14 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
             </div>
             
             {/* CAPTAIN APP SECURITY */}
-            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Wifi size={20} /> Captain App Security
               </h3>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <div>
-                  <div style={{ fontWeight: '800', color: '#1f2937' }}>Require Captain App PIN</div>
+                  <div style={{ fontWeight: '800', color: '#1e293b' }}>Require Captain App PIN</div>
                   <div style={{ fontSize: '12px', color: '#64748b' }}>Waiters must enter a PIN to access the table network.</div>
                 </div>
                 <button 
@@ -3368,7 +3458,7 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fade-in 0.3s' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '20px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Captain PIN (4-6 Digits)</label>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '8px' }}>Captain PIN (4-6 Digits)</label>
                       <input 
                         type="text" 
                         maxLength={6}
@@ -3376,7 +3466,7 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
                         value={localSettings.captainSecurityPin || ''} 
                         onChange={handleChange}
                         placeholder="1234"
-                        style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #d1d5db', fontSize: '18px', fontWeight: '900', letterSpacing: '4px', textAlign: 'center' }}
+                        style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '18px', fontWeight: '900', letterSpacing: '4px', textAlign: 'center' }}
                       />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -3395,14 +3485,14 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
             </div>
 
             {/* CAPTAIN PRO SECURITY */}
-            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: '#821a1d' }}>
+            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: '#821a1d' }}>
                 <Zap size={20} color="#821a1d" /> Captain Pro (Service Floor Mode)
               </h3>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <div>
-                  <div style={{ fontWeight: '800', color: '#1f2937' }}>Enable Captain Pro Mode</div>
+                  <div style={{ fontWeight: '800', color: '#1e293b' }}>Enable Captain Pro Mode</div>
                   <div style={{ fontSize: '12px', color: '#64748b' }}>Allows remote billing, settlement, and table clearing from Captain App.</div>
                 </div>
                 <button 
@@ -3423,7 +3513,7 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fade-in 0.3s' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '20px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Pro Mode PIN (4-6 Digits)</label>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '8px' }}>Pro Mode PIN (4-6 Digits)</label>
                       <input 
                         type="text" 
                         maxLength={6}
@@ -3431,7 +3521,7 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
                         value={localSettings?.captainProPin || '0000'} 
                         onChange={handleChange}
                         placeholder="0000"
-                        style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #d1d5db', fontSize: '18px', fontWeight: '900', letterSpacing: '4px', textAlign: 'center' }}
+                        style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '18px', fontWeight: '900', letterSpacing: '4px', textAlign: 'center' }}
                       />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -3454,8 +3544,8 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
 
         {activeTab === 'system' && (
           <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <AlertTriangle size={20} /> Danger Zone: Data Management
               </h3>
               
@@ -3463,11 +3553,11 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                   <div>
                     <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Software Version</div>
-                    <div style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b' }}>{appVersion?.version || 'v1.0-stable'}</div>
+                    <div style={{ fontSize: '18px', fontWeight: '800', color: '#1e293b' }}>{appVersion?.version || 'v1.0-stable'}</div>
                   </div>
                   <div>
                     <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Last Official Update</div>
-                    <div style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b' }}>{appVersion?.lastUpdated || '2026-04-19'}</div>
+                    <div style={{ fontSize: '18px', fontWeight: '800', color: '#1e293b' }}>{appVersion?.lastUpdated || '2026-04-19'}</div>
                   </div>
                 </div>
                 {appVersion?.notes && (
@@ -3483,7 +3573,7 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
                         <div key={idx} style={{ padding: '8px', background: 'white', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                             <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b' }}>{hist.version}</span>
-                            <span style={{ fontSize: '10px', color: '#64748b' }}>{hist.date}</span>
+                            <span style={{ fontSize: '11px', color: '#64748b' }}>{hist.date}</span>
                           </div>
                           <div style={{ fontSize: '11px', color: '#475569' }}>{hist.changes}</div>
                         </div>
@@ -3543,18 +3633,18 @@ const PrinterSettingsView = ({ settings, onSaveSettings, categories }) => {
     <div className="view-container no-scrollbar">
       <div style={{ maxWidth: '600px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <div style={{ background: 'white', padding: '32px', borderRadius: 'var(--radius-md)', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px', color: '#1f2937' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px', color: '#1e293b' }}>
             <Printer size={24} color="#64748b" /> Hardware Receipt Configuration
           </h2>
 
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Bill Header (Text Logo)</label>
-            <input type="text" name="billHeader" value={localSettings.billHeader} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', color: '#111827' }} />
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '8px' }}>Bill Header (Text Logo)</label>
+            <input type="text" name="billHeader" value={localSettings.billHeader} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', color: '#111827' }} />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>Bill Footer Message</label>
-            <input type="text" name="billFooter" value={localSettings.billFooter} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', color: '#111827' }} />
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '8px' }}>Bill Footer Message</label>
+            <input type="text" name="billFooter" value={localSettings.billFooter} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', color: '#111827' }} />
           </div>
 
           <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -3571,9 +3661,9 @@ const PrinterSettingsView = ({ settings, onSaveSettings, categories }) => {
             />
           </div>
 
-          <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
+          <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#374151' }}>Custom KOT Stations</label>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#334155' }}>Custom KOT Stations</label>
               <button onClick={() => {
                 const name = window.prompt("Enter new Station Name (e.g. Beverages, Pizza):");
                 if (name) {
@@ -3603,7 +3693,7 @@ const PrinterSettingsView = ({ settings, onSaveSettings, categories }) => {
                       const name = typeof cat === 'object' ? cat.name : cat;
                       const isSelected = station.categories.includes(name);
                       return (
-                        <label key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', border: `1px solid ${isSelected ? 'var(--primary)' : '#d1d5db'}`, padding: '4px 10px', borderRadius: '20px', background: isSelected ? 'var(--primary)' : 'white', color: isSelected ? 'white' : '#4b5563', cursor: 'pointer', transition: 'all 0.2s' }}>
+                        <label key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', border: `1px solid ${isSelected ? 'var(--primary)' : '#cbd5e1'}`, padding: '4px 10px', borderRadius: '20px', background: isSelected ? 'var(--primary)' : 'white', color: isSelected ? 'white' : '#475569', cursor: 'pointer', transition: 'all 0.2s' }}>
                           <input
                             type="checkbox"
                             checked={isSelected}
@@ -3631,14 +3721,14 @@ const PrinterSettingsView = ({ settings, onSaveSettings, categories }) => {
             </div>
           </div>
 
-          <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '12px' }}>Print Typography</label>
+          <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '12px' }}>Print Typography</label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <select name="printFontFamily" value={localSettings.printFontFamily} onChange={handleChange} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white', fontSize: '12px', color: '#111827' }}>
+              <select name="printFontFamily" value={localSettings.printFontFamily} onChange={handleChange} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', fontSize: '12px', color: '#111827' }}>
                 <option value="Helvetica, Arial, sans-serif">Sans-Serif</option>
                 <option value="'Courier New', Courier, monospace">Monospace</option>
               </select>
-              <input type="number" name="printFontSize" value={localSettings.printFontSize} onChange={handleChange} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '12px', color: '#111827' }} />
+              <input type="number" name="printFontSize" value={localSettings.printFontSize} onChange={handleChange} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', color: '#111827' }} />
             </div>
           </div>
 
@@ -3738,7 +3828,7 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
       {showStats && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '14px', marginBottom: '24px' }}>
           <StatCard label="Occupancy" value={`${occupancyRate}%`} icon={LayoutGrid} color="#f97316" subtext={`${occupiedTables.length}/${tables.length} tables active`} />
-          <StatCard label="Open Tickets" value={formatCurrency(openRevenue)} icon={CreditCard} color="#a3112a" subtext={`Avg open bill ${formatCurrency(avgOpenTicket)}`} />
+          <StatCard label="Open Tickets" value={formatCurrency(openRevenue)} icon={CreditCard} color="#94161c" subtext={`Avg open bill ${formatCurrency(avgOpenTicket)}`} />
           <StatCard label="Ready To Settle" value={printedTables.length} icon={CheckSquare} color="#10b981" subtext="Printed bills awaiting payment" />
           <StatCard label="Delayed Tables" value={delayedTables.length} icon={AlertTriangle} color="#f59e0b" subtext="Orders older than 45 minutes" />
         </div>
@@ -3746,7 +3836,7 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', gap: '16px', flexWrap: 'wrap' }}>
         <div>
-          <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#111827', letterSpacing: '-0.6px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#111827', letterSpacing: '-0.6px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             Service Floor
             <button
               onClick={() => setShowStats(s => !s)}
@@ -3804,7 +3894,7 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'white', padding: '6px 16px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'white', padding: '6px 16px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
             <span style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Zoom: {zoom}%</span>
             <input 
               type="range"
@@ -3830,7 +3920,7 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
           </button>
 
 
-          <div style={{ display: 'flex', gap: '16px', fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>
+          <div style={{ display: 'flex', gap: '16px', fontSize: '11px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '3px' }}></div> Vacant</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', background: '#fed7aa', borderRadius: '3px' }}></div> Running</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', background: '#bbf7d0', borderRadius: '3px' }}></div> Printed</div>
@@ -3849,7 +3939,7 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
               position: 'relative', 
               height: `${Math.min(750, 1300 * (zoom / 100) + 48)}px`, 
               background: '#ffffff', 
-              borderRadius: '24px', 
+              borderRadius: '20px', 
               border: '1px solid #e2e8f0', 
               overflow: 'auto',
               backgroundImage: 'radial-gradient(#e2e8f0 1.5px, transparent 1.5px)', 
@@ -3902,8 +3992,8 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
                       {/* Top Row: Table Name & Compact Timer */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', gap: '8px' }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: '9px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '2px', letterSpacing: '0.4px' }}>Table</div>
-                          <div style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <div style={{ fontSize: '11px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '2px', letterSpacing: '0.4px' }}>Table</div>
+                          <div style={{ fontSize: '18px', fontWeight: '800', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {table.name.replace('Table ', '')}
                           </div>
                         </div>
@@ -3916,12 +4006,12 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
 
                       {/* Middle: Status & Price */}
                       <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '4px 0' }}>
-                        <div style={{ fontSize: '9px', fontWeight: '900', color: isRunning ? '#64748b' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: '900', color: isRunning ? '#64748b' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>
                           {table.status === 'draft' ? '🔵 DRAFT' : 
                            (table.status === 'kot_pending' || table.status === 'kot_printed' || table.status === 'occupied') ? '🟡 RUNNING' : 
                            (table.status === 'billing' || table.status === 'printed') ? '🟢 BILLING' : '○ VACANT'}
                         </div>
-                        <div style={{ fontSize: '24px', fontWeight: '950', color: isRunning ? 'var(--primary)' : '#e2e8f0', margin: '2px 0', lineHeight: 1 }}>
+                        <div style={{ fontSize: '24px', fontWeight: '800', color: isRunning ? 'var(--primary)' : '#e2e8f0', margin: '2px 0', lineHeight: 1 }}>
                           {tableTotal > 0 ? `₹${Math.ceil(tableTotal)}` : '--'}
                         </div>
                         <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', marginTop: '2px' }}>
@@ -3972,8 +4062,8 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
                     {/* Top Row: Table Name & Compact Timer */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', gap: '8px' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '9px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '2px', letterSpacing: '0.4px' }}>Table</div>
-                        <div style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: '11px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '2px', letterSpacing: '0.4px' }}>Table</div>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {table.name.replace('Table ', '')}
                         </div>
                       </div>
@@ -3986,12 +4076,12 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
 
                     {/* Middle: Status & Price (Centered for consistency) */}
                     <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '4px 0' }}>
-                      <div style={{ fontSize: '9px', fontWeight: '900', color: isRunning ? '#64748b' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>
+                      <div style={{ fontSize: '11px', fontWeight: '900', color: isRunning ? '#64748b' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>
                         {table.status === 'draft' ? '🔵 DRAFT' : 
                          (table.status === 'kot_pending' || table.status === 'kot_printed' || table.status === 'occupied') ? '🟡 RUNNING' : 
                          (table.status === 'billing' || table.status === 'printed') ? '🟢 BILLING' : '○ VACANT'}
                       </div>
-                      <div style={{ fontSize: '24px', fontWeight: '950', color: isRunning ? 'var(--primary)' : '#e2e8f0', margin: '2px 0', lineHeight: 1 }}>
+                      <div style={{ fontSize: '24px', fontWeight: '800', color: isRunning ? 'var(--primary)' : '#e2e8f0', margin: '2px 0', lineHeight: 1 }}>
                         {tableTotal > 0 ? `₹${Math.ceil(tableTotal)}` : '--'}
                       </div>
                       <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', marginTop: '2px' }}>
@@ -4040,7 +4130,7 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
                         onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                       >
                         <td style={{ padding: '14px 20px' }}>
-                          <span style={{ fontSize: '15px', fontWeight: '950', color: '#1e293b' }}>
+                          <span style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b' }}>
                             {table.name.replace('Table ', '')}
                           </span>
                         </td>
@@ -4083,7 +4173,7 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
                         <td style={{ padding: '14px 20px', fontSize: '13px', color: '#64748b', fontWeight: '700' }}>
                           {isRunning ? `${table.orders?.length || 0} items` : '--'}
                         </td>
-                        <td style={{ padding: '14px 20px', fontSize: '15px', fontWeight: '950', color: isRunning ? 'var(--primary)' : '#94a3b8' }}>
+                        <td style={{ padding: '14px 20px', fontSize: '14px', fontWeight: '800', color: isRunning ? 'var(--primary)' : '#94a3b8' }}>
                           {tableTotal > 0 ? `₹${Math.ceil(tableTotal)}` : '--'}
                         </td>
                         <td style={{ padding: '10px 20px' }} onClick={e => e.stopPropagation()}>
@@ -4095,7 +4185,7 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
                                   onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
                                 ><Printer size={14} color="#64748b" /><span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b' }}>KOT</span></button>
                                 <button disabled={!IS_LOCAL} onClick={() => onQuickSettle(table)} title="Settle Bill" style={{ background: '#111827', border: 'none', padding: '8px 12px', borderRadius: '8px', cursor: IS_LOCAL ? 'pointer' : 'not-allowed', opacity: IS_LOCAL ? 1 : 0.5, display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.15s' }}
-                                  onMouseEnter={e => { e.currentTarget.style.background = '#1f2937'; }}
+                                  onMouseEnter={e => { e.currentTarget.style.background = '#1e293b'; }}
                                   onMouseLeave={e => { e.currentTarget.style.background = '#111827'; }}
                                 ><CheckSquare size={14} color="white" /><span style={{ fontSize: '11px', fontWeight: '800', color: 'white' }}>Settle</span></button>
                                 <button disabled={!IS_LOCAL} onClick={() => setTableToClear(table.id)} title="Discard" style={{ background: '#fff1f2', border: 'none', padding: '8px 12px', borderRadius: '8px', cursor: IS_LOCAL ? 'pointer' : 'not-allowed', opacity: IS_LOCAL ? 1 : 0.5, display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.15s' }}
@@ -4431,17 +4521,17 @@ const KitchenDisplay = () => {
           borderBottom: `1px solid ${urgency.border}40`
         }}>
           <div>
-            <div style={{ fontSize: '10px', fontWeight: '800', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '2px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '800', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '2px' }}>
               TABLE {ticket.table_number || '—'}
             </div>
-            <div style={{ fontWeight: '950', fontSize: '17px', color: 'white', letterSpacing: '-0.3px' }}>
+            <div style={{ fontWeight: '800', fontSize: '16px', color: 'white', letterSpacing: '-0.3px' }}>
               KOT #{String(ticket.originalId || ticket.id).padStart(4, '0')}
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{
               fontSize: '22px',
-              fontWeight: '950',
+              fontWeight: '800',
               fontFamily: "'JetBrains Mono', monospace",
               color: urgency.text,
               display: 'flex',
@@ -4451,7 +4541,7 @@ const KitchenDisplay = () => {
               <Clock size={15} />
               {formatWaitTime(ticket.created_at)}
             </div>
-            <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.5)', fontWeight: '700' }}>
+            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', fontWeight: '700' }}>
               {formatTime(ticket.created_at)}
             </div>
           </div>
@@ -4489,7 +4579,7 @@ const KitchenDisplay = () => {
                 {/* Item name + comment */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
-                    fontWeight: '800', fontSize: '15px', color: '#f1f5f9',
+                    fontWeight: '800', fontSize: '14px', color: '#f1f5f9',
                     textDecoration: iStatus === 'READY' ? 'line-through' : 'none',
                     textDecorationColor: 'rgba(255,255,255,0.3)',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
@@ -4505,7 +4595,7 @@ const KitchenDisplay = () => {
                 
                 {/* Qty badge */}
                 <div style={{
-                  fontSize: '14px', fontWeight: '950', color: '#fbbf24',
+                  fontSize: '14px', fontWeight: '800', color: '#fbbf24',
                   background: 'rgba(251,191,36,0.12)', padding: '4px 10px',
                   borderRadius: '8px', minWidth: '36px', textAlign: 'center',
                   border: '1px solid rgba(251,191,36,0.15)'
@@ -4568,7 +4658,7 @@ const KitchenDisplay = () => {
                   ? 'linear-gradient(135deg, #ea580c, #dc2626)'
                   : 'linear-gradient(135deg, #16a34a, #059669)',
                 color: 'white', border: 'none', padding: '16px',
-                fontWeight: '950', fontSize: '13px', cursor: 'pointer',
+                fontWeight: '800', fontSize: '13px', cursor: 'pointer',
                 display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px',
                 textTransform: 'uppercase', letterSpacing: '0.5px', transition: 'all 0.2s',
                 borderRadius: '0 0 14px 14px'
@@ -4594,7 +4684,7 @@ const KitchenDisplay = () => {
                 flex: 1,
                 background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
                 color: 'white', border: 'none', padding: '16px',
-                fontWeight: '950', fontSize: '13px', cursor: 'pointer',
+                fontWeight: '800', fontSize: '13px', cursor: 'pointer',
                 display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px',
                 textTransform: 'uppercase', letterSpacing: '0.5px', transition: 'all 0.2s',
                 borderRadius: '0 0 14px 14px',
@@ -4632,7 +4722,7 @@ const KitchenDisplay = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <ChefHat size={28} color="#f87171" strokeWidth={2.5} />
-            <h2 style={{ fontSize: '22px', fontWeight: '950', margin: 0, letterSpacing: '-0.5px' }}>Kitchen Display</h2>
+            <h2 style={{ fontSize: '22px', fontWeight: '800', margin: 0, letterSpacing: '-0.5px' }}>Kitchen Display</h2>
           </div>
 
           {/* Tab Switcher */}
@@ -4655,8 +4745,8 @@ const KitchenDisplay = () => {
 
         {/* Station Selector - Segmented Pills */}
         {stations.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.04)', padding: '5px 8px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', padding: '0 4px' }}>Station</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.04)', padding: '5px 8px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', padding: '0 4px' }}>Station</span>
             {[{ name: 'ALL', label: 'ALL' }, ...stations].map(s => {
               const isActive = selectedStation === s.name;
               const stName = s.label || String(s.name).toUpperCase();
@@ -4715,8 +4805,8 @@ const KitchenDisplay = () => {
               textAlign: 'center',
               minWidth: '72px'
             }}>
-              <div style={{ fontSize: '18px', fontWeight: '950', color: s.color }}>{s.value}</div>
-              <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.label}</div>
+              <div style={{ fontSize: '18px', fontWeight: '800', color: s.color }}>{s.value}</div>
+              <div style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.label}</div>
             </div>
           ))}
 
@@ -4728,10 +4818,10 @@ const KitchenDisplay = () => {
             borderRadius: '12px',
             textAlign: 'center'
           }}>
-            <div style={{ fontSize: '18px', fontWeight: '950', color: '#e2e8f0', fontFamily: 'monospace' }}>
+            <div style={{ fontSize: '18px', fontWeight: '800', color: '#e2e8f0', fontFamily: 'monospace' }}>
               {new Date(now).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
             </div>
-            <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>CLOCK</div>
+            <div style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>CLOCK</div>
           </div>
         </div>
       </div>
@@ -4763,12 +4853,12 @@ const KitchenDisplay = () => {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '18px' }}>{col.icon}</span>
-                  <span style={{ fontSize: '14px', fontWeight: '950', color: col.color, letterSpacing: '1px' }}>{col.label}</span>
+                  <span style={{ fontSize: '14px', fontWeight: '800', color: col.color, letterSpacing: '1px' }}>{col.label}</span>
                 </div>
                 <div style={{
                   background: col.color,
                   color: 'white',
-                  fontWeight: '950',
+                  fontWeight: '800',
                   fontSize: '14px',
                   width: '32px',
                   height: '32px',
@@ -4818,7 +4908,7 @@ const KitchenDisplay = () => {
                 return (
                   <div key={item.name} style={{
                     background: 'linear-gradient(145deg, #1e293b, #172033)',
-                    borderRadius: '14px',
+                    borderRadius: '16px',
                     border: '1px solid rgba(255,255,255,0.08)',
                     padding: '16px 20px',
                     display: 'flex',
@@ -4828,7 +4918,7 @@ const KitchenDisplay = () => {
                   }}>
                     {/* Item name */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: '900', fontSize: '17px', color: '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontWeight: '900', fontSize: '16px', color: '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {item.name}
                       </div>
                       <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginTop: '4px' }}>
@@ -4840,20 +4930,20 @@ const KitchenDisplay = () => {
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       {hasNew && (
                         <div style={{ background: 'rgba(220,38,38,0.15)', border: '1px solid #dc2626', padding: '6px 12px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: '950', color: '#fca5a5' }}>{item.NEW}</span>
-                          <span style={{ fontSize: '10px', fontWeight: '800', color: '#f87171' }}>NEW</span>
+                          <span style={{ fontSize: '13px', fontWeight: '800', color: '#fca5a5' }}>{item.NEW}</span>
+                          <span style={{ fontSize: '11px', fontWeight: '800', color: '#f87171' }}>NEW</span>
                         </div>
                       )}
                       {hasPrep && (
                         <div style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid #f97316', padding: '6px 12px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: '950', color: '#fdba74' }}>{item.PREPARING}</span>
-                          <span style={{ fontSize: '10px', fontWeight: '800', color: '#fb923c' }}>COOKING</span>
+                          <span style={{ fontSize: '13px', fontWeight: '800', color: '#fdba74' }}>{item.PREPARING}</span>
+                          <span style={{ fontSize: '11px', fontWeight: '800', color: '#fb923c' }}>COOKING</span>
                         </div>
                       )}
                       {hasReady && (
                         <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #22c55e', padding: '6px 12px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: '950', color: '#86efac' }}>{item.READY}</span>
-                          <span style={{ fontSize: '10px', fontWeight: '800', color: '#4ade80' }}>READY</span>
+                          <span style={{ fontSize: '13px', fontWeight: '800', color: '#86efac' }}>{item.READY}</span>
+                          <span style={{ fontSize: '11px', fontWeight: '800', color: '#4ade80' }}>READY</span>
                         </div>
                       )}
                     </div>
@@ -5095,7 +5185,7 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
         {filteredOrders.length === 0 && (
           <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px', background: 'white', borderRadius: '12px', border: '2px dashed #e2e8f0' }}>
             <ShoppingBag size={48} color="#cbd5e1" style={{ margin: '0 auto 16px' }} />
-            <div style={{ color: '#94a3b8', fontSize: '15px', fontWeight: '500' }}>No matching pickup orders found.</div>
+            <div style={{ color: '#94a3b8', fontSize: '14px', fontWeight: '500' }}>No matching pickup orders found.</div>
           </div>
         )}
         {[...filteredOrders].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 20).map(order => {
@@ -5130,7 +5220,7 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                      <div style={{ fontSize: '11px', fontWeight: '900', color: 'var(--primary)' }}>{order.id}</div>
                      <div style={{ 
-                       fontSize: '9px', fontWeight: '900', padding: '2px 6px', borderRadius: '4px',
+                       fontSize: '11px', fontWeight: '900', padding: '2px 6px', borderRadius: '6px',
                        background: (order.paymentStatus === 'UNPAID' || order.payment_status === 'UNPAID') ? '#fef2f2' : '#f0fdf4',
                        color: (order.paymentStatus === 'UNPAID' || order.payment_status === 'UNPAID') ? '#ef4444' : '#10b981',
                        border: `1px solid ${(order.paymentStatus === 'UNPAID' || order.payment_status === 'UNPAID') ? '#fecaca' : '#bbf7d0'}`,
@@ -5139,7 +5229,7 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
                        {order.paymentStatus || order.payment_status || 'PAID'}
                      </div>
                    </div>
-                   <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#1e293b', marginBottom: '4px' }}>{order.customerName || order.name}</div>
+                   <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b', marginBottom: '4px' }}>{order.customerName || order.name}</div>
                    <TimeElapsed createdAt={order.createdAt} />
                  </div>
                 
@@ -5161,7 +5251,7 @@ const NonTableManagement = ({ orders, onSelectOrder, onCreateOrder, onViewChange
 
               {/* Absolute Action Controls (Upper Right) */}
               <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px', zIndex: 100 }}>
-                <div style={{ fontSize: '10px', background: bg, color: text, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold', border: `1px solid ${border}`, textTransform: 'uppercase' }}>{order.type}</div>
+                <div style={{ fontSize: '11px', background: bg, color: text, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold', border: `1px solid ${border}`, textTransform: 'uppercase' }}>{order.type}</div>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   {(String(order.paymentStatus || order.payment_status || '').toUpperCase() === 'PAID') ? (
                     <button 
@@ -5264,7 +5354,7 @@ const ProcessingOverlay = ({ type }) => {
       <div style={{ 
         background: 'white', 
         padding: '24px 40px', 
-        borderRadius: '24px', 
+        borderRadius: '20px', 
         boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.15)',
         display: 'flex',
         flexDirection: 'column',
@@ -5310,16 +5400,16 @@ const MergeTableModal = ({ currentTable, tables, onMerge, onClose }) => {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div className="animate-fade-in" style={{ background: 'white', padding: '24px', borderRadius: '12px', width: '400px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h3 style={{ fontWeight: 'bold', fontSize: '18px', color: '#1f2937' }}>Merge Table</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}><X size={20} /></button>
+          <h3 style={{ fontWeight: 'bold', fontSize: '18px', color: '#1e293b' }}>Merge Table</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
         </div>
-        <p style={{ fontSize: '14px', color: '#4b5563', marginBottom: '16px' }}>
+        <p style={{ fontSize: '14px', color: '#475569', marginBottom: '16px' }}>
           Merge <strong>{currentTable.name}</strong> into another active table. All items will be transferred to the target table, and {currentTable.name} will be cleared.
         </p>
         <select 
           value={selectedTargetId} 
           onChange={e => setSelectedTargetId(e.target.value)}
-          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', marginBottom: '24px', fontSize: '14px' }}
+          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', marginBottom: '24px', fontSize: '14px' }}
         >
           <option value="" disabled>Select Target Table</option>
           {mergeableTables.map(t => (
@@ -5358,22 +5448,22 @@ const SplitTableModal = ({ currentTable, cart, onSplit, onClose }) => {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div className="animate-fade-in" style={{ background: 'white', padding: '24px', borderRadius: '12px', width: '450px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ fontWeight: 'bold', fontSize: '18px', color: '#1f2937' }}>Split Table</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}><X size={20} /></button>
+          <h3 style={{ fontWeight: 'bold', fontSize: '18px', color: '#1e293b' }}>Split Table</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
         </div>
         
-        <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#4b5563', marginBottom: '4px' }}>New Table Name</label>
+        <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569', marginBottom: '4px' }}>New Table Name</label>
         <input 
           value={newTableName} 
           onChange={e => setNewTableName(e.target.value)}
           placeholder="e.g. Table 4 - B"
-          style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', marginBottom: '16px', fontSize: '14px' }}
+          style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '16px', fontSize: '14px' }}
         />
 
-        <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#4b5563', marginBottom: '8px' }}>Select Items to Move</label>
-        <div style={{ flex: 1, overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '8px' }} className="no-scrollbar">
+        <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569', marginBottom: '8px' }}>Select Items to Move</label>
+        <div style={{ flex: 1, overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px' }} className="no-scrollbar">
           {cart.map(item => (
-            <label key={item.cartItemId} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', background: selectedItemIds[item.cartItemId] ? '#eff6ff' : 'transparent' }}>
+            <label key={item.cartItemId} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', background: selectedItemIds[item.cartItemId] ? '#eff6ff' : 'transparent' }}>
               <input 
                 type="checkbox" 
                 checked={!!selectedItemIds[item.cartItemId]} 
@@ -5381,10 +5471,10 @@ const SplitTableModal = ({ currentTable, cart, onSplit, onClose }) => {
                 style={{ width: '16px', height: '16px' }}
               />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '14px', fontWeight: '500', color: '#1f2937' }}>{item.name}</div>
-                <div style={{ fontSize: '12px', color: '#6b7280' }}>Qty: {item.qty}</div>
+                <div style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b' }}>{item.name}</div>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>Qty: {item.qty}</div>
               </div>
-              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937' }}>₹{item.price * item.qty}</div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>₹{item.price * item.qty}</div>
             </label>
           ))}
         </div>
@@ -6106,7 +6196,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
     });
 
   return (
-    <div style={{ flex: 1, display: 'flex', background: '#f3f4f6', position: 'relative', height: '100%', overflow: 'hidden' }}>
+    <div style={{ flex: 1, display: 'flex', background: '#f1f5f9', position: 'relative', height: '100%', overflow: 'hidden' }}>
 
       {/* Category Sidebar */}
       <div className="no-print" style={{ width: '180px', background: 'white', display: 'flex', flexDirection: 'column', overflowY: 'auto', borderRight: '1px solid #e2e8f0', zIndex: 10 }}>
@@ -6133,7 +6223,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       </div>
 
       {/* Main Item Grid Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid #e5e7eb', background: '#f8fafc' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid #e2e8f0', background: '#f8fafc' }}>
         <div style={{ padding: '16px 24px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} className="no-print">
           <div style={{ fontWeight: '800', fontSize: '18px', color: '#1e293b' }}>{activeCat}</div>
           <div style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', padding: '10px 16px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '10px', width: '300px' }}>
@@ -6196,11 +6286,11 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
               >
                 <div style={{ fontSize: '13px', fontWeight: '800', color: '#111827', lineHeight: '1.2', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <span>{item.name}</span>
-                  {isRetail && <div style={{ marginTop: '4px', background: '#f0f9ff', color: '#0284c7', padding: '2px 6px', borderRadius: '4px', fontSize: '10px' }}>Stock: {liveStock}</div>}
+                  {isRetail && <div style={{ marginTop: '4px', background: '#f0f9ff', color: '#0284c7', padding: '2px 6px', borderRadius: '6px', fontSize: '11px' }}>Stock: {liveStock}</div>}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                  <div style={{ fontSize: '15px', fontWeight: '900', color: '#111827' }}>₹{item.price}</div>
-                  {!isAvailable && <div style={{ fontSize: '10px', color: '#ef4444', fontWeight: '900', background: '#fef2f2', padding: '2px 6px', borderRadius: '4px' }}>OUT</div>}
+                  <div style={{ fontSize: '14px', fontWeight: '900', color: '#111827' }}>₹{item.price}</div>
+                  {!isAvailable && <div style={{ fontSize: '11px', color: '#ef4444', fontWeight: '900', background: '#fef2f2', padding: '2px 6px', borderRadius: '6px' }}>OUT</div>}
                 </div>
               </div>
             );
@@ -6338,7 +6428,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
         <div style={{ padding: '12px 16px', background: isPickup ? '#faf5ff' : '#fafbfc', borderBottom: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', gap: '10px', marginBottom: (customerInfo || isPickup) ? '10px' : '0' }}>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: isPickup ? 'var(--secondary)' : '#94a3b8', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Customer Name (Optional)</label>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: isPickup ? 'var(--secondary)' : '#94a3b8', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Customer Name (Optional)</label>
               <input
                 type="text"
                 placeholder="Walk-In"
@@ -6348,7 +6438,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
               />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: isPickup ? 'var(--secondary)' : '#94a3b8', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Phone Number (Optional)</label>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: isPickup ? 'var(--secondary)' : '#94a3b8', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Phone Number (Optional)</label>
               <input
                 type="text"
                 placeholder="Mobile number"
@@ -6396,7 +6486,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
         </div>
         {/* --- END CRM SECTION --- */}
 
-        <div style={{ padding: '10px 16px', display: 'flex', fontSize: '10px', fontWeight: '900', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.8px', background: '#f8fafc' }}>
+        <div style={{ padding: '10px 16px', display: 'flex', fontSize: '11px', fontWeight: '900', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.8px', background: '#f8fafc' }}>
           <div style={{ flex: 1 }}>Items</div>
           <div style={{ width: '100px', textAlign: 'center' }}>Qty.</div>
           <div style={{ width: '85px', textAlign: 'right' }}>Price</div>
@@ -6407,7 +6497,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
           {cart.length === 0 ? (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.4, padding: '40px 20px' }}>
               <Utensils size={52} color="#cbd5e1" />
-              <div style={{ fontWeight: '800', fontSize: '15px', marginTop: '12px', color: '#94a3b8' }}>No Items Added</div>
+              <div style={{ fontWeight: '800', fontSize: '14px', marginTop: '12px', color: '#94a3b8' }}>No Items Added</div>
               <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '4px' }}>Select items from the menu</div>
             </div>
           ) : (
@@ -6433,7 +6523,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                   <div style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}>
                     <span>₹{item.price} /ea</span>
                     <button 
-                      style={{ border: 'none', background: '#f1f5f9', cursor: 'pointer', padding: '3px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '3px', fontSize: '10px', color: '#64748b', fontWeight: '700' }}
+                      style={{ border: 'none', background: '#f1f5f9', cursor: 'pointer', padding: '3px 6px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', color: '#64748b', fontWeight: '700' }}
                       onClick={() => {
                         setCustomNoteText(item.note || '');
                         setShowNoteModal(item);
@@ -6458,7 +6548,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                     <Minus size={14} color="#64748b" />
                   </button>
                   <span style={{ 
-                    fontSize: '15px', fontWeight: '800', color: '#1e293b', 
+                    fontSize: '14px', fontWeight: '800', color: '#1e293b', 
                     width: '32px', textAlign: 'center',
                     background: '#f1f5f9', borderRadius: '6px', padding: '4px 0',
                     border: '1px solid #e2e8f0'
@@ -6478,7 +6568,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                 </div>
 
                 {/* Line Total */}
-                <div style={{ width: '85px', textAlign: 'right', fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
+                <div style={{ width: '85px', textAlign: 'right', fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
                   ₹{item.price * item.qty}
                 </div>
               </div>
@@ -6492,7 +6582,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
             {/* Subtotal */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <span style={{ fontSize: '14px', fontWeight: '700', color: '#334155' }}>Subtotal</span>
-              <span style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>₹{subtotal.toFixed(2)}</span>
+              <span style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>₹{subtotal.toFixed(2)}</span>
             </div>
 
             {applyDiscount && discountAmt > 0 && (
@@ -6612,7 +6702,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
           {/* Grand Total & Payment */}
           <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fafbfc', borderTop: '1px solid #e2e8f0' }}>
             <div>
-              <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>Total Amount</div>
+              <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>Total Amount</div>
               <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--primary)', letterSpacing: '-1px', lineHeight: '1' }}>₹{grandTotal.toFixed(2)}</div>
               {splitWays > 1 && <div style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '700', marginTop: '4px' }}>₹{(grandTotal / splitWays).toFixed(2)} / person</div>}
             </div>
@@ -6652,7 +6742,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
             <button disabled={!IS_LOCAL || isProcessing} className="btn-maroon" onClick={handleSave} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed' }}>{isProcessing ? 'Saving...' : 'SAVE'}</button>
             <button disabled={!IS_LOCAL || isProcessing} className="btn-maroon" onClick={handlePrintBill} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed' }}>PRINT BILL</button>
             <button disabled={!IS_LOCAL || isProcessing} className="btn-grey" onClick={handleKOT} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed' }}>KOT</button>
-            <button disabled={!IS_LOCAL || isProcessing} className="btn-grey" style={{ background: '#374151', opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed' }} onClick={handleKOTPrint}>KOT & PRINT</button>
+            <button disabled={!IS_LOCAL || isProcessing} className="btn-grey" style={{ background: '#334155', opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed' }} onClick={handleKOTPrint}>KOT & PRINT</button>
           </div>
           
 
@@ -6692,8 +6782,8 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       {showNoteModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="animate-fade-in" style={{ background: 'white', padding: '24px', borderRadius: 'var(--radius-md)', width: '340px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
-            <h3 style={{ marginBottom: '16px', fontWeight: 'bold', fontSize: '18px', color: '#1f2937' }}>Kitchen Instructions</h3>
-            <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '16px' }}>Add special requests for {showNoteModal.name}</p>
+            <h3 style={{ marginBottom: '16px', fontWeight: 'bold', fontSize: '18px', color: '#1e293b' }}>Kitchen Instructions</h3>
+            <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '16px' }}>Add special requests for {showNoteModal.name}</p>
             <input
               autoFocus
               type="text"
@@ -6706,7 +6796,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                   setShowNoteModal(null);
                 }
               }}
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '14px', outline: 'none', marginBottom: '20px' }}
+              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', marginBottom: '20px' }}
             />
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
@@ -6735,13 +6825,13 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="animate-fade-in" style={{ background: 'white', padding: '24px', borderRadius: '16px', width: '400px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontWeight: '900', fontSize: '20px', color: '#1f2937' }}>Settle {table?.name}</h3>
+              <h3 style={{ fontWeight: '900', fontSize: '20px', color: '#1e293b' }}>Settle {table?.name}</h3>
               <button onClick={() => setShowSettleModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
             </div>
 
             <div style={{ padding: '16px', background: '#fef2f2', borderRadius: '12px', marginBottom: '20px', textAlign: 'center' }}>
               <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#991b1b', textTransform: 'uppercase', marginBottom: '4px' }}>Total Amount Due</div>
-              <div style={{ fontSize: '32px', fontWeight: '950', color: '#94161c' }}>₹{grandTotal.toFixed(2)}</div>
+              <div style={{ fontSize: '32px', fontWeight: '800', color: '#94161c' }}>₹{grandTotal.toFixed(2)}</div>
             </div>
             
             {/* Breakdown Summary */}
@@ -6796,7 +6886,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                   {!showTipEntry ? (
                     <button 
                       onClick={() => setShowTipEntry(true)}
-                      style={{ background: 'none', border: 'none', color: parseFloat(tipAmount) > 0 ? '#047857' : '#f59e0b', fontSize: '11px', fontWeight: '950', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 0' }}
+                      style={{ background: 'none', border: 'none', color: parseFloat(tipAmount) > 0 ? '#047857' : '#f59e0b', fontSize: '11px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 0' }}
                     >
                       <Plus size={14} /> {parseFloat(tipAmount) > 0 ? `STAFF TIP: ₹${parseFloat(tipAmount).toFixed(2)} (Tap to Edit)` : 'ADD STAFF TIP'}
                     </button>
@@ -6805,13 +6895,13 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Zap size={13} color="#f59e0b"/>
-                          <span style={{ fontSize: '12px', fontWeight: '950', color: '#9a3412' }}>STAFF TIP</span>
+                          <span style={{ fontSize: '12px', fontWeight: '800', color: '#9a3412' }}>STAFF TIP</span>
                         </div>
                         <button onClick={() => { setShowTipEntry(false); setTipAmount('0'); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={14} /></button>
                       </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <div style={{ position: 'relative', flex: 1 }}>
-                          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: '950', color: '#94a3b8', fontSize: '14px' }}>₹</span>
+                          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: '800', color: '#94a3b8', fontSize: '14px' }}>₹</span>
                           <input 
                             autoFocus
                             type="number" 
@@ -6819,12 +6909,12 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                             onChange={(e) => setTipAmount(e.target.value)} 
                             onKeyDown={(e) => e.key === 'Enter' && setShowTipEntry(false)}
                             placeholder="0.00"
-                            style={{ width: '100%', padding: '10px 10px 10px 28px', borderRadius: '8px', border: '2px solid #fed7aa', background: 'white', fontSize: '15px', fontWeight: 'bold', outline: 'none', color: '#9a3412' }}
+                            style={{ width: '100%', padding: '10px 10px 10px 28px', borderRadius: '8px', border: '2px solid #fed7aa', background: 'white', fontSize: '14px', fontWeight: 'bold', outline: 'none', color: '#9a3412' }}
                           />
                         </div>
                         <button 
                           onClick={() => setShowTipEntry(false)}
-                          style={{ padding: '0 12px', borderRadius: '8px', background: '#10b981', color: 'white', border: 'none', fontWeight: '950', cursor: 'pointer' }}
+                          style={{ padding: '0 12px', borderRadius: '8px', background: '#10b981', color: 'white', border: 'none', fontWeight: '800', cursor: 'pointer' }}
                         >
                           <CheckCircle size={16} />
                         </button>
@@ -6877,7 +6967,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                 if (onBack) onBack();
               }}
               style={{ 
-                width: '100%', padding: '16px', borderRadius: '12px', border: 'none', fontSize: '16px', fontWeight: '950', color: 'white',
+                width: '100%', padding: '16px', borderRadius: '12px', border: 'none', fontSize: '16px', fontWeight: '800', color: 'white',
                 background: ((parseFloat(cashReceived) || 0) + (parseFloat(upiReceived) || 0)) >= grandTotal ? '#10b981' : '#cbd5e1',
                 cursor: ((parseFloat(cashReceived) || 0) + (parseFloat(upiReceived) || 0)) >= grandTotal ? 'pointer' : 'not-allowed'
               }}>
@@ -6895,9 +6985,9 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
 const StatCard = ({ label, value, icon: Icon, color, subtext }) => (
   <div style={{ background: 'rgba(255,255,255,0.88)', padding: '22px', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0', position: 'relative', boxShadow: '0 18px 32px rgba(15, 23, 42, 0.06)' }}>
     <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '900', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1.2px' }}>{label}</div>
-    <div style={{ fontSize: '28px', fontWeight: '950', color: '#1e293b', letterSpacing: '-0.8px' }}>{value}</div>
+    <div style={{ fontSize: '28px', fontWeight: '800', color: '#1e293b', letterSpacing: '-0.8px' }}>{value}</div>
     <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', fontWeight: '700', lineHeight: 1.5 }}>{subtext}</div>
-    <div style={{ position: 'absolute', top: '22px', right: '22px', width: '42px', height: '42px', borderRadius: '14px', background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ position: 'absolute', top: '22px', right: '22px', width: '42px', height: '42px', borderRadius: '16px', background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Icon size={20} color={color} />
     </div>
   </div>
@@ -7534,8 +7624,35 @@ function MainApp() {
   }, [nonTableOrders]);
 
 
-  const syncToBackend = async (isSilent = false) => {
-    // REDUNDANT in backend-driven architecture
+  const syncToBackend = async (isSilent = false, overrideHistory = null) => {
+    setIsSyncing(true);
+    try {
+      const historyToSync = overrideHistory || loadFromLocal('pos_order_history') || orderHistory || [];
+      const res = await fetch('/api/analytics/cloud-sync/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderHistory: historyToSync })
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (!isSilent) {
+          const syncedMsg = data.status?.syncedCount 
+            ? `☁️ Synced ${data.status.syncedCount} item(s) live to your Cloud Dashboard!`
+            : '☁️ Cloud Dashboard is fully up to date!';
+          alert(syncedMsg);
+        }
+      } else {
+        if (!isSilent) {
+          alert(data.error || 'Cloud sync error');
+        }
+      }
+    } catch (err) {
+      if (!isSilent) {
+        alert('Failed to connect to sync service.');
+      }
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   useEffect(() => {
@@ -7546,15 +7663,35 @@ function MainApp() {
     return () => clearTimeout(timer);
   }, [menuItems, nonTableOrders, categories]);
 
-  // Periodic Cloud Sync every 30 seconds
+  // ─── 30s Periodic Cloud Sync & Online Reconnection Trigger ─────
   useEffect(() => {
     if (!IS_LOCAL) return;
+    
+    // Initial sync 2 seconds after startup
+    const initTimer = setTimeout(() => {
+      syncToBackend(true);
+    }, 2000);
+
+    // 30-second continuous sync interval
     const cloudInterval = setInterval(() => {
-      console.log("☁️ 30s Interval: Syncing to cloud...");
-      syncToCloud();
+      console.log("☁️ 30s Interval: Syncing POS data to Cloud Dashboard...");
+      syncToBackend(true);
     }, 30000);
-    return () => clearInterval(cloudInterval);
-  }, []);
+
+    // Instant sync when internet connection turns back online
+    const handleOnline = () => {
+      console.log("📶 Internet reconnected! Triggering instant Cloud Sync...");
+      syncToBackend(true);
+    };
+
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      clearTimeout(initTimer);
+      clearInterval(cloudInterval);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [orderHistory]);
   
   const loadCategories = async () => {
     localStorage.removeItem('pos_categories'); // purge old state
@@ -8029,6 +8166,12 @@ function MainApp() {
         if (isDuplicate) return prev;
         const updated = [completedEntry, ...prev];
         saveToLocal('pos_order_history', updated.slice(0, 1000));
+
+        // Instant Cloud Sync on Settlement
+        setTimeout(() => {
+          syncToBackend(true, updated);
+        }, 300);
+
         return updated;
       });
 
@@ -8273,7 +8416,7 @@ function MainApp() {
         <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: deviceStatus === 'PENDING' ? '#fef3c7' : '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
           {deviceStatus === 'PENDING' ? <Clock size={40} color="#d97706" /> : <X size={40} color="#dc2626" />}
         </div>
-        <h1 style={{ fontSize: '24px', fontWeight: '950', color: '#111827', marginBottom: '12px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#111827', marginBottom: '12px' }}>
           {deviceStatus === 'PENDING' ? 'Registration Pending' : 'Access Restricted'}
         </h1>
         <p style={{ fontSize: '16px', color: '#64748b', maxWidth: '400px', lineHeight: '1.6', marginBottom: '32px' }}>
@@ -8393,12 +8536,12 @@ function MainApp() {
       {/* Confirmation Modal - Correctly Positioned at Root Level for Perfect Centering */}
       {tableToClear && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000 }}>
-          <div className="animate-fade-in" style={{ background: 'white', padding: '32px', borderRadius: '24px', width: '380px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+          <div className="animate-fade-in" style={{ background: 'white', padding: '32px', borderRadius: '20px', width: '380px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
              <div style={{ background: '#fee2e2', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                 <Trash2 size={32} color="#dc2626" />
              </div>
-            <h3 style={{ fontSize: '24px', fontWeight: '950', marginBottom: '12px', color: '#111827', letterSpacing: '-0.5px' }}>Clear Table?</h3>
-            <p style={{ fontSize: '15px', color: '#64748b', marginBottom: '32px', lineHeight: '1.6', fontWeight: '500' }}>This will immediately remove all items from this table and restore it to vacant status. This action cannot be undone.</p>
+            <h3 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '12px', color: '#111827', letterSpacing: '-0.5px' }}>Clear Table?</h3>
+            <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '32px', lineHeight: '1.6', fontWeight: '500' }}>This will immediately remove all items from this table and restore it to vacant status. This action cannot be undone.</p>
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
                 onClick={() => setTableToClear(null)}
@@ -8436,12 +8579,12 @@ function MainApp() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)', flexShrink: 0 }}>
               <Store size={22} />
-              <h1 style={{ fontSize: '17px', fontWeight: '900', letterSpacing: '-0.5px', whiteSpace: 'nowrap' }}>{settings.resName}</h1>
+              <h1 style={{ fontSize: '16px', fontWeight: '900', letterSpacing: '-0.5px', whiteSpace: 'nowrap' }}>{settings.resName}</h1>
             </div>
             <button onClick={() => setShowSidebar(!showSidebar)} style={{ padding: '7px', borderRadius: 'var(--radius-md)', background: '#f1f5f9', border: 'none', cursor: 'pointer', color: '#64748b', flexShrink: 0 }}>
               <Menu size={18} />
             </button>
-            <h1 style={{ fontSize: '16px', fontWeight: '950', color: '#1e293b', letterSpacing: '-0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <h1 style={{ fontSize: '16px', fontWeight: '800', color: '#1e293b', letterSpacing: '-0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {view === 'tables' && 'Floor Plan'}
               {view === 'nontables' && 'Pickup / Online'}
               {view === 'analytics' && 'Intelligence'}
@@ -8461,10 +8604,10 @@ function MainApp() {
                 disabled={isSyncing}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '8px',
-                  padding: '10px 18px', borderRadius: '14px', border: 'none',
-                  background: isSyncing ? '#f1f5f9' : '#a3112a',
+                  padding: '10px 18px', borderRadius: '16px', border: 'none',
+                  background: isSyncing ? '#f1f5f9' : '#94161c',
                   color: isSyncing ? '#94a3b8' : 'white',
-                  fontSize: '13px', fontWeight: '950', cursor: isSyncing ? 'not-allowed' : 'pointer',
+                  fontSize: '13px', fontWeight: '800', cursor: isSyncing ? 'not-allowed' : 'pointer',
                   transition: 'all 0.2s', boxShadow: isSyncing ? 'none' : '0 4px 12px rgba(163, 17, 42, 0.2)'
                 }}
               >
@@ -8484,7 +8627,7 @@ function MainApp() {
               </span>
             </div>
 
-            <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '14px', padding: '4px 12px', alignItems: 'center', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '16px', padding: '4px 12px', alignItems: 'center', border: '1px solid #e2e8f0' }}>
               <Search size={15} color="#94a3b8" />
               <input
                 type="text"
@@ -8496,7 +8639,7 @@ function MainApp() {
             </div>
 
             {/* GLOBAL NAVIGATION PILLS */}
-            <div style={{ display: 'flex', gap: '6px', background: '#f1f5f9', padding: '5px', borderRadius: '14px', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)', border: '1px solid #e2e8f0', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: '6px', background: '#f1f5f9', padding: '5px', borderRadius: '16px', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)', border: '1px solid #e2e8f0', flexShrink: 0 }}>
               <button onClick={() => setView('tables')} style={{ padding: '8px 16px', borderRadius: '10px', background: view === 'tables' ? 'var(--primary)' : 'transparent', color: view === 'tables' ? 'white' : '#64748b', fontWeight: '900', border: 'none', cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s', whiteSpace: 'nowrap', boxShadow: view === 'tables' ? '0 4px 12px rgba(148,22,28,0.2)' : 'none' }}>
                 Tables
               </button>
@@ -8570,8 +8713,11 @@ function MainApp() {
           {view === 'nontables' && (
             <NonTableManagement orders={nonTableOrders} onSelectOrder={handleSelectTable} onCreateOrder={handleCreateNonTableOrder} onViewChange={setView} onQuickSettle={setQuickSettleTable} onQuickPrint={handleQuickPrint} onClearOrder={clearTableFast} onCancelOrder={handleCancelOrder} globalSearch={globalSearch} onCompleteAllPickups={handleCompleteAllPickups} />
           )}
-          {view === 'analytics' && (
-            <ReportsHub orderHistory={orderHistory} menuItems={menuItems} tables={tables} nonTableOrders={nonTableOrders} products={products} loadHistory={loadHistory} />
+          {(view === 'analytics' || view === 'reports') && (
+            <ReportsHub orderHistory={orderHistory} menuItems={menuItems} tables={tables} nonTableOrders={nonTableOrders} products={products} loadHistory={loadHistory} initialTab="overview" />
+          )}
+          {view === 'crm' && (
+            <ReportsHub orderHistory={orderHistory} menuItems={menuItems} tables={tables} nonTableOrders={nonTableOrders} products={products} loadHistory={loadHistory} initialTab="crm" />
           )}
           {view === 'dayclose' && (
             <DayCloseWizard
@@ -8667,11 +8813,11 @@ function MainApp() {
           {view === 'pro_control' && (
             <div style={{ padding: '40px', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
                <div style={{ background: 'white', padding: '40px', borderRadius: '32px', boxShadow: '0 20px 40px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
-                  <div style={{ width: '80px', height: '80px', borderRadius: '24px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                  <div style={{ width: '80px', height: '80px', borderRadius: '20px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
                      <Zap size={40} color="#821a1d" fill="#821a1d" />
                   </div>
-                  <h2 style={{ fontSize: '24px', fontWeight: 950, color: '#1e293b' }}>Captain Pro Mode</h2>
-                  <p style={{ color: '#64748b', marginTop: '8px', fontSize: '15px' }}>The remote floor controller is currently <b>{settings.captainProEnabled ? 'ACTIVE' : 'DISABLED'}</b>.</p>
+                  <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#1e293b' }}>Captain Pro Mode</h2>
+                  <p style={{ color: '#64748b', marginTop: '8px', fontSize: '14px' }}>The remote floor controller is currently <b>{settings.captainProEnabled ? 'ACTIVE' : 'DISABLED'}</b>.</p>
                   
                   <div style={{ marginTop: '32px', padding: '20px', background: '#f8fafc', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -8782,12 +8928,12 @@ function MainApp() {
           {/* COVERS MODAL */}
           {pendingCoversTable && (
             <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
-              <div style={{ background: '#fff', borderRadius: '24px', padding: '32px', width: '90%', maxWidth: '360px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.2)' }}>
+              <div style={{ background: '#fff', borderRadius: '20px', padding: '32px', width: '90%', maxWidth: '360px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.2)' }}>
                 <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                   <div style={{ width: '48px', height: '48px', background: '#fef2f2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                     <User size={24} color="#dc2626" />
                   </div>
-                  <h3 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>Number of Guests</h3>
+                  <h3 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>Number of Guests</h3>
                   <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>How many people for {pendingCoversTable.name}?</p>
                 </div>
                 
@@ -8795,15 +8941,15 @@ function MainApp() {
                   <button onClick={() => setCoversCount(Math.max(1, coversCount - 1))} style={{ width: '48px', height: '48px', borderRadius: '50%', border: 'none', background: '#f1f5f9', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }}>
                     <Minus size={24} />
                   </button>
-                  <div style={{ fontSize: '48px', fontWeight: '950', color: '#0f172a', width: '64px', textAlign: 'center', lineHeight: 1 }}>{coversCount}</div>
+                  <div style={{ fontSize: '48px', fontWeight: '800', color: '#0f172a', width: '64px', textAlign: 'center', lineHeight: 1 }}>{coversCount}</div>
                   <button onClick={() => setCoversCount(coversCount + 1)} style={{ width: '48px', height: '48px', borderRadius: '50%', border: 'none', background: '#f1f5f9', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }}>
                     <Plus size={24} />
                   </button>
                 </div>
 
                 <div style={{ display: 'flex', gap: '12px' }}>
-                  <button onClick={() => setPendingCoversTable(null)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', background: 'transparent', color: '#64748b', fontWeight: '800', fontSize: '15px', cursor: 'pointer' }}>Cancel</button>
-                  <button onClick={() => finalizeSelectTable(pendingCoversTable, coversCount)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: 'none', background: '#dc2626', color: 'white', fontWeight: '800', fontSize: '15px', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(220,38,38,0.3)' }}>Confirm</button>
+                  <button onClick={() => setPendingCoversTable(null)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', background: 'transparent', color: '#64748b', fontWeight: '800', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={() => finalizeSelectTable(pendingCoversTable, coversCount)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: 'none', background: '#dc2626', color: 'white', fontWeight: '800', fontSize: '14px', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(220,38,38,0.3)' }}>Confirm</button>
                 </div>
               </div>
             </div>
