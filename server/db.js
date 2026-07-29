@@ -506,7 +506,10 @@ export const statements = {
   },
 
   deleteOrder({ id }) {
-    db.run(`DELETE FROM orders WHERE id = ?`, [id]);
+    db.run(
+      `DELETE FROM orders WHERE id = ? OR table_number = ? OR bill_number = ?`,
+      [id, String(id), String(id)]
+    );
     persistToFile();
     return { changes: db.getRowsModified() };
   },
@@ -525,10 +528,10 @@ export const statements = {
     return { changes: db.getRowsModified() };
   },
 
-  updateOrderCart({ id, items, notes, status, gst_enabled, gst_rate, service_charge_enabled, service_charge_rate, customer_name, phone, covers }) {
+  updateOrderCart({ id, items, notes, status, gst_enabled, gst_rate, service_charge_enabled, service_charge_rate, customer_name, phone, covers, grand_total, payment_method, gst_amount, service_charge, tip_amount, bill_number }) {
     db.run(
-      `UPDATE orders SET items = ?, notes = ?, status = ?, gst_enabled = ?, gst_rate = ?, service_charge_enabled = ?, service_charge_rate = ?, customer_name = COALESCE(?, customer_name), phone = COALESCE(?, phone), covers = COALESCE(?, covers) WHERE id = ?`,
-      [items, notes, status, gst_enabled || 0, gst_rate || 0, service_charge_enabled || 0, service_charge_rate || 0, customer_name || null, phone || null, covers || null, id]
+      `UPDATE orders SET items = ?, notes = ?, status = ?, gst_enabled = ?, gst_rate = ?, service_charge_enabled = ?, service_charge_rate = ?, customer_name = COALESCE(?, customer_name), phone = COALESCE(?, phone), covers = COALESCE(?, covers), grand_total = COALESCE(?, grand_total), payment_method = COALESCE(?, payment_method), gst_amount = COALESCE(?, gst_amount), service_charge = COALESCE(?, service_charge), tip_amount = COALESCE(?, tip_amount), bill_number = COALESCE(?, bill_number) WHERE id = ?`,
+      [items, notes, status, gst_enabled || 0, gst_rate || 0, service_charge_enabled || 0, service_charge_rate || 0, customer_name || null, phone || null, covers || null, grand_total ?? null, payment_method || null, gst_amount ?? null, service_charge ?? null, tip_amount ?? null, bill_number || null, id]
     );
     persistToFile();
     return { changes: db.getRowsModified() };

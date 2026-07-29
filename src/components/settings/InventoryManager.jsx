@@ -105,12 +105,12 @@ const InventoryManager = ({ menuItems = [] }) => {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <h2 style={{ fontSize: 24, fontWeight: 900, color: '#0f172a' }}>Inventory & Recipes</h2>
+          <h2 style={{ fontSize: 24, fontWeight: 600, color: '#0f172a' }}>Inventory & Recipes</h2>
           <p style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>Manage raw materials and track recipe costing.</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           {lowStockItems.length > 0 && (
-            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: '8px 16px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 8, color: '#dc2626', fontWeight: 800 }}>
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: '8px 16px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 8, color: '#dc2626', fontWeight: 600 }}>
               <AlertTriangle size={18} />
               {lowStockItems.length} Items Low on Stock
             </div>
@@ -122,13 +122,13 @@ const InventoryManager = ({ menuItems = [] }) => {
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, borderBottom: '2px solid #e2e8f0', paddingBottom: 8 }}>
         <button 
           onClick={() => setTab('materials')}
-          style={{ padding: '8px 16px', borderRadius: 8, background: tab === 'materials' ? '#0f172a' : 'transparent', color: tab === 'materials' ? 'white' : '#64748b', fontWeight: 800, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+          style={{ padding: '8px 16px', borderRadius: 8, background: tab === 'materials' ? '#0f172a' : 'transparent', color: tab === 'materials' ? 'white' : '#64748b', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
         >
           <Package size={16} /> Raw Materials
         </button>
         <button 
           onClick={() => setTab('recipes')}
-          style={{ padding: '8px 16px', borderRadius: 8, background: tab === 'recipes' ? '#0f172a' : 'transparent', color: tab === 'recipes' ? 'white' : '#64748b', fontWeight: 800, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+          style={{ padding: '8px 16px', borderRadius: 8, background: tab === 'recipes' ? '#0f172a' : 'transparent', color: tab === 'recipes' ? 'white' : '#64748b', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
         >
           <LinkIcon size={16} /> Recipe Builder
         </button>
@@ -152,7 +152,7 @@ const InventoryManager = ({ menuItems = [] }) => {
                 </div>
                 <button 
                   onClick={() => { setEditingItem(null); setShowItemModal(true); }}
-                  style={{ background: '#10b981', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                  style={{ background: '#10b981', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
                 >
                   <Plus size={16} /> Add Material
                 </button>
@@ -175,16 +175,16 @@ const InventoryManager = ({ menuItems = [] }) => {
                     return (
                       <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                         <td style={{ padding: 12, fontWeight: 700 }}>{item.name}</td>
-                        <td style={{ padding: 12, fontWeight: 900, color: isLow ? '#ef4444' : '#1e293b' }}>
+                        <td style={{ padding: 12, fontWeight: 600, color: isLow ? '#ef4444' : '#1e293b' }}>
                           {item.current_stock}
                         </td>
                         <td style={{ padding: 12, color: '#64748b' }}>{item.unit}</td>
                         <td style={{ padding: 12, fontWeight: 700 }}>{formatCurrency(item.cost_per_unit)}</td>
                         <td style={{ padding: 12 }}>
                           {isLow ? (
-                            <span style={{ background: '#fef2f2', color: '#ef4444', padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 800 }}>Low Stock</span>
+                            <span style={{ background: '#fef2f2', color: '#ef4444', padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600 }}>Low Stock</span>
                           ) : (
-                            <span style={{ background: '#f0fdf4', color: '#10b981', padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 800 }}>Healthy</span>
+                            <span style={{ background: '#f0fdf4', color: '#10b981', padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600 }}>Healthy</span>
                           )}
                         </td>
                         <td style={{ padding: 12, textAlign: 'right' }}>
@@ -205,7 +205,7 @@ const InventoryManager = ({ menuItems = [] }) => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24 }}>
               {/* Menu Item Selector */}
               <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e2e8f0', padding: 24 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 900, marginBottom: 16 }}>Select Menu Item</h3>
+                <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Select Menu Item</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '60vh', overflowY: 'auto' }}>
                   {menuItems.map(mi => {
                     const ingCount = recipes.filter(r => r.menu_item_id === mi.id).length;
@@ -217,7 +217,7 @@ const InventoryManager = ({ menuItems = [] }) => {
                         style={{ padding: 12, borderRadius: 10, cursor: 'pointer', border: `2px solid ${isSelected ? '#3b82f6' : '#f1f5f9'}`, background: isSelected ? '#eff6ff' : 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                       >
                         <span style={{ fontWeight: 700, color: '#1e293b' }}>{mi.name}</span>
-                        {ingCount > 0 && <span style={{ background: '#dbeafe', color: '#1d4ed8', fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 800 }}>{ingCount} INGREDIENTS</span>}
+                        {ingCount > 0 && <span style={{ background: '#dbeafe', color: '#1d4ed8', fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>{ingCount} INGREDIENTS</span>}
                       </div>
                     )
                   })}
@@ -229,10 +229,10 @@ const InventoryManager = ({ menuItems = [] }) => {
                 {selectedMenuItem ? (
                   <>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                      <h3 style={{ fontSize: 18, fontWeight: 900 }}>Recipe: {menuItems.find(m => m.id === selectedMenuItem)?.name}</h3>
+                      <h3 style={{ fontSize: 18, fontWeight: 600 }}>Recipe: {menuItems.find(m => m.id === selectedMenuItem)?.name}</h3>
                       <button 
                         onClick={() => setShowRecipeModal(true)}
-                        style={{ background: '#0f172a', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                        style={{ background: '#0f172a', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
                       >
                         <Plus size={16} /> Link Ingredient
                       </button>
@@ -255,7 +255,7 @@ const InventoryManager = ({ menuItems = [] }) => {
                           return (
                             <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                               <td style={{ padding: 12, fontWeight: 700 }}>{ing.name}</td>
-                              <td style={{ padding: 12, fontWeight: 900 }}>{r.quantity_required} {ing.unit}</td>
+                              <td style={{ padding: 12, fontWeight: 600 }}>{r.quantity_required} {ing.unit}</td>
                               <td style={{ padding: 12, fontWeight: 700, color: '#ef4444' }}>{formatCurrency(cost)}</td>
                               <td style={{ padding: 12, textAlign: 'right' }}>
                                 <button onClick={() => handleRemoveRecipe(selectedMenuItem, ing.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={16} /></button>
@@ -272,7 +272,7 @@ const InventoryManager = ({ menuItems = [] }) => {
                 ) : (
                   <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
                     <LinkIcon size={48} style={{ marginBottom: 16 }} />
-                    <h3 style={{ fontSize: 18, fontWeight: 900 }}>Select a menu item</h3>
+                    <h3 style={{ fontSize: 18, fontWeight: 600 }}>Select a menu item</h3>
                     <p style={{ color: '#64748b', marginTop: 8 }}>Click a menu item on the left to view and build its recipe.</p>
                   </div>
                 )}
@@ -288,35 +288,35 @@ const InventoryManager = ({ menuItems = [] }) => {
       {showItemModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}>
           <div style={{ background: 'white', padding: 32, borderRadius: 24, width: 400, boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ fontSize: 20, fontWeight: 900, marginBottom: 20 }}>{editingItem ? 'Edit Material' : 'Add Material'}</h3>
+            <h3 style={{ fontSize: 20, fontWeight: 600, marginBottom: 20 }}>{editingItem ? 'Edit Material' : 'Add Material'}</h3>
             <form onSubmit={handleSaveItem} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 800, color: '#64748b', display: 'block', marginBottom: 6 }}>NAME</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 6 }}>NAME</label>
                 <input name="name" defaultValue={editingItem?.name} required placeholder="e.g. Tomato Sauce" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }} />
               </div>
               <div style={{ display: 'flex', gap: 12 }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 12, fontWeight: 800, color: '#64748b', display: 'block', marginBottom: 6 }}>UNIT (e.g. Kg, L, Pcs)</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 6 }}>UNIT (e.g. Kg, L, Pcs)</label>
                   <input name="unit" defaultValue={editingItem?.unit} required placeholder="kg" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 12, fontWeight: 800, color: '#64748b', display: 'block', marginBottom: 6 }}>COST PER UNIT (₹)</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 6 }}>COST PER UNIT (₹)</label>
                   <input name="cost_per_unit" type="number" step="0.01" defaultValue={editingItem?.cost_per_unit} required style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }} />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 12 }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 12, fontWeight: 800, color: '#64748b', display: 'block', marginBottom: 6 }}>CURRENT STOCK</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 6 }}>CURRENT STOCK</label>
                   <input name="current_stock" type="number" step="0.01" defaultValue={editingItem?.current_stock} required style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 12, fontWeight: 800, color: '#64748b', display: 'block', marginBottom: 6 }}>LOW STOCK THRESHOLD</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 6 }}>LOW STOCK THRESHOLD</label>
                   <input name="low_stock_threshold" type="number" step="0.01" defaultValue={editingItem?.low_stock_threshold} required style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }} />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-                <button type="button" onClick={() => setShowItemModal(false)} style={{ flex: 1, padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: 'white', fontWeight: 800, cursor: 'pointer' }}>Cancel</button>
-                <button type="submit" style={{ flex: 1, padding: 12, borderRadius: 10, border: 'none', background: '#10b981', color: 'white', fontWeight: 800, cursor: 'pointer' }}>Save Material</button>
+                <button type="button" onClick={() => setShowItemModal(false)} style={{ flex: 1, padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: 'white', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" style={{ flex: 1, padding: 12, borderRadius: 10, border: 'none', background: '#10b981', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Save Material</button>
               </div>
             </form>
           </div>
@@ -327,24 +327,24 @@ const InventoryManager = ({ menuItems = [] }) => {
       {showRecipeModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}>
           <div style={{ background: 'white', padding: 32, borderRadius: 24, width: 400, boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ fontSize: 20, fontWeight: 900, marginBottom: 20 }}>Link Ingredient</h3>
+            <h3 style={{ fontSize: 20, fontWeight: 600, marginBottom: 20 }}>Link Ingredient</h3>
             <form onSubmit={handleSaveRecipe} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 800, color: '#64748b', display: 'block', marginBottom: 6 }}>SELECT MATERIAL</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 6 }}>SELECT MATERIAL</label>
                 <select name="inventory_item_id" required style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }}>
                   <option value="">-- Choose Material --</option>
                   {items.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 800, color: '#64748b', display: 'block', marginBottom: 6 }}>QUANTITY REQUIRED PER PORTION</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 6 }}>QUANTITY REQUIRED PER PORTION</label>
                 <input name="quantity_required" type="number" step="0.001" required placeholder="e.g. 0.15 for 150g" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }} />
                 <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>Must match the unit of the material.</p>
               </div>
               
               <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-                <button type="button" onClick={() => setShowRecipeModal(false)} style={{ flex: 1, padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: 'white', fontWeight: 800, cursor: 'pointer' }}>Cancel</button>
-                <button type="submit" style={{ flex: 1, padding: 12, borderRadius: 10, border: 'none', background: '#3b82f6', color: 'white', fontWeight: 800, cursor: 'pointer' }}>Link to Recipe</button>
+                <button type="button" onClick={() => setShowRecipeModal(false)} style={{ flex: 1, padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: 'white', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" style={{ flex: 1, padding: 12, borderRadius: 10, border: 'none', background: '#3b82f6', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Link to Recipe</button>
               </div>
             </form>
           </div>

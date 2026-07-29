@@ -128,24 +128,27 @@ export function syncKdsTicket(tableNumber, items, io, isNewKot = false) {
       statements.insertKotTicket(tableNumStr, newKdsItems, 'NEW');
     }
 
-    // 5. Handle reductions/cancellations against unprepared active tickets
-    normalizedKdsItems.forEach(newItem => {
-      const key = getItemKey(newItem);
-      const payloadQty = getItemQty(newItem);
+    // 5. Handle reductions/deletions against active session tickets
+    // Iterate over ALL item keys currently on KDS for this table to catch deleted items
+    const allSeenKeys = Array.from(new Set([...totalSeenMap.keys()]));
+
+    allSeenKeys.forEach(key => {
+      const payloadItem = normalizedKdsItems.find(i => getItemKey(i) === key);
+      const payloadQty = payloadItem ? getItemQty(payloadItem) : 0;
       const seenQty = totalSeenMap.get(key) || 0;
       let diff = seenQty - payloadQty;
 
       if (diff > 0) {
-        for (const ticket of unpreparedTickets) {
+        for (const ticket of tableTickets) {
           if (diff <= 0) break;
           let changed = false;
           const updatedItems = (ticket.items || []).map(item => {
-            if (getItemKey(item) === key && diff > 0 && item.itemStatus !== 'READY' && item.itemStatus !== 'SERVED') {
+            if (getItemKey(item) === key && diff > 0) {
               const itemQty = getItemQty(item);
               if (itemQty <= diff) {
                 diff -= itemQty;
                 changed = true;
-                return null;
+                return null; // Item removed from ticket
               } else {
                 const newQty = itemQty - diff;
                 diff = 0;
@@ -777,23 +780,20 @@ router.put('/:id/status', (req, res) => {
 // ─────────────────────────────────────────────────────────────
 router.delete('/:id', (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) return res.status(400).json({ error: 'Invalid ID' });
-
-    const existing = statements.getOrderById({ id });
-    if (!existing) {
-      // Idempotent delete: if already deleted, just tell the client it succeeded
-      const io = req.app.get('io');
-      if (io) io.emit('order_deleted', { id });
-      return res.json({ success: true, message: 'Order already deleted' });
+    const rawId = decodeURIComponent(req.params.id || '');
+    if (!rawId || String(rawId).trim() === '') {
+      return res.status(400).json({ error: 'Invalid ID' });
     }
 
+    const id = isNaN(Number(rawId)) ? rawId : Number(rawId);
+
+    // Delete order from database (handles numeric ID, string ID, table_number, or bill_number)
     statements.deleteOrder({ id });
 
-    // Tell clients to refresh history
+    // Tell all connected POS clients to refresh order history
     const io = req.app.get('io');
     if (io) {
-      io.emit('order_deleted', { id });
+      io.emit('order_deleted', { id: rawId });
     }
 
     res.json({ success: true, message: 'Order deleted successfully' });

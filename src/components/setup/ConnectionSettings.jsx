@@ -77,7 +77,7 @@ const ConnectionSettings = ({ onSaved, isSetup = false }) => {
           }}>
             <Globe size={32} color="white" />
           </div>
-          <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b', marginBottom: '8px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#1e293b', marginBottom: '8px' }}>
             Backend Connection
           </h2>
           <p style={{ color: '#64748b', fontSize: '14px' }}>
@@ -86,7 +86,7 @@ const ConnectionSettings = ({ onSaved, isSetup = false }) => {
         </div>
 
         <div style={{ marginBottom: '24px' }}>
-          <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>
             Backend Server URL
           </label>
           <div style={{ position: 'relative' }}>
@@ -130,7 +130,7 @@ const ConnectionSettings = ({ onSaved, isSetup = false }) => {
               border: '2px solid #e2e8f0',
               background: 'white',
               color: '#475569',
-              fontWeight: '800',
+              fontWeight: '600',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -151,7 +151,7 @@ const ConnectionSettings = ({ onSaved, isSetup = false }) => {
               border: 'none',
               background: '#94161c',
               color: 'white',
-              fontWeight: '800',
+              fontWeight: '600',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',

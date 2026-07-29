@@ -56,7 +56,15 @@ router.post('/settle', (req, res) => {
             gst_enabled: gstAmount > 0 ? 1 : 0,
             gst_rate: order_details?.gstRate || 0,
             service_charge_enabled: serviceCharge > 0 ? 1 : 0,
-            service_charge_rate: order_details?.serviceChargeRate || 0
+            service_charge_rate: order_details?.serviceChargeRate || 0,
+            grand_total: grandTotal,
+            payment_method: paymentMethod,
+            gst_amount: gstAmount,
+            service_charge: serviceCharge,
+            tip_amount: tipAmount,
+            bill_number: order_details?.billNumber || order_details?.bill_number || table?.bill_number || null,
+            customer_name: order_details?.customerName || order_details?.customer_name || null,
+            phone: order_details?.phone || order_details?.customerPhone || null
           });
           if (isVirtual) {
             statements.updateOrderDateToNow({ id: order.id });

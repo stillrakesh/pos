@@ -14,12 +14,12 @@ const BUILT_IN_TEMPLATES = [
     global: { marginTop: 0, marginBottom: 0, marginLeft: 5, marginRight: 5, sectionSpacing: 1, fontFamily: 'Verdana' },
     printBehavior: { autoPrint: false, copies: 1 },
     sections: [
-      { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 14, fontWeight: 'bold', textAlign: 'center', marginBottom: 5, layout: 'full' }, data: { showLogo: false, text: 'Tyde Cafe', address: 'Nerul Ferry Terminal', showGst: false, gstNumber: '' } },
+      { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 14, fontWeight: '500', textAlign: 'center', marginBottom: 5, layout: 'full' }, data: { showLogo: false, text: 'Tyde Cafe', address: 'Nerul Ferry Terminal', showGst: false, gstNumber: '' } },
       { id: 's3', type: 'customerInfo', visible: true, order: 2, style: { fontSize: 13, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'full' }, data: { showName: true, showMobile: false } },
       { id: 's2', type: 'orderInfo', visible: true, order: 3, style: { fontSize: 13, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'full' }, data: { showBillNo: true, showTableNo: true, showOrderType: true, showDateTime: true } },
       { id: 's4', type: 'itemList', visible: true, order: 4, style: { fontSize: 13, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'full' }, data: { showQty: true, showPrice: true, showTotal: true, colQty: 4, colPrice: 8, colTotal: 8, qtyBeforeName: false, showNotes: true, mergeDuplicates: false, headerFontSize: 13 } },
       { id: 's5', type: 'charges', visible: true, order: 5, style: { fontSize: 13, fontWeight: 'normal', textAlign: 'right', marginBottom: 5, layout: 'full' }, data: { showGst: false, showServiceCharge: true, totalQtyFontSize: 13, serviceChargeFontSize: 13 } },
-      { id: 's6', type: 'totalSummary', visible: true, order: 6, style: { fontSize: 14, fontWeight: '900', textAlign: 'right', marginBottom: 10, layout: 'full' }, data: { roundOffFontSize: 11 } },
+      { id: 's6', type: 'totalSummary', visible: true, order: 6, style: { fontSize: 14, fontWeight: '600', textAlign: 'right', marginBottom: 10, layout: 'full' }, data: { roundOffFontSize: 11 } },
       { id: 's7', type: 'footer', visible: true, order: 7, style: { fontSize: 13, fontWeight: 'normal', textAlign: 'center', marginBottom: 0, layout: 'full' }, data: { text: 'Sea you soon — under the moon' } }
     ]
   },
@@ -32,12 +32,12 @@ const BUILT_IN_TEMPLATES = [
     global: { marginTop: 0, marginBottom: 4, marginLeft: 0, marginRight: 0, sectionSpacing: 1, fontFamily: 'Verdana' },
     printBehavior: { autoPrint: false, copies: 1 },
     sections: [
-      { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 12, fontWeight: 'bold', textAlign: 'center', marginBottom: 2 }, data: { showLogo: false, text: 'TYDE CAFE', address: 'Nerul', showGst: false, gstNumber: '' } },
+      { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 12, fontWeight: '500', textAlign: 'center', marginBottom: 2 }, data: { showLogo: false, text: 'TYDE CAFE', address: 'Nerul', showGst: false, gstNumber: '' } },
       { id: 's2', type: 'orderInfo', visible: true, order: 2, style: { fontSize: 10, fontWeight: 'normal', textAlign: 'left', marginBottom: 2 }, data: { showBillNo: true, showTableNo: true, showOrderType: false, showDateTime: true } },
       { id: 's3', type: 'customerInfo', visible: false, order: 3, style: { fontSize: 10, fontWeight: 'normal', textAlign: 'left', marginBottom: 2 }, data: { showName: true, showMobile: false } },
       { id: 's4', type: 'itemList', visible: true, order: 4, style: { fontSize: 10, fontWeight: 'normal', textAlign: 'left', marginBottom: 2 }, data: { showQty: true, showPrice: false, showTotal: true } },
       { id: 's5', type: 'charges', visible: true, order: 5, style: { fontSize: 10, fontWeight: 'normal', textAlign: 'right', marginBottom: 2 }, data: { showGst: true, showServiceCharge: true } },
-      { id: 's6', type: 'totalSummary', visible: true, order: 6, style: { fontSize: 12, fontWeight: 'bold', textAlign: 'right', marginBottom: 5 }, data: {} },
+      { id: 's6', type: 'totalSummary', visible: true, order: 6, style: { fontSize: 12, fontWeight: '500', textAlign: 'right', marginBottom: 5 }, data: {} },
       { id: 's7', type: 'footer', visible: true, order: 7, style: { fontSize: 10, fontWeight: 'normal', textAlign: 'center', marginBottom: 0 }, data: { text: 'Thank you!' } }
     ]
   },
@@ -50,13 +50,13 @@ const BUILT_IN_TEMPLATES = [
     global: { marginTop: 0, marginBottom: 4, marginLeft: 0, marginRight: 0, sectionSpacing: 1, fontFamily: 'Verdana' },
     printBehavior: { autoPrint: false, copies: 1 },
     sections: [
-      { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 16, fontWeight: 'bold', textAlign: 'center', marginBottom: 5, layout: 'full' }, data: { showLogo: false, text: 'Tyde Cafe', address: 'Nerul Ferry Terminal', showGst: false, gstNumber: '' } },
+      { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 16, fontWeight: '500', textAlign: 'center', marginBottom: 5, layout: 'full' }, data: { showLogo: false, text: 'Tyde Cafe', address: 'Nerul Ferry Terminal', showGst: false, gstNumber: '' } },
       { id: 's3', type: 'customerInfo', visible: true, order: 2, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'full' }, data: { showName: true, showMobile: false } },
       { id: 's2', type: 'orderInfo', visible: true, order: 3, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'half-left' }, data: { showBillNo: false, showTableNo: false, showOrderType: false, showDateTime: true } },
-      { id: 's2_right', type: 'orderInfo', visible: true, order: 4, style: { fontSize: 12, fontWeight: 'bold', textAlign: 'left', marginBottom: 5, layout: 'half-right' }, data: { showBillNo: true, showTableNo: true, showOrderType: true, showDateTime: false } },
+      { id: 's2_right', type: 'orderInfo', visible: true, order: 4, style: { fontSize: 12, fontWeight: '500', textAlign: 'left', marginBottom: 5, layout: 'half-right' }, data: { showBillNo: true, showTableNo: true, showOrderType: true, showDateTime: false } },
       { id: 's4', type: 'itemList', visible: true, order: 5, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'left', marginBottom: 5, layout: 'full' }, data: { showQty: true, showPrice: true, showTotal: true } },
       { id: 's5', type: 'charges', visible: true, order: 6, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'right', marginBottom: 5, layout: 'full' }, data: { showGst: false, showServiceCharge: true } },
-      { id: 's6', type: 'totalSummary', visible: true, order: 7, style: { fontSize: 14, fontWeight: 'bold', textAlign: 'right', marginBottom: 10, layout: 'full' }, data: {} },
+      { id: 's6', type: 'totalSummary', visible: true, order: 7, style: { fontSize: 14, fontWeight: '500', textAlign: 'right', marginBottom: 10, layout: 'full' }, data: {} },
       { id: 's7', type: 'footer', visible: true, order: 8, style: { fontSize: 12, fontWeight: 'normal', textAlign: 'center', marginBottom: 0, layout: 'full' }, data: { text: 'Sea you soon — under the moon' } }
     ]
   },
@@ -70,7 +70,7 @@ const BUILT_IN_TEMPLATES = [
     printBehavior: { autoPrint: false, copies: 1 },
     sections: [
       { id: 's1', type: 'header', visible: true, order: 1, style: { fontSize: 14, fontWeight: 'normal', textAlign: 'center', marginBottom: 2 }, data: { text: 'Running Table' } },
-      { id: 's2', type: 'orderInfo', visible: true, order: 2, style: { fontSize: 14, fontWeight: 'bold', textAlign: 'center', marginBottom: 5 }, data: { showBillNo: true, showTableNo: true, showOrderType: true, showDateTime: true } },
+      { id: 's2', type: 'orderInfo', visible: true, order: 2, style: { fontSize: 14, fontWeight: '500', textAlign: 'center', marginBottom: 5 }, data: { showBillNo: true, showTableNo: true, showOrderType: true, showDateTime: true } },
       { id: 's4', type: 'itemList', visible: true, order: 3, style: { fontSize: 13, fontWeight: 'normal', textAlign: 'left', marginBottom: 5 }, data: { showQty: true, showPrice: false, showTotal: false, showNoteCol: true, colNote: 15, showNotes: true } },
     ]
   }
@@ -220,7 +220,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
             >
               <div style={{ position: 'absolute', top: '2px', left: section.visible ? '18px' : '2px', width: '20px', height: '20px', borderRadius: '50%', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'all 0.3s' }} />
             </button>
-            <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '800', color: '#1e293b', textTransform: 'capitalize' }}>
+            <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#1e293b', textTransform: 'capitalize' }}>
               {section.type.replace(/([A-Z])/g, ' $1').trim()}
             </h4>
           </div>
@@ -240,18 +240,18 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
             {/* Style Controls */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Font Size</label>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Font Size</label>
                 <input type="number" value={section.style.fontSize} onChange={(e) => updateSectionStyle(index, 'fontSize', parseInt(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Weight</label>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Weight</label>
                 <select value={section.style.fontWeight} onChange={(e) => updateSectionStyle(index, 'fontWeight', e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: 'white' }}>
                   <option value="normal">Normal</option>
                   <option value="bold">Bold</option>
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Align</label>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Align</label>
                 <select value={section.style.textAlign} onChange={(e) => updateSectionStyle(index, 'textAlign', e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: 'white' }}>
                   <option value="left">Left</option>
                   <option value="center">Center</option>
@@ -259,7 +259,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Layout</label>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Layout</label>
                 <select value={section.style.layout || 'full'} onChange={(e) => updateSectionStyle(index, 'layout', e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: 'white' }}>
                   <option value="full">1 Col</option>
                   <option value="half-left">Left</option>
@@ -272,11 +272,11 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
             {section.type === 'header' && (
               <>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Title Text</label>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Title Text</label>
                   <input type="text" value={section.data.text} onChange={(e) => updateSectionData(index, 'text', e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Address / Contact Info</label>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Address / Contact Info</label>
                   <textarea value={section.data.address || ''} onChange={(e) => updateSectionData(index, 'address', e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', minHeight: '60px' }} />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -285,7 +285,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                 </div>
                 {section.data.showGst && (
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>GST Number</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>GST Number</label>
                     <input type="text" value={section.data.gstNumber || ''} onChange={(e) => updateSectionData(index, 'gstNumber', e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
                   </div>
                 )}
@@ -304,11 +304,11 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Order Type Font Size</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Order Type Font Size</label>
                     <input type="number" value={section.data.typeFontSize || 16} onChange={(e) => updateSectionData(index, 'typeFontSize', parseInt(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Order Type Weight</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Order Type Weight</label>
                     <select value={section.data.typeFontWeight || 'bold'} onChange={(e) => updateSectionData(index, 'typeFontWeight', e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: 'white' }}>
                       <option value="normal">Normal</option>
                       <option value="bold">Bold</option>
@@ -317,11 +317,11 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Table/Token Font Size</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Table/Token Font Size</label>
                     <input type="number" value={section.data.tableFontSize || 14} onChange={(e) => updateSectionData(index, 'tableFontSize', parseInt(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Table/Token Weight</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Table/Token Weight</label>
                     <select value={section.data.tableFontWeight || 'bold'} onChange={(e) => updateSectionData(index, 'tableFontWeight', e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: 'white' }}>
                       <option value="normal">Normal</option>
                       <option value="bold">Bold</option>
@@ -330,11 +330,11 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Time Font Size</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Time Font Size</label>
                     <input type="number" value={section.data.timeFontSize || 12} onChange={(e) => updateSectionData(index, 'timeFontSize', parseInt(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Time Weight</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Time Weight</label>
                     <select value={section.data.timeFontWeight || 'normal'} onChange={(e) => updateSectionData(index, 'timeFontWeight', e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: 'white' }}>
                       <option value="normal">Normal</option>
                       <option value="bold">Bold</option>
@@ -364,11 +364,11 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Header Font Size</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Header Font Size</label>
                     <input type="number" value={section.data.headerFontSize || 13} onChange={(e) => updateSectionData(index, 'headerFontSize', parseInt(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Header Weight</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Header Weight</label>
                     <select value={section.data.headerFontWeight || 'bold'} onChange={(e) => updateSectionData(index, 'headerFontWeight', e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: 'white' }}>
                       <option value="normal">Normal</option>
                       <option value="bold">Bold</option>
@@ -377,7 +377,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                   </div>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px' }}>Column Widths (chars)</label>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '8px' }}>Column Widths (chars)</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px' }}>
                     <div><span style={{ fontSize: '11px', color: '#94a3b8' }}>Qty Width</span><input type="number" value={section.data.colQty || 4} onChange={(e) => updateSectionData(index, 'colQty', parseInt(e.target.value))} style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
                     <div><span style={{ fontSize: '11px', color: '#94a3b8' }}>Note Width</span><input type="number" value={section.data.colNote || 15} onChange={(e) => updateSectionData(index, 'colNote', parseInt(e.target.value))} style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
@@ -396,11 +396,11 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Total Qty Font Size</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Total Qty Font Size</label>
                     <input type="number" value={section.data.totalQtyFontSize || 13} onChange={(e) => updateSectionData(index, 'totalQtyFontSize', parseInt(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Service Charge Font Size</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Service Charge Font Size</label>
                     <input type="number" value={section.data.serviceChargeFontSize || 13} onChange={(e) => updateSectionData(index, 'serviceChargeFontSize', parseInt(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
                   </div>
                 </div>
@@ -408,13 +408,13 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
             )}
             {section.type === 'totalSummary' && (
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Round Off Font Size</label>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Round Off Font Size</label>
                 <input type="number" value={section.data.roundOffFontSize || 11} onChange={(e) => updateSectionData(index, 'roundOffFontSize', parseInt(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
               </div>
             )}
             {section.type === 'footer' && (
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>Footer Message</label>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Footer Message</label>
                 <textarea value={section.data.text || ''} onChange={(e) => updateSectionData(index, 'text', e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', minHeight: '60px' }} />
               </div>
             )}
@@ -481,7 +481,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                   borderBottom: editingTemplate.global?.separatorChar === '.' ? '2px dotted #000' : '2px solid #000'
                 }}>
                   {section.data.showLogo && <div style={{ border: '1px solid #ccc', padding: '10px', display: 'inline-block', marginBottom: '5px' }}>[LOGO]</div>}
-                  <div style={{ whiteSpace: 'pre-wrap', fontSize: '14px', fontWeight: 'bold' }}>{section.data.text}</div>
+                  <div style={{ whiteSpace: 'pre-wrap', fontSize: '14px', fontWeight: '500' }}>{section.data.text}</div>
                   {section.data.address && <div style={{ fontSize: '13px', fontWeight: 'normal', whiteSpace: 'pre-wrap', marginTop: '4px' }}>{section.data.address}</div>}
                   {section.data.showGst && section.data.gstNumber && <div style={{ fontSize: '12px', marginTop: '4px' }}>GSTIN: {section.data.gstNumber}</div>}
                 </div>
@@ -512,15 +512,15 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                           <div style={{ marginBottom: '2px' }}>{mockOrder.time}</div>
                         </>
                       )}
-                      {section.data.showBillNo && <div style={{ fontWeight: 'bold' }}>KOT - 4021</div>}
-                      <div style={{ fontWeight: '900', marginTop: '2px' }}>Dine In</div>
-                      <div style={{ fontWeight: '900' }}>Table No: T-12</div>
+                      {section.data.showBillNo && <div style={{ fontWeight: '500' }}>KOT - 4021</div>}
+                      <div style={{ fontWeight: '600', marginTop: '2px' }}>Dine In</div>
+                      <div style={{ fontWeight: '600' }}>Table No: T-12</div>
                     </div>
                   ) : (
                     <>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
                         {section.data.showDateTime ? <span>Date: {mockOrder.date}</span> : <span />}
-                        {(section.data.showTableNo || section.data.showOrderType) && <span style={{ fontWeight: '900' }}>{mockOrder.type}: {mockOrder.table}</span>}
+                        {(section.data.showTableNo || section.data.showOrderType) && <span style={{ fontWeight: '600' }}>{mockOrder.type}: {mockOrder.table}</span>}
                       </div>
                       {section.data.showDateTime && <div style={{ marginBottom: '2px' }}>{mockOrder.time}</div>}
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -644,7 +644,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                     <span style={{ flex: 1, textAlign: 'right', paddingRight: '4px' }}>Round off</span>
                     <span style={{ width: `${colTotalW}px`, textAlign: 'right' }}>+0.00</span>
                   </div>
-                  <div style={{ display: 'flex', fontWeight: '900', fontSize: `${section.style.fontSize}px`, whiteSpace: 'nowrap' }}>
+                  <div style={{ display: 'flex', fontWeight: '600', fontSize: `${section.style.fontSize}px`, whiteSpace: 'nowrap' }}>
                     <span style={{ flex: 1, textAlign: 'right', paddingRight: '4px' }}>Grand Total</span>
                     <span style={{ width: `${colTotalW}px`, textAlign: 'right' }}>₹{mockOrder.total.toFixed(2)}</span>
                   </div>
@@ -682,7 +682,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
               key={type}
               onClick={() => handleTypeChange(type)}
               style={{
-                padding: '10px 20px', borderRadius: '12px', fontSize: '13px', fontWeight: '800', cursor: 'pointer', border: 'none',
+                padding: '10px 20px', borderRadius: '12px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', border: 'none',
                 background: activeType === type ? '#94161c' : '#f1f5f9',
                 color: activeType === type ? 'white' : '#64748b',
                 textTransform: 'uppercase'
@@ -693,7 +693,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
           ))}
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button onClick={saveTemplate} style={{ padding: '10px 20px', borderRadius: '10px', background: '#10b981', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button onClick={saveTemplate} style={{ padding: '10px 20px', borderRadius: '10px', background: '#10b981', color: 'white', fontWeight: '600', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Save size={16} /> Save Template
           </button>
           <button onClick={() => { 
@@ -706,7 +706,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
             }
             onSaveSettings({ ...settings, printTemplates: newTemplates }); 
             showNotification("POS Settings Saved Successfully!"); 
-          }} style={{ padding: '10px 20px', borderRadius: '10px', background: '#1e293b', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          }} style={{ padding: '10px 20px', borderRadius: '10px', background: '#1e293b', color: 'white', fontWeight: '600', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <CheckCircle size={16} /> Done
           </button>
         </div>
@@ -730,7 +730,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
           animation: 'slideUp 0.3s ease-out'
         }}>
           <CheckCircle size={18} />
-          <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{notification.message}</span>
+          <span style={{ fontWeight: '500', fontSize: '14px' }}>{notification.message}</span>
         </div>
       )}
       <style>{`
@@ -747,7 +747,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
             
             {/* Template Selector */}
             <div style={{ padding: '24px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Current Template</label>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Current Template</label>
               <select value={activeTemplateId || ''} onChange={handleTemplateChange} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '600', marginBottom: '12px' }}>
                 {templates.filter(t => t.type === activeType).map(t => (
                   <option key={t.id} value={t.id}>{t.name} {t.isDefault ? '(Default)' : ''} {t.isBuiltIn ? '(Built-in)' : ''}</option>
@@ -768,16 +768,16 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
 
             {/* Settings Tabs */}
             <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', flexShrink: 0 }}>
-              <button onClick={() => setActiveTab('sections')} style={{ flex: 1, padding: '16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'sections' ? '2px solid #94161c' : '2px solid transparent', color: activeTab === 'sections' ? '#94161c' : '#64748b', fontWeight: 'bold', cursor: 'pointer' }}>Sections</button>
-              <button onClick={() => setActiveTab('global')} style={{ flex: 1, padding: '16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'global' ? '2px solid #94161c' : '2px solid transparent', color: activeTab === 'global' ? '#94161c' : '#64748b', fontWeight: 'bold', cursor: 'pointer' }}>Global Layout</button>
+              <button onClick={() => setActiveTab('sections')} style={{ flex: 1, padding: '16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'sections' ? '2px solid #94161c' : '2px solid transparent', color: activeTab === 'sections' ? '#94161c' : '#64748b', fontWeight: '600', cursor: 'pointer' }}>Sections</button>
+              <button onClick={() => setActiveTab('global')} style={{ flex: 1, padding: '16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'global' ? '2px solid #94161c' : '2px solid transparent', color: activeTab === 'global' ? '#94161c' : '#64748b', fontWeight: '600', cursor: 'pointer' }}>Global Layout</button>
             </div>
 
             {activeTab === 'global' && (
               <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }} className="no-scrollbar">
-                <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Settings2 size={16}/> Global Spacing & Layout</h3>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Settings2 size={16}/> Global Spacing & Layout</h3>
                 
                 <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#475569', marginBottom: '12px' }}>Outer Margins (Print lines)</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '12px' }}>Outer Margins (Print lines)</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
                       <label style={{ fontSize: '11px', color: '#64748b' }}>Top Margin</label>
@@ -799,7 +799,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
                 </div>
 
                 <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#475569', marginBottom: '12px' }}>Typography & Spacing</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '12px' }}>Typography & Spacing</label>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <div>
                       <label style={{ fontSize: '11px', color: '#64748b' }}>Section Spacing (Lines)</label>
@@ -837,10 +837,10 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
 
             {/* Layout Options */}
             <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
-               <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#475569', marginBottom: '12px' }}>Paper Width</label>
+               <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '12px' }}>Paper Width</label>
                <div style={{ display: 'flex', gap: '12px' }}>
-                 <button onClick={() => setEditingTemplate({...editingTemplate, paperWidth: 80})} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '2px solid', borderColor: editingTemplate.paperWidth === 80 ? '#94161c' : '#e2e8f0', background: editingTemplate.paperWidth === 80 ? '#fdf2f2' : 'white', color: editingTemplate.paperWidth === 80 ? '#94161c' : '#64748b', fontWeight: 'bold', cursor: 'pointer' }}>80 mm</button>
-                 <button onClick={() => setEditingTemplate({...editingTemplate, paperWidth: 58})} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '2px solid', borderColor: editingTemplate.paperWidth === 58 ? '#94161c' : '#e2e8f0', background: editingTemplate.paperWidth === 58 ? '#fdf2f2' : 'white', color: editingTemplate.paperWidth === 58 ? '#94161c' : '#64748b', fontWeight: 'bold', cursor: 'pointer' }}>58 mm</button>
+                 <button onClick={() => setEditingTemplate({...editingTemplate, paperWidth: 80})} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '2px solid', borderColor: editingTemplate.paperWidth === 80 ? '#94161c' : '#e2e8f0', background: editingTemplate.paperWidth === 80 ? '#fdf2f2' : 'white', color: editingTemplate.paperWidth === 80 ? '#94161c' : '#64748b', fontWeight: '600', cursor: 'pointer' }}>80 mm</button>
+                 <button onClick={() => setEditingTemplate({...editingTemplate, paperWidth: 58})} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '2px solid', borderColor: editingTemplate.paperWidth === 58 ? '#94161c' : '#e2e8f0', background: editingTemplate.paperWidth === 58 ? '#fdf2f2' : 'white', color: editingTemplate.paperWidth === 58 ? '#94161c' : '#64748b', fontWeight: '600', cursor: 'pointer' }}>58 mm</button>
                </div>
             </div>
 
@@ -850,7 +850,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
             {/* Section Controls */}
             {activeTab === 'sections' && (
               <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }} className="no-scrollbar">
-                <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Layout size={16}/> Section Blocks</h3>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Layout size={16}/> Section Blocks</h3>
                 {editingTemplate.sections.sort((a,b) => a.order - b.order).map((section, index) => renderSectionControls(section, index))}
               </div>
             )}
@@ -858,7 +858,7 @@ const BillDesigner = ({ settings, onSaveSettings }) => {
 
           {/* Right Column: Live Preview */}
           <div style={{ flex: 1, background: '#f1f5f9', display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto', padding: '40px 0' }} className="no-scrollbar">
-             <div style={{ background: '#1e293b', color: 'white', padding: '6px 16px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+             <div style={{ background: '#1e293b', color: 'white', padding: '6px 16px', borderRadius: '20px', fontSize: '11px', fontWeight: '500', letterSpacing: '1px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                 <Eye size={14}/> LIVE PREVIEW
              </div>
              {renderLivePreview()}

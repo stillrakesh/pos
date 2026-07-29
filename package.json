@@ -31,6 +31,7 @@
       "data/**/*",
       "public/**/*",
       "frontend/captain/dist/**/*",
+      "frontend/kitchen/dist/**/*",
       "package.json",
       "scripts/copy-node.js",
       "bundled-node-mac"

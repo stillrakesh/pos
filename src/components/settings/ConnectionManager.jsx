@@ -48,12 +48,12 @@ const ConnectionManager = ({ backendUrl, isConnected, onUpdate, onRestore }) => 
       {/* 1. Status Overview */}
       <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '16px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#1e293b' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px', color: '#1e293b' }}>
              <Wifi size={20} color={isConnected ? '#10b981' : '#ef4444'} /> Backend Connection Status
           </h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: isConnected ? '#10b981' : '#ef4444' }}></div>
-            <span style={{ fontSize: '12px', fontWeight: '900', color: isConnected ? '#10b981' : '#ef4444' }}>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: isConnected ? '#10b981' : '#ef4444' }}>
               {isConnected ? 'STABLE' : 'OFFLINE'}
             </span>
           </div>
@@ -61,11 +61,11 @@ const ConnectionManager = ({ backendUrl, isConnected, onUpdate, onRestore }) => 
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
           <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>Current Endpoint</div>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>Current Endpoint</div>
             <div style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b', wordBreak: 'break-all' }}>{backendUrl}</div>
           </div>
           <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>Local Network IP</div>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>Local Network IP</div>
             <div style={{ fontSize: '14px', fontWeight: '700', color: '#0369a1' }}>{localIp}</div>
           </div>
         </div>
@@ -82,10 +82,10 @@ const ConnectionManager = ({ backendUrl, isConnected, onUpdate, onRestore }) => 
 
       {/* 2. Configuration Panel */}
       <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', marginBottom: '4px' }}>Update Connection</h3>
+        <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1e293b', marginBottom: '4px' }}>Update Connection</h3>
         
         <div>
-          <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px' }}>Backend Server URL</label>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px' }}>Backend Server URL</label>
           <div style={{ display: 'flex', gap: '12px' }}>
             <input 
               type="text"
@@ -112,7 +112,7 @@ const ConnectionManager = ({ backendUrl, isConnected, onUpdate, onRestore }) => 
                 border: '1px solid #e2e8f0',
                 background: 'white',
                 color: '#475569',
-                fontWeight: '800',
+                fontWeight: '600',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -129,7 +129,7 @@ const ConnectionManager = ({ backendUrl, isConnected, onUpdate, onRestore }) => 
                 border: 'none',
                 background: '#94161c',
                 color: 'white',
-                fontWeight: '800',
+                fontWeight: '600',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -156,12 +156,12 @@ const ConnectionManager = ({ backendUrl, isConnected, onUpdate, onRestore }) => 
       {/* 3. Maintenance */}
       <div style={{ background: '#fff', padding: '24px 32px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>Sync Tables & Menu</h4>
+          <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>Sync Tables & Menu</h4>
           <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>Restore all data from the connected backend system.</p>
         </div>
         <button 
           onClick={onRestore} 
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: '#f1f5f9', color: '#475569', fontWeight: '800', border: '1px solid #e2e8f0', borderRadius: '12px', cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: '#f1f5f9', color: '#475569', fontWeight: '600', border: '1px solid #e2e8f0', borderRadius: '12px', cursor: 'pointer' }}
         >
           <RefreshCw size={16} /> Restore
         </button>

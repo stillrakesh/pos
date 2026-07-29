@@ -460,7 +460,7 @@ export default function App() {
           <ChefHat size={28} color="#fff" />
         </div>
         <RefreshCw size={24} color="#821a1d" style={{ animation: 'spin 1s linear infinite' }} />
-        <span style={{ fontSize: '14px', fontWeight: 800, color: '#64748b', letterSpacing: '0.5px' }}>Loading Kitchen...</span>
+        <span style={{ fontSize: '14px', fontWeight: '600', color: '#64748b', letterSpacing: '0.5px' }}>Loading Kitchen...</span>
       </div>
     );
   }
@@ -504,7 +504,7 @@ export default function App() {
               background: connected ? '#4ade80' : '#f87171',
               boxShadow: connected ? '0 0 6px #4ade80' : '0 0 6px #f87171',
             }} />
-            <span style={{ fontSize: '10px', color: connected ? '#86efac' : '#fca5a5', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <span style={{ fontSize: '10px', color: connected ? '#86efac' : '#fca5a5', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               {connected ? 'Live' : 'Offline'}
             </span>
           </div>
@@ -534,12 +534,12 @@ export default function App() {
         {/* Date & time banner */}
         <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: '12px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>{dateStr}</div>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>{dateStr}</div>
             <div style={{ fontSize: '24px', fontWeight: 950, color: '#0f172a', letterSpacing: '-1px', lineHeight: 1.1 }}>{timeStr}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Kitchen Status</div>
-            <div style={{ fontSize: '13px', fontWeight: 900, color: connected ? '#16a34a' : '#dc2626', marginTop: '2px' }}>
+            <div style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Kitchen Status</div>
+            <div style={{ fontSize: '13px', fontWeight: '600', color: connected ? '#16a34a' : '#dc2626', marginTop: '2px' }}>
               {connected ? '● Online' : '● Offline'}
             </div>
           </div>
@@ -548,25 +548,25 @@ export default function App() {
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '14px 16px', flexShrink: 0 }}>
           <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '14px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-            <div style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Active Orders</div>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Active Orders</div>
             <div style={{ fontSize: '28px', fontWeight: 950, color: '#0f172a', marginTop: '4px', lineHeight: 1 }}>{totalActive}</div>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: '#821a1d', marginTop: '4px' }}>In Queue</div>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: '#821a1d', marginTop: '4px' }}>In Queue</div>
           </div>
           <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '14px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-            <div style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Ready</div>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Ready</div>
             <div style={{ fontSize: '28px', fontWeight: 950, color: '#0f172a', marginTop: '4px', lineHeight: 1 }}>{readyCount}</div>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: '#16a34a', marginTop: '4px' }}>For Serving</div>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: '#16a34a', marginTop: '4px' }}>For Serving</div>
           </div>
         </div>
 
         {/* Station Cards */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '2px 16px 32px', display: 'flex', flexDirection: 'column', gap: '10px' }} className="hide-scrollbar">
-          <div style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px', paddingLeft: '4px', marginBottom: '2px' }}>Select Station</div>
+          <div style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px', paddingLeft: '4px', marginBottom: '2px' }}>Select Station</div>
 
           {stations.length === 0 && (
             <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
               <Flame size={40} style={{ opacity: 0.2, marginBottom: '12px' }} />
-              <div style={{ fontSize: '14px', fontWeight: 800, color: '#64748b' }}>No stations configured</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#64748b' }}>No stations configured</div>
               <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>Add printer stations in POS settings</div>
             </div>
           )}
@@ -610,7 +610,7 @@ export default function App() {
                 {count > 0 && (
                   <div style={{
                     background: station.color, color: '#fff',
-                    fontSize: '13px', fontWeight: 900,
+                    fontSize: '13px', fontWeight: '600',
                     padding: '5px 12px', borderRadius: '10px', flexShrink: 0,
                   }}>{count}</div>
                 )}
@@ -703,7 +703,7 @@ export default function App() {
                   background: selectedStation.color || '#821a1d',
                   color: '#fff',
                   fontSize: '11px',
-                  fontWeight: 900,
+                  fontWeight: '600',
                   padding: '2px 7px',
                   borderRadius: '6px',
                   lineHeight: 1.2,
@@ -723,7 +723,7 @@ export default function App() {
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', color: '#94a3b8' }}
               >
                 <UtensilsCrossed size={44} style={{ marginBottom: '14px', opacity: 0.2 }} />
-                <div style={{ fontSize: '15px', fontWeight: 800, color: '#64748b' }}>No active orders</div>
+                <div style={{ fontSize: '15px', fontWeight: '600', color: '#64748b' }}>No active orders</div>
                 <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>All caught up! 🎉</div>
               </motion.div>
             ) : (
@@ -756,7 +756,7 @@ export default function App() {
                             color: '#fff',
                             padding: '7px 18px',
                             fontSize: '11px',
-                            fontWeight: 900,
+                            fontWeight: '600',
                             letterSpacing: '1.5px',
                             textTransform: 'uppercase',
                             display: 'flex',
@@ -784,10 +784,10 @@ export default function App() {
                           borderRadius: isModified ? '0' : '20px 20px 0 0',
                         }}>
                           <div>
-                            <div style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                            <div style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>
                               TABLE {group.table_number}
                             </div>
-                            <div style={{ fontSize: '13px', fontWeight: 900, color: '#0f172a', marginTop: '2px' }}>
+                            <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a', marginTop: '2px' }}>
                               KOTs: {group.kotIds.map(id => `#${String(id).padStart(4, '0')}`).join(', ')}
                             </div>
                           </div>
@@ -817,13 +817,13 @@ export default function App() {
                                 }}>
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                      <span style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+                                      <span style={{ fontSize: '15px', fontWeight: '600', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
                                       {isNew && (
                                         <span style={{
                                           background: '#2563eb',
                                           color: '#fff',
                                           fontSize: '9px',
-                                          fontWeight: 900,
+                                          fontWeight: '600',
                                           padding: '2px 6px',
                                           borderRadius: '6px',
                                           letterSpacing: '0.5px',
@@ -883,7 +883,7 @@ export default function App() {
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', color: '#94a3b8' }}
               >
                 <ConciergeBell size={44} style={{ marginBottom: '14px', opacity: 0.2 }} />
-                <div style={{ fontSize: '15px', fontWeight: 800, color: '#64748b' }}>No items ready</div>
+                <div style={{ fontSize: '15px', fontWeight: '600', color: '#64748b' }}>No items ready</div>
                 <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>Ready orders will appear here</div>
               </motion.div>
             ) : (
@@ -914,7 +914,7 @@ export default function App() {
                         borderRadius: '20px 20px 0 0',
                       }}>
                         <div>
-                          <div style={{ fontSize: '10px', fontWeight: 900, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                          <div style={{ fontSize: '10px', fontWeight: '600', color: '#16a34a', textTransform: 'uppercase', letterSpacing: '1px' }}>
                             DELIVER TO
                           </div>
                           <div style={{ fontSize: '16px', fontWeight: 950, color: '#0f172a', marginTop: '2px' }}>
@@ -929,13 +929,13 @@ export default function App() {
                         {group.items.map((item, idx) => (
                           <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
                             <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>{item.name}</div>
+                              <div style={{ fontSize: '14px', fontWeight: '500', color: '#0f172a' }}>{item.name}</div>
                               <div style={{ fontSize: '10px', fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', marginTop: '1px' }}>{getCategoryName(item.category)}</div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                               <div style={{
                                 background: '#f0fdf4', border: '1px solid #86efac',
-                                color: '#166534', fontWeight: 900, fontSize: '13px',
+                                color: '#166534', fontWeight: '600', fontSize: '13px',
                                 padding: '3px 10px', borderRadius: '8px',
                                 minWidth: '32px', textAlign: 'center',
                               }}>
@@ -979,7 +979,7 @@ export default function App() {
           {allTickets.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', color: '#94a3b8' }}>
               <History size={44} style={{ marginBottom: '14px', opacity: 0.2 }} />
-              <div style={{ fontSize: '15px', fontWeight: 800, color: '#64748b' }}>No served orders today</div>
+              <div style={{ fontSize: '15px', fontWeight: '600', color: '#64748b' }}>No served orders today</div>
               <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>Completed orders will appear here</div>
             </div>
           ) : (
@@ -999,7 +999,7 @@ export default function App() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <div>
-                      <span style={{ fontSize: '14px', fontWeight: 900, color: '#0f172a' }}>Table {ticket.table_number}</span>
+                      <span style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>Table {ticket.table_number}</span>
                       <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '8px' }}>KOT #{String(ticket.id).padStart(4, '0')}</span>
                     </div>
                     <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8' }}>

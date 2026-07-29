@@ -138,7 +138,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
         <span style={{
           color: '#fff',
           fontSize: '16px',
-          fontWeight: 900,
+          fontWeight: '600',
           letterSpacing: '2px',
           textTransform: 'uppercase' as const,
           transform: `translateX(${Math.max(-10 + swipePercent * 10, 0)}px)`,

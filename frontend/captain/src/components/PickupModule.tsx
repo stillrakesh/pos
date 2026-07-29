@@ -103,7 +103,7 @@ export const PickupModule: React.FC<PickupModuleProps> = ({ pickupOrders, menuIt
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button onClick={() => setView('dashboard')} style={{ color: '#fff', background: 'rgba(255,255,255,0.15)', padding: '8px', borderRadius: '10px', border: 'none' }}><ChevronLeft size={24} /></button>
             <div>
-              <h1 style={{ fontSize: '18px', fontWeight: 900, margin: 0 }}>New Pickup</h1>
+              <h1 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>New Pickup</h1>
               <p style={{ fontSize: '11px', fontWeight: 700, margin: 0, opacity: 0.8 }}>Add items & customer info</p>
             </div>
           </div>
@@ -118,7 +118,7 @@ export const PickupModule: React.FC<PickupModuleProps> = ({ pickupOrders, menuIt
           </div>
           <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }} className="hide-scrollbar">
             {categories.map(c => (
-              <button key={c} onClick={() => setCategory(c)} style={{ padding: '8px 18px', borderRadius: '25px', fontSize: '13px', fontWeight: 800, whiteSpace: 'nowrap', background: category === c ? '#fbbf24' : '#f1f5f9', color: category === c ? '#000' : '#64748b', border: category === c ? '2px solid #b45309' : 'none', transition: 'all 0.2s' }}>{c}</button>
+              <button key={c} onClick={() => setCategory(c)} style={{ padding: '8px 18px', borderRadius: '25px', fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap', background: category === c ? '#fbbf24' : '#f1f5f9', color: category === c ? '#000' : '#64748b', border: category === c ? '2px solid #b45309' : 'none', transition: 'all 0.2s' }}>{c}</button>
             ))}
           </div>
         </div>
@@ -134,7 +134,7 @@ export const PickupModule: React.FC<PickupModuleProps> = ({ pickupOrders, menuIt
                   <div style={{ position: 'absolute', left: 0, top: '16px', bottom: '16px', width: '4px', background: item.isVeg ? '#22c55e' : '#ef4444', borderRadius: '0 4px 4px 0' }} />
                   {qty > 0 && <div style={{ position: 'absolute', top: '8px', right: '8px', background: '#821a1d', color: '#fff', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 950, boxShadow: '0 4px 10px rgba(130,26,29,0.3)' }}>{qty}</div>}
                   <div style={{ paddingLeft: '8px' }}>
-                    <p style={{ fontSize: '14px', fontWeight: 800, lineHeight: 1.2, color: '#1e293b', marginBottom: '2px' }}>{item.name}</p>
+                    <p style={{ fontSize: '14px', fontWeight: '600', lineHeight: 1.2, color: '#1e293b', marginBottom: '2px' }}>{item.name}</p>
                     <p style={{ fontSize: '16px', fontWeight: 950, color: '#821a1d' }}>₹{item.price}</p>
                   </div>
                 </motion.div>
@@ -151,11 +151,11 @@ export const PickupModule: React.FC<PickupModuleProps> = ({ pickupOrders, menuIt
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ background: 'rgba(255,255,255,0.2)', padding: '8px', borderRadius: '12px' }}><ShoppingBag size={20} /></div>
                 <div style={{ textAlign: 'left' }}>
-                  <span style={{ display: 'block', fontSize: '12px', fontWeight: 800, opacity: 0.8 }}>{cart.length} ITEMS SELECTED</span>
+                  <span style={{ display: 'block', fontSize: '12px', fontWeight: '600', opacity: 0.8 }}>{cart.length} ITEMS SELECTED</span>
                   <span style={{ fontSize: '18px', fontWeight: 950 }}>VIEW CHECKOUT</span>
                 </div>
               </div>
-              <span style={{ fontSize: '20px', fontWeight: 900 }}>₹{total}</span>
+              <span style={{ fontSize: '20px', fontWeight: '600' }}>₹{total}</span>
             </motion.button>
           </div>
         )}
@@ -167,7 +167,7 @@ export const PickupModule: React.FC<PickupModuleProps> = ({ pickupOrders, menuIt
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCheckout(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 100, backdropFilter: 'blur(6px)' }} />
               <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, maxHeight: '95vh', zIndex: 110, background: '#fff', borderTopLeftRadius: '32px', borderTopRightRadius: '32px', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div><h2 style={{ fontSize: '20px', fontWeight: 900, color: '#1e293b' }}>Order Details</h2><p style={{ fontSize: '13px', color: '#64748b', fontWeight: 700 }}>Pickup Details</p></div>
+                  <div><h2 style={{ fontSize: '20px', fontWeight: '600', color: '#1e293b' }}>Order Details</h2><p style={{ fontSize: '13px', color: '#64748b', fontWeight: 700 }}>Pickup Details</p></div>
                   <button onClick={() => setShowCheckout(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={20} /></button>
                 </div>
                 
@@ -191,7 +191,7 @@ export const PickupModule: React.FC<PickupModuleProps> = ({ pickupOrders, menuIt
                     </div>
 
                     <div style={{ marginTop: '8px' }}>
-                      <label style={{ fontSize: '12px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '10px', display: 'block', paddingLeft: '4px' }}>Payment Method</label>
+                      <label style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', marginBottom: '10px', display: 'block', paddingLeft: '4px' }}>Payment Method</label>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                         {['Cash', 'UPI', 'Card'].map(m => (
                           <button 
@@ -204,7 +204,7 @@ export const PickupModule: React.FC<PickupModuleProps> = ({ pickupOrders, menuIt
                               borderColor: paymentMethod === m ? '#821a1d' : '#e2e8f0', 
                               background: paymentMethod === m ? '#fef2f2' : '#fff', 
                               color: paymentMethod === m ? '#821a1d' : '#64748b', 
-                              fontWeight: 900, 
+                              fontWeight: '600', 
                               fontSize: '13px',
                               transition: 'all 0.2s'
                             }}
@@ -216,15 +216,15 @@ export const PickupModule: React.FC<PickupModuleProps> = ({ pickupOrders, menuIt
                     </div>
                   </div>
 
-                  <h3 style={{ fontSize: '14px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '12px' }}>Order Summary</h3>
+                  <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', marginBottom: '12px' }}>Order Summary</h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {cart.map(item => (
                       <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                        <div><p style={{ fontSize: '15px', fontWeight: 800, margin: 0 }}>{item.name}</p><p style={{ fontSize: '14px', fontWeight: 900, color: '#821a1d', margin: 0 }}>₹{item.price * item.quantity}</p></div>
+                        <div><p style={{ fontSize: '15px', fontWeight: '600', margin: 0 }}>{item.name}</p><p style={{ fontSize: '14px', fontWeight: '600', color: '#821a1d', margin: 0 }}>₹{item.price * item.quantity}</p></div>
                         <div style={{ display: 'flex', alignItems: 'center', background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                          <button onClick={() => dec(item.id)} style={{ width: '36px', height: '36px', border: 'none', background: 'none', fontWeight: 900 }}>−</button>
+                          <button onClick={() => dec(item.id)} style={{ width: '36px', height: '36px', border: 'none', background: 'none', fontWeight: '600' }}>−</button>
                           <span style={{ width: '36px', textAlign: 'center', fontWeight: 950 }}>{item.quantity}</span>
-                          <button onClick={() => add(item)} style={{ width: '36px', height: '36px', border: 'none', background: 'none', fontWeight: 900 }}>+</button>
+                          <button onClick={() => add(item)} style={{ width: '36px', height: '36px', border: 'none', background: 'none', fontWeight: '600' }}>+</button>
                         </div>
                       </div>
                     ))}
@@ -234,7 +234,7 @@ export const PickupModule: React.FC<PickupModuleProps> = ({ pickupOrders, menuIt
                 <div style={{ padding: '24px', borderTop: '1px solid #f1f5f9' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}><span style={{ fontSize: '16px', fontWeight: 700, color: '#64748b' }}>Grand Total</span><span style={{ fontSize: '28px', fontWeight: 950, color: '#1e293b' }}>₹{total}</span></div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px' }}>
-                    <button onClick={() => { setCart([]); setShowCheckout(false); }} style={{ background: '#f1f5f9', borderRadius: '20px', border: 'none', padding: '18px', fontSize: '15px', fontWeight: 900, color: '#64748b' }}>CANCEL</button>
+                    <button onClick={() => { setCart([]); setShowCheckout(false); }} style={{ background: '#f1f5f9', borderRadius: '20px', border: 'none', padding: '18px', fontSize: '15px', fontWeight: '600', color: '#64748b' }}>CANCEL</button>
                     <button disabled={sending} onClick={handleSubmit} style={{ background: '#821a1d', color: '#fff', border: 'none', borderRadius: '20px', padding: '18px', fontSize: '16px', fontWeight: 950, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(130,26,29,0.3)' }}>
                       {sending ? 'PLACING...' : 'SEND TO POS'}<SendHorizontal size={20} />
                     </button>
@@ -268,11 +268,11 @@ export const PickupModule: React.FC<PickupModuleProps> = ({ pickupOrders, menuIt
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button onClick={onBack} style={{ color: '#fff', background: 'rgba(255,255,255,0.15)', padding: '8px', borderRadius: '10px', border: 'none' }}><ChevronLeft size={24} /></button>
           <div>
-            <h1 style={{ fontSize: '18px', fontWeight: 900, margin: 0, letterSpacing: '0.5px' }}>PICKUPS</h1>
+            <h1 style={{ fontSize: '18px', fontWeight: '600', margin: 0, letterSpacing: '0.5px' }}>PICKUPS</h1>
             <p style={{ fontSize: '11px', fontWeight: 700, margin: 0, opacity: 0.8 }}>Live sync with POS</p>
           </div>
         </div>
-        <button onClick={() => setView('create')} style={{ background: '#fff', color: '#821a1d', border: 'none', borderRadius: '12px', padding: '8px 16px', fontSize: '12px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+        <button onClick={() => setView('create')} style={{ background: '#fff', color: '#821a1d', border: 'none', borderRadius: '12px', padding: '8px 16px', fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
           <Plus size={16} strokeWidth={3} /> NEW ORDER
         </button>
       </header>
@@ -281,7 +281,7 @@ export const PickupModule: React.FC<PickupModuleProps> = ({ pickupOrders, menuIt
         {activePickups.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8' }}>
             <div style={{ width: '80px', height: '80px', background: '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', opacity: 0.5 }}><ShoppingBag size={40} /></div>
-            <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#64748b' }}>No Active Pickups</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#64748b' }}>No Active Pickups</h3>
             <p style={{ fontSize: '14px', fontWeight: 700, marginTop: '4px' }}>New orders will appear here</p>
           </div>
         ) : (
@@ -302,14 +302,14 @@ export const PickupModule: React.FC<PickupModuleProps> = ({ pickupOrders, menuIt
                   <div>
                     <h3 style={{ fontSize: '18px', fontWeight: 950, color: '#0f172a', margin: 0 }}>{order.customerName || order.name}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{order.id}</span>
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{order.id}</span>
                       <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#cbd5e1' }} />
-                      <span style={{ fontSize: '11px', fontWeight: 900, color: '#821a1d' }}>{itemCount} ITEMS</span>
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#821a1d' }}>{itemCount} ITEMS</span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
                     <div style={{ 
-                      padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em',
+                      padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em',
                       background: isPaid ? '#f0fdf4' : '#fffbeb', 
                       color: isPaid ? '#16a34a' : '#b45309',
                       border: `1px solid ${isPaid ? '#bbf7d0' : '#fde68a'}`
@@ -317,7 +317,7 @@ export const PickupModule: React.FC<PickupModuleProps> = ({ pickupOrders, menuIt
                       {isPaid ? '✓ PAID' : 'UNPAID'}
                     </div>
                     {order.paymentMethod && (
-                      <div style={{ padding: '3px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 800, background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0' }}>
+                      <div style={{ padding: '3px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '500', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0' }}>
                         {order.paymentMethod}
                       </div>
                     )}
@@ -327,12 +327,12 @@ export const PickupModule: React.FC<PickupModuleProps> = ({ pickupOrders, menuIt
                 {phoneNum && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: '#f8fafc', borderRadius: '14px', border: '1px solid #eef2f6', marginLeft: '10px' }}>
                     <Phone size={14} color="#821a1d" />
-                    <span style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>{phoneNum}</span>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>{phoneNum}</span>
                   </div>
                 )}
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: '10px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Total</div>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' }}>Total</div>
                   <span style={{ fontSize: '24px', fontWeight: 950, color: '#0f172a' }}>₹{orderTotal}</span>
                 </div>
               </motion.div>

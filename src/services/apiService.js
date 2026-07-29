@@ -234,7 +234,7 @@ export const apiService = {
   },
 
   async deleteOrder(id) {
-    return resilientFetch(`${BASE_URL}/orders/${id}`, {
+    return resilientFetch(`${BASE_URL}/orders/${encodeURIComponent(id)}`, {
       method: 'DELETE',
       headers
     });

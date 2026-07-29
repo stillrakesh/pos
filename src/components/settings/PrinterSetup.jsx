@@ -150,7 +150,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
 
   const titleStyle = { 
     fontSize: '18px', 
-    fontWeight: '900', 
+    fontWeight: '600', 
     color: '#0f172a',
     letterSpacing: '-0.02em'
   };
@@ -171,7 +171,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div>
-            <div style={{ fontWeight: '800', fontSize: '14px', color: isSaved ? '#065f46' : '#0f172a', transition: 'color 0.3s' }}>
+            <div style={{ fontWeight: '600', fontSize: '14px', color: isSaved ? '#065f46' : '#0f172a', transition: 'color 0.3s' }}>
               Printer Configuration
             </div>
             <div style={{ fontSize: '12px', color: isSaved ? '#047857' : '#64748b', fontWeight: '500', transition: 'color 0.3s' }}>
@@ -186,7 +186,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
               display: 'flex', alignItems: 'center', gap: '6px',
               background: '#10b981', color: 'white',
               padding: '6px 14px', borderRadius: '20px',
-              fontSize: '12px', fontWeight: '800',
+              fontSize: '12px', fontWeight: '600',
               boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
               animation: 'pulse 1.5s infinite'
             }}>
@@ -201,7 +201,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
               background: isSaved 
                 ? 'linear-gradient(135deg, #10b981, #059669)' 
                 : 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-              color: 'white', fontWeight: '800', fontSize: '14px', cursor: 'pointer',
+              color: 'white', fontWeight: '600', fontSize: '14px', cursor: 'pointer',
               boxShadow: isSaved 
                 ? '0 8px 20px rgba(16, 185, 129, 0.4)' 
                 : '0 8px 16px rgba(79, 70, 229, 0.3)',
@@ -246,7 +246,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
             transition: 'all 0.2s'
           }} onClick={() => toggleSetting('separateKotStations')}>
             <div>
-              <div style={{ fontWeight: '800', fontSize: '14px', color: '#1e293b' }}>Station-Wise KOT Printing</div>
+              <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Station-Wise KOT Printing</div>
               <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Enable this to print separate KOT slips per Station (Bar, Kitchen, etc.)</div>
             </div>
             <div style={{
@@ -292,7 +292,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
 
           <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: '12px', fontWeight: '800', color: '#475569', display: 'block', marginBottom: '6px' }}>PRINTER IP ADDRESS</label>
+              <label style={{ fontSize: '12px', fontWeight: '600', color: '#475569', display: 'block', marginBottom: '6px' }}>PRINTER IP ADDRESS</label>
               <input
                 id="printer-ip-input"
                 type="text"
@@ -305,7 +305,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
               />
             </div>
             <div style={{ width: '100px' }}>
-              <label style={{ fontSize: '12px', fontWeight: '800', color: '#475569', display: 'block', marginBottom: '6px' }}>PORT</label>
+              <label style={{ fontSize: '12px', fontWeight: '600', color: '#475569', display: 'block', marginBottom: '6px' }}>PORT</label>
               <input
                 id="printer-port-input"
                 type="number"
@@ -319,14 +319,14 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
             <button
               id="save-printer-ip-btn"
               onClick={handleSaveIp}
-              style={{ padding: '14px 24px', borderRadius: '16px', border: 'none', background: ipSaved ? '#16a34a' : '#0f172a', color: 'white', fontWeight: '900', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'background 0.3s', whiteSpace: 'nowrap' }}
+              style={{ padding: '14px 24px', borderRadius: '16px', border: 'none', background: ipSaved ? '#16a34a' : '#0f172a', color: 'white', fontWeight: '600', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'background 0.3s', whiteSpace: 'nowrap' }}
             >
               {ipSaved ? <><Check size={16} /> Saved!</> : <><Save size={16} /> Save IP</>}
             </button>
           </div>
 
           {printerIp && (
-            <div style={{ marginTop: '12px', padding: '10px 16px', borderRadius: '10px', background: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: '12px', fontWeight: '700', color: '#166534', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ marginTop: '12px', padding: '10px 16px', borderRadius: '10px', background: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: '12px', fontWeight: '500', color: '#166534', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Wifi size={14} /> Silent print will send ESC/POS bytes directly to <strong>{printerIp}:{printerPort}</strong> — no driver needed.
             </div>
           )}
@@ -356,7 +356,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
             {connected ? <Wifi size={24} color="#10b981" /> : <WifiOff size={24} color="#ef4444" />}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: '900', fontSize: '16px', color: connected ? '#065f46' : '#991b1b' }}>
+            <div style={{ fontWeight: '600', fontSize: '16px', color: connected ? '#065f46' : '#991b1b' }}>
               {connected ? 'Electron Print API Active' : 'Browser Mode Active'}
             </div>
             <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>
@@ -373,12 +373,12 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
         <div style={cardStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
             <div>
-              <span style={{ fontSize: '12px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Detected Printers</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Detected Printers</span>
               <div style={{ fontSize: '13px', color: '#475569', fontWeight: '700', marginTop: '4px' }}>
                 {qzPrinters.length > 0 ? `${qzPrinters.length} Printers Found` : 'Scan for local USB/Network printers'}
               </div>
             </div>
-            <button onClick={handleDetect} disabled={detecting} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '16px', border: '1px solid #e2e8f0', background: detecting ? '#f8fafc' : 'white', color: '#334155', cursor: detecting ? 'wait' : 'pointer', fontWeight: '800', fontSize: '13px' }}>
+            <button onClick={handleDetect} disabled={detecting} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '16px', border: '1px solid #e2e8f0', background: detecting ? '#f8fafc' : 'white', color: '#334155', cursor: detecting ? 'wait' : 'pointer', fontWeight: '600', fontSize: '13px' }}>
               <RefreshCw size={16} className={detecting ? 'animate-spin' : ''} />
               {detecting ? 'Scanning...' : 'Detect'}
             </button>
@@ -422,15 +422,15 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
         <div style={{ ...cardStyle, border: '1px dashed #e2e8f0', background: 'rgba(255,255,255,0.4)' }}>
            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ fontWeight: '900', fontSize: '14px', color: '#1e293b' }}>Troubleshooting</div>
+                <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Troubleshooting</div>
                 <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Send a formatting test to <strong>{selectedName}</strong></div>
               </div>
-              <button onClick={handleTestPrint} style={{ padding: '12px 24px', borderRadius: '16px', border: 'none', background: '#0f172a', color: 'white', fontWeight: '900', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button onClick={handleTestPrint} style={{ padding: '12px 24px', borderRadius: '16px', border: 'none', background: '#0f172a', color: 'white', fontWeight: '600', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <TestTube size={16} /> Test Formatting
               </button>
            </div>
            {testResult && (
-             <div style={{ marginTop: '16px', padding: '12px', borderRadius: '12px', background: testResult.success ? '#f0fdf4' : '#fef2f2', color: testResult.success ? '#166534' : '#991b1b', fontSize: '12px', fontWeight: '700', border: '1px solid currentColor' }}>
+             <div style={{ marginTop: '16px', padding: '12px', borderRadius: '12px', background: testResult.success ? '#f0fdf4' : '#fef2f2', color: testResult.success ? '#166534' : '#991b1b', fontSize: '12px', fontWeight: '500', border: '1px solid currentColor' }}>
                {testResult.message}
              </div>
            )}
@@ -442,13 +442,13 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
           onClick={() => {
             window.location.reload();
           }}
-          style={{ padding: '8px 16px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+          style={{ padding: '8px 16px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
         >
           DETECT PRINTERS & REFRESH BRIDGE
         </button>
       </div>
 
-      <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '11px', color: '#94a3b8', fontWeight: 'bold' }}>
+      <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>
         BRIDGE VERSION: 1.3 (PRO)
       </div>
     </div>
@@ -507,7 +507,7 @@ const KOTStationSettings = ({ settings, setSettings, categories = [] }) => {
           <LayoutGrid size={20} color="#94161c" />
         </div>
         <div>
-          <span style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>KOT Station Routing</span>
+          <span style={{ fontSize: '18px', fontWeight: '500', color: '#0f172a' }}>KOT Station Routing</span>
           <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginTop: '2px' }}>Route specific food & beverage categories to separate kitchen or bar thermal printers</div>
         </div>
       </div>
@@ -534,9 +534,9 @@ const KOTStationSettings = ({ settings, setSettings, categories = [] }) => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#94161c' }} />
-                 <div style={{ fontWeight: '800', fontSize: '15px', color: '#0f172a' }}>{station.name}</div>
+                 <div style={{ fontWeight: '600', fontSize: '15px', color: '#0f172a' }}>{station.name}</div>
               </div>
-              <button onClick={() => removeStation(station.id)} style={{ padding: '6px 12px', background: '#fff1f2', color: '#94161c', border: '1px solid #fecdd3', borderRadius: '8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}>
+              <button onClick={() => removeStation(station.id)} style={{ padding: '6px 12px', background: '#fff1f2', color: '#94161c', border: '1px solid #fecdd3', borderRadius: '8px', fontSize: '11px', fontWeight: '500', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}>
                 <Trash2 size={13} /> REMOVE
               </button>
             </div>
@@ -589,7 +589,7 @@ const KOTExclusionSettings = ({ settings, setSettings, categories = [] }) => {
           <WifiOff size={20} color="#c2410c" />
         </div>
         <div>
-          <span style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>KOT Printing Exclusions</span>
+          <span style={{ fontSize: '18px', fontWeight: '500', color: '#0f172a' }}>KOT Printing Exclusions</span>
           <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginTop: '2px' }}>Select categories that should NEVER be printed on KOT slips (e.g. Water, Soda, Packed Items)</div>
         </div>
       </div>
@@ -613,7 +613,7 @@ const KOTExclusionSettings = ({ settings, setSettings, categories = [] }) => {
             >
               {isExcluded ? <WifiOff size={15} color="#c2410c" /> : <Check size={15} style={{ opacity: 0.3 }} />} 
               {catName}
-              {isExcluded && <span style={{ fontSize: '10px', background: '#ffedd5', color: '#c2410c', padding: '2px 6px', borderRadius: '6px', fontWeight: '800' }}>EXCLUDED</span>}
+              {isExcluded && <span style={{ fontSize: '10px', background: '#ffedd5', color: '#c2410c', padding: '2px 6px', borderRadius: '6px', fontWeight: '500' }}>EXCLUDED</span>}
             </button>
           );
         })}

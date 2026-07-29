@@ -1,10 +1,31 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
-  LayoutGrid, Plus, Trash2, CheckSquare, Zap, RotateCcw, RefreshCw, Maximize2
+  LayoutGrid, Plus, Trash2, CheckSquare, Zap, RotateCcw, RefreshCw, Maximize2,
+  Lock, Unlock, RotateCw, Copy, Download, Upload, Eye, Sliders, Shield, Info,
+  Compass, Layers, Grid, Palette, ChevronRight
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 
-/* --- FLOOR PLAN SETUP VIEW --- */
+const COLOR_PALETTES = [
+  { name: 'Default', border: '#1e293b', bg: '#ffffff', fill: '#f5f3ff', tag: '#7c3aed' },
+  { name: 'VIP Emerald', border: '#047857', bg: '#ecfdf5', fill: '#d1fae5', tag: '#059669' },
+  { name: 'Amber Gold', border: '#b45309', bg: '#fffbeb', fill: '#fef3c7', tag: '#d97706' },
+  { name: 'Rose Red', border: '#be123c', bg: '#fff1f2', fill: '#ffe4e6', tag: '#e11d48' },
+  { name: 'Ocean Cyan', border: '#0e7490', bg: '#ecfeff', fill: '#cffaff', tag: '#0891b2' },
+  { name: 'Royal Indigo', border: '#4338ca', bg: '#eef2ff', fill: '#e0e7ff', tag: '#4f46e5' },
+];
+
+const ARCH_PROPS = [
+  { type: 'door', label: 'Entrance / Door', icon: '🚪', width: 90, height: 24, shape: 'rectangle', seats: 0 },
+  { type: 'bar', label: 'Bar Counter', icon: '🍹', width: 220, height: 60, shape: 'rectangle', seats: 0 },
+  { type: 'kitchen', label: 'Kitchen Pass', icon: '🍳', width: 160, height: 45, shape: 'rectangle', seats: 0 },
+  { type: 'restroom', label: 'Restroom', icon: '🚽', width: 80, height: 70, shape: 'square', seats: 0 },
+  { type: 'plant', label: 'Plant / Decor', icon: '🌴', width: 50, height: 50, shape: 'circle', seats: 0 },
+  { type: 'wall', label: 'Wall Divider', icon: '🧱', width: 180, height: 16, shape: 'rectangle', seats: 0 },
+  { type: 'stage', label: 'Stage / DJ', icon: '🎵', width: 200, height: 100, shape: 'rectangle', seats: 0 },
+];
+
+/* --- ADVANCED PRO FLOOR DESIGNER --- */
 const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables }) => {
   const [activeZone, setActiveZone] = useState(sections[0] || 'Main Floor');
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -14,6 +35,9 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
   const [gridSnap, setGridSnap] = useState(true);
   const [gridSize, setGridSize] = useState(15);
   const [snapToTables, setSnapToTables] = useState(true);
+  const [gridStyle, setGridStyle] = useState('dots'); // 'dots' | 'mesh' | 'clean'
+  const [showRulers, setShowRulers] = useState(true);
+
   const [newSectionName, setNewSectionName] = useState('');
   const [tableToDelete, setTableToDelete] = useState(null);
   const [draggingPos, setDraggingPos] = useState(null);
@@ -22,10 +46,10 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
   const [marquee, setMarquee] = useState(null);
   const [isMarqueeSelecting, setIsMarqueeSelecting] = useState(false);
 
-  // ── UNDO / REDO ──
+  // ── UNDO / REDO STACK ──
   const [undoStack, setUndoStack] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
-  const MAX_HISTORY = 30;
+  const MAX_HISTORY = 40;
 
   // ── TOAST NOTIFICATIONS ──
   const [toast, setToast] = useState(null);
@@ -44,7 +68,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
 
   const canvasRef = useRef(null);
 
-  // Push current table state onto undo stack
+  // Push state snapshot for undo
   const pushUndo = useCallback(() => {
     const snapshot = JSON.parse(JSON.stringify(tables));
     setUndoStack(prev => {
@@ -67,7 +91,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     setUndoStack(prev => prev.slice(0, -1));
     setTables(prevState);
     showToast('Undo', 'info');
-    prevState.forEach(t => apiService.patchTable(t.id, { pos: t.pos, seats: t.seats, shape: t.shape, scale: t.scale }).catch(() => {}));
+    prevState.forEach(t => apiService.patchTable(t.id, { pos: t.pos, seats: t.seats, shape: t.shape, scale: t.scale, rotation: t.rotation, isLocked: t.isLocked, colorTag: t.colorTag }).catch(() => {}));
   }, [undoStack, tables, setTables, showToast]);
 
   const performRedo = useCallback(() => {
@@ -82,7 +106,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     setRedoStack(prev => prev.slice(0, -1));
     setTables(nextState);
     showToast('Redo', 'info');
-    nextState.forEach(t => apiService.patchTable(t.id, { pos: t.pos, seats: t.seats, shape: t.shape, scale: t.scale }).catch(() => {}));
+    nextState.forEach(t => apiService.patchTable(t.id, { pos: t.pos, seats: t.seats, shape: t.shape, scale: t.scale, rotation: t.rotation, isLocked: t.isLocked, colorTag: t.colorTag }).catch(() => {}));
   }, [redoStack, tables, setTables, showToast]);
 
   // Auto-sync activeZone if sections change
@@ -98,27 +122,22 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
       const tag = e.target?.tagName?.toLowerCase();
       if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
 
-      // Ctrl+Z = Undo
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); performUndo(); return; }
-      // Ctrl+Y or Ctrl+Shift+Z = Redo
       if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey) || (e.key === 'Z'))) { e.preventDefault(); performRedo(); return; }
-      // Ctrl+A = Select all in zone
       if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
         e.preventDefault();
         setSelectedIds(new Set((tables || []).filter(t => t.type === activeZone).map(t => String(t.id))));
         showToast('All tables selected');
         return;
       }
-      // Ctrl+D = Duplicate selected
       if ((e.ctrlKey || e.metaKey) && e.key === 'd') { e.preventDefault(); duplicateSelected(); return; }
-      // Delete / Backspace = Delete selected
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') { e.preventDefault(); rotateSelected(45); return; }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'l') { e.preventDefault(); toggleLockSelected(); return; }
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedIds.size > 0) { e.preventDefault(); deleteSelectedTable(); }
         return;
       }
-      // Escape = Deselect
       if (e.key === 'Escape') { setSelectedIds(new Set()); return; }
-      // Arrow keys = Nudge
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && selectedIds.size > 0) {
         e.preventDefault();
         const step = e.shiftKey ? 1 : gridSize;
@@ -139,6 +158,21 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     return (tables || []).find(t => String(t.id) === String(firstId)) || null;
   }, [tables, selectedIds]);
 
+  const selectedTablesList = useMemo(() => {
+    return (tables || []).filter(t => selectedIds.has(String(t.id)));
+  }, [tables, selectedIds]);
+
+  // Zone analytics stats
+  const zoneStats = useMemo(() => {
+    const zoneT = (tables || []).filter(t => t.type === activeZone);
+    const totalSeats = zoneT.reduce((s, t) => s + (t.seats || 0), 0);
+    const roundCount = zoneT.filter(t => t.shape === 'circle').length;
+    const squareCount = zoneT.filter(t => t.shape === 'square').length;
+    const longCount = zoneT.filter(t => t.shape === 'rectangle').length;
+    const propCount = zoneT.filter(t => t.isProp).length;
+    return { count: zoneT.length - propCount, totalSeats, roundCount, squareCount, longCount, propCount };
+  }, [tables, activeZone]);
+
   const getTableDims = (table) => {
     const scale = table.scale || 1.0;
     let baseW = 90, baseH = 90;
@@ -151,12 +185,46 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
   const nudgeSelected = async (dx, dy) => {
     pushUndo();
     const updated = tables.map(t => {
-      if (!selectedIds.has(String(t.id)) || t.type !== activeZone) return t;
+      if (!selectedIds.has(String(t.id)) || t.type !== activeZone || t.isLocked) return t;
       return { ...t, pos: { x: Math.max(0, Math.min(1800, (t.pos?.x || 0) + dx)), y: Math.max(0, Math.min(1200, (t.pos?.y || 0) + dy)) } };
     });
     setTables(updated);
-    try { await Promise.all(updated.filter(t => selectedIds.has(String(t.id))).map(t => apiService.patchTable(t.id, { pos: t.pos }))); }
+    try { await Promise.all(updated.filter(t => selectedIds.has(String(t.id)) && !t.isLocked).map(t => apiService.patchTable(t.id, { pos: t.pos }))); }
     catch (err) { console.error('Nudge save failed:', err); }
+  };
+
+  // ── ROTATE SELECTED ──
+  const rotateSelected = async (angleDeg = 45) => {
+    if (selectedIds.size === 0) return;
+    pushUndo();
+    const updated = tables.map(t => {
+      if (!selectedIds.has(String(t.id))) return t;
+      const currentRot = t.rotation || 0;
+      const nextRot = (currentRot + angleDeg) % 360;
+      return { ...t, rotation: nextRot };
+    });
+    setTables(updated);
+    showToast(`Rotated ${selectedIds.size} item(s)`);
+    try {
+      await Promise.all(updated.filter(t => selectedIds.has(String(t.id))).map(t => apiService.patchTable(t.id, { rotation: t.rotation })));
+    } catch (err) { console.error('Rotate save failed:', err); }
+  };
+
+  // ── TOGGLE LOCK SELECTED ──
+  const toggleLockSelected = async () => {
+    if (selectedIds.size === 0) return;
+    pushUndo();
+    const allLocked = selectedTablesList.every(t => t.isLocked);
+    const nextLocked = !allLocked;
+    const updated = tables.map(t => {
+      if (!selectedIds.has(String(t.id))) return t;
+      return { ...t, isLocked: nextLocked };
+    });
+    setTables(updated);
+    showToast(nextLocked ? `Locked ${selectedIds.size} table(s)` : `Unlocked ${selectedIds.size} table(s)`);
+    try {
+      await Promise.all(updated.filter(t => selectedIds.has(String(t.id))).map(t => apiService.patchTable(t.id, { isLocked: nextLocked })));
+    } catch (err) { console.error('Lock save failed:', err); }
   };
 
   // ── DUPLICATE SELECTED ──
@@ -168,16 +236,16 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     for (const t of toDup) {
       let count = 1; let newName = `${t.name}-copy`;
       while (tables.some(tb => String(tb.name) === newName)) { count++; newName = `${t.name}-copy${count}`; }
-      const newTable = { name: newName, type: activeZone, status: 'vacant', pos: { x: (t.pos?.x || 0) + 30, y: (t.pos?.y || 0) + 30 }, seats: t.seats, shape: t.shape, scale: t.scale || 1.0, zoneLabel: '' };
+      const newTable = { name: newName, type: activeZone, status: 'vacant', pos: { x: (t.pos?.x || 0) + 30, y: (t.pos?.y || 0) + 30 }, seats: t.seats, shape: t.shape, scale: t.scale || 1.0, rotation: t.rotation || 0, colorTag: t.colorTag || 'default', zoneLabel: '' };
       try {
         const res = await apiService.createTable(newTable);
         if (res.success && res.data) { const added = res.data.find(tb => String(tb.name) === newName); if (added) newIds.add(String(added.id)); }
       } catch (err) { console.error('Duplicate failed:', err); }
     }
-    if (newIds.size > 0) { setSelectedIds(newIds); showToast(`Duplicated ${newIds.size} table(s)`); }
+    if (newIds.size > 0) { setSelectedIds(newIds); showToast(`Duplicated ${newIds.size} item(s)`); }
   };
 
-  // ── MOUSE DOWN on a table ── (FIXED: canvas-relative coords with zoom)
+  // ── MOUSE DOWN on table ──
   const handleTableMouseDown = (e, tableId) => {
     e.preventDefault();
     e.stopPropagation();
@@ -197,6 +265,8 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
       setSelectedIds(new Set([String(tableId)]));
     }
 
+    if (table.isLocked) return; // Prevent dragging locked tables
+
     const rect = canvasRef.current?.getBoundingClientRect();
     const scaleF = zoom / 100;
     const scrollLeft = canvasRef.current?.scrollLeft || 0;
@@ -208,7 +278,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     setDraggedTableId(tableId);
   };
 
-  // ── MOUSE DOWN on canvas (marquee or clear)
+  // ── MOUSE DOWN on canvas ──
   const handleCanvasMouseDown = (e) => {
     if (e.target !== e.currentTarget && !e.target.closest('[data-canvas-bg]')) return;
     setSelectedIds(new Set());
@@ -222,7 +292,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     setMarquee({ startX, startY, endX: startX, endY: startY });
   };
 
-  // ── MOUSE MOVE ── (FIXED: canvas-relative)
+  // ── MOUSE MOVE ──
   const handleCanvasMouseMove = (e) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     const scaleF = zoom / 100;
@@ -239,7 +309,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     e.preventDefault();
 
     const table = (tables || []).find(t => String(t.id) === String(draggedTableId));
-    if (!table) return;
+    if (!table || table.isLocked) return;
     const { width, height } = getTableDims(table);
 
     let newX = ((e.clientX - (rect?.left || 0) + scrollLeft) / scaleF) - dragOffset.x;
@@ -281,7 +351,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     const dy = newY - (draggedTable?.pos?.y || 0);
 
     setTables(prev => prev.map(t => {
-      if (selectedIds.has(String(t.id)) && t.type === activeZone) {
+      if (selectedIds.has(String(t.id)) && t.type === activeZone && !t.isLocked) {
         const nx = Math.max(0, Math.min(1800, (t.pos?.x || 0) + dx));
         const ny = Math.max(0, Math.min(1200, (t.pos?.y || 0) + dy));
         return { ...t, pos: { x: nx, y: ny } };
@@ -290,7 +360,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     }));
   };
 
-  // ── MOUSE UP
+  // ── MOUSE UP ──
   const handleCanvasMouseUp = async () => {
     setGuideLines({ x: [], y: [] });
     setDraggingPos(null);
@@ -317,21 +387,21 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     if (draggedTableId) {
       pushUndo();
       try {
-        const movedTables = (tables || []).filter(t => selectedIds.has(String(t.id)));
+        const movedTables = (tables || []).filter(t => selectedIds.has(String(t.id)) && !t.isLocked);
         await Promise.all(movedTables.map(t => apiService.patchTable(t.id, { pos: t.pos })));
       } catch (err) { console.error('Failed to save table positions:', err); }
     }
     setDraggedTableId(null);
   };
 
-  // ── ADD TABLE TEMPLATE
+  // ── ADD TABLE TEMPLATE ──
   const addTableTemplate = async (shape, seats) => {
     pushUndo();
     let count = 1;
     let newName = `${count}`;
     while (tables.some(t => String(t.name) === newName)) { count++; newName = `${count}`; }
     const stagger = (tables.filter(t => t.type === activeZone).length % 6) * 35;
-    const newTableData = { name: newName, type: activeZone, status: 'vacant', pos: { x: 80 + stagger, y: 80 + stagger }, seats, shape, scale: 1.0, zoneLabel: '' };
+    const newTableData = { name: newName, type: activeZone, status: 'vacant', pos: { x: 80 + stagger, y: 80 + stagger }, seats, shape, scale: 1.0, rotation: 0, colorTag: 'default', zoneLabel: '' };
     try {
       const res = await apiService.createTable(newTableData);
       if (res.success && res.data) {
@@ -342,7 +412,36 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     } catch (err) { console.error('Failed to add table:', err); showToast('Error adding table', 'error'); }
   };
 
-  // ── DELETE
+  // ── ADD ARCHITECTURAL PROP ──
+  const addArchProp = async (prop) => {
+    pushUndo();
+    let count = 1;
+    let newName = `${prop.label} ${count}`;
+    while (tables.some(t => String(t.name) === newName)) { count++; newName = `${prop.label} ${count}`; }
+    const newPropData = {
+      name: newName,
+      type: activeZone,
+      status: 'vacant',
+      pos: { x: 100, y: 100 },
+      seats: 0,
+      shape: prop.shape,
+      scale: 1.0,
+      rotation: 0,
+      isProp: true,
+      propType: prop.type,
+      colorTag: 'amber'
+    };
+    try {
+      const res = await apiService.createTable(newPropData);
+      if (res.success && res.data) {
+        const added = res.data.find(t => String(t.name) === newName);
+        if (added) setSelectedIds(new Set([String(added.id)]));
+        showToast(`${prop.label} added to floor`);
+      }
+    } catch (err) { console.error('Failed to add prop:', err); showToast('Error adding prop', 'error'); }
+  };
+
+  // ── DELETE ──
   const deleteSelectedTable = () => {
     if (!selectedTable) return;
     if (selectedTable.status !== 'vacant') { showToast('Cannot delete a table with an active order', 'error'); return; }
@@ -356,20 +455,20 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
       await apiService.deleteTable(tableToDelete.id);
       setSelectedIds(new Set());
       setTableToDelete(null);
-      showToast('Table deleted');
-    } catch (err) { console.error('Failed to delete table:', err); showToast('Error deleting table', 'error'); }
+      showToast('Item deleted');
+    } catch (err) { console.error('Failed to delete table:', err); showToast('Error deleting item', 'error'); }
   };
 
-  // ── PROPERTY CHANGE (single table)
+  // ── BATCH & PROPERTY EDIT ──
   const handlePropertyChange = async (field, value) => {
-    if (!selectedTable) return;
+    if (selectedIds.size === 0) return;
     pushUndo();
-    const tableId = selectedTable.id;
 
     setTables(prev => prev.map(t => {
-      if (String(t.id) === String(tableId)) {
+      if (selectedIds.has(String(t.id))) {
         if (field === 'seats') return { ...t, seats: parseInt(value, 10) || 4 };
         if (field === 'scale') return { ...t, scale: parseFloat(value) || 1.0 };
+        if (field === 'rotation') return { ...t, rotation: parseInt(value, 10) || 0 };
         if (field === 'pos.x') return { ...t, pos: { ...t.pos, x: parseInt(value, 10) || 0 } };
         if (field === 'pos.y') return { ...t, pos: { ...t.pos, y: parseInt(value, 10) || 0 } };
         return { ...t, [field]: value };
@@ -379,18 +478,20 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
 
     try {
       const updateData = {};
-      if (field === 'name') updateData.table_number = value;
+      if (field === 'name' && selectedTable) updateData.table_number = value;
       else if (field === 'seats') updateData.seats = parseInt(value, 10) || 4;
       else if (field === 'shape') updateData.shape = value;
       else if (field === 'scale') updateData.scale = parseFloat(value) || 1.0;
+      else if (field === 'rotation') updateData.rotation = parseInt(value, 10) || 0;
+      else if (field === 'colorTag') updateData.colorTag = value;
       else if (field === 'type') updateData.zone = value;
-      else if (field === 'pos.x') updateData.pos = { x: parseInt(value, 10) || 0, y: selectedTable.pos?.y || 0 };
-      else if (field === 'pos.y') updateData.pos = { x: selectedTable.pos?.x || 0, y: parseInt(value, 10) || 0 };
-      await apiService.patchTable(tableId, updateData);
-    } catch (err) { console.error('Auto-save failed:', err); }
+
+      await Promise.all(selectedTablesList.map(t => apiService.patchTable(t.id, updateData)));
+      showToast(`Updated ${selectedIds.size} item(s)`);
+    } catch (err) { console.error('Batch save failed:', err); }
   };
 
-  // ── ALIGNMENT (FIXED: only selected tables, never fallback to all)
+  // ── ALIGNMENT ──
   const getTargetTables = () => {
     return (tables || []).filter(t => t.type === activeZone && selectedIds.has(String(t.id)));
   };
@@ -417,7 +518,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     });
 
     setTables(updatedTables);
-    showToast(`Aligned ${targets.length} tables: ${direction}`);
+    showToast(`Aligned ${targets.length} tables`);
     try { await Promise.all(updatedTables.filter(t => targets.find(at => String(at.id) === String(t.id))).map(t => apiService.patchTable(t.id, { pos: t.pos }))); }
     catch (err) { console.error('Align failed:', err); }
   };
@@ -488,11 +589,9 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
   const applyLayoutTemplate = async (rows, cols, gapX, gapY) => {
     const totalToCreate = rows * cols;
     const existingZoneTables = (tables || []).filter(t => t.type === activeZone);
-
     if (existingZoneTables.length > 0) {
       if (!window.confirm(`This will add ${totalToCreate} new tables to "${activeZone}". Existing ${existingZoneTables.length} tables will remain. Continue?`)) return;
     }
-
     pushUndo();
     showToast(`Creating ${totalToCreate} tables...`);
     const letters = 'ABCDEFGHIJ';
@@ -506,7 +605,6 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
         let newName = `${rowLetter}${c + 1}`;
         let attempt = 0;
         while (tables.some(t => String(t.name) === newName)) { attempt++; newName = `${rowLetter}${c + 1}-${attempt}`; }
-
         const newTable = {
           name: newName,
           type: activeZone,
@@ -515,9 +613,10 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
           seats: 4,
           shape: 'square',
           scale: 1.0,
+          rotation: 0,
+          colorTag: 'default',
           zoneLabel: ''
         };
-
         try {
           const res = await apiService.createTable(newTable);
           if (res.success && res.data) {
@@ -527,9 +626,51 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
         } catch (err) { console.error('Template table create failed:', err); }
       }
     }
-
     showToast(`Created ${newIds.size} tables in ${rows}×${cols} grid`);
     setSelectedIds(newIds);
+  };
+
+  // ── EXPORT / IMPORT LAYOUT JSON ──
+  const exportLayoutJSON = () => {
+    const exportData = {
+      version: '2.0',
+      exportedAt: new Date().toISOString(),
+      sections,
+      tables: tables.map(t => ({
+        id: t.id, name: t.name, type: t.type, seats: t.seats, shape: t.shape,
+        pos: t.pos, scale: t.scale, rotation: t.rotation, isLocked: t.isLocked, colorTag: t.colorTag, isProp: t.isProp
+      }))
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `floor_layout_${activeZone.replace(/\s+/g, '_')}_backup.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Layout JSON backup exported');
+  };
+
+  const importLayoutJSON = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const imported = JSON.parse(evt.target?.result || '{}');
+        if (!imported.tables || !Array.isArray(imported.tables)) throw new Error('Invalid layout backup file format.');
+        if (window.confirm(`Import ${imported.tables.length} tables from backup? This will sync with server.`)) {
+          pushUndo();
+          setTables(imported.tables);
+          if (imported.sections && Array.isArray(imported.sections)) setSections(imported.sections);
+          showToast(`Imported ${imported.tables.length} tables successfully!`);
+        }
+      } catch (err) {
+        showToast('Invalid JSON backup file', 'error');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const addNewZone = () => {
@@ -551,7 +692,6 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     }
   };
 
-  // ── RESET FUNCTIONS ──
   const resetView = () => {
     setZoom(100);
     if (canvasRef.current) { canvasRef.current.scrollTop = 0; canvasRef.current.scrollLeft = 0; }
@@ -568,7 +708,7 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     }
   };
 
-  // ── CHAIRS RENDERING
+  // ── CHAIRS RENDERING ──
   const renderChairsForCircle = (seats, size) => {
     const chairs = []; const R = size / 2;
     for (let i = 0; i < Math.min(seats, 12); i++) {
@@ -593,15 +733,15 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     return chairs;
   };
 
-  // Style helpers
+  // Helper styles
   const sTab = (id) => ({
-    flex: 1, padding: '8px 4px', borderRadius: '8px', fontSize: '11px', fontWeight: '900', border: 'none', cursor: 'pointer', transition: 'all 0.15s', letterSpacing: '0.3px',
+    flex: 1, padding: '8px 4px', borderRadius: '8px', fontSize: '11px', fontWeight: '600', border: 'none', cursor: 'pointer', transition: 'all 0.15s', letterSpacing: '0.3px',
     background: activeSideTab === id ? '#7c3aed' : 'transparent',
     color: activeSideTab === id ? 'white' : '#64748b'
   });
 
   const AlignBtn = ({ label, title: tt, onClick: oc, icon }) => (
-    <button onClick={oc} title={tt} style={{ flex: 1, padding: '8px 4px', borderRadius: '8px', fontSize: '11px', fontWeight: '900', border: '1px solid #e2e8f0', background: 'white', color: '#334155', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', transition: 'all 0.15s' }}
+    <button onClick={oc} title={tt} style={{ flex: 1, padding: '8px 4px', borderRadius: '8px', fontSize: '11px', fontWeight: '600', border: '1px solid #e2e8f0', background: 'white', color: '#334155', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', transition: 'all 0.15s' }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.color = '#7c3aed'; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#334155'; }}
     >
@@ -610,9 +750,9 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
     </button>
   );
 
-  const ToolBtn = ({ title, onClick, disabled, children }) => (
+  const ToolBtn = ({ title, onClick, disabled, children, active }) => (
     <button onClick={onClick} title={title} disabled={disabled}
-      style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'white', color: disabled ? '#cbd5e1' : '#475569', cursor: disabled ? 'not-allowed' : 'pointer', fontWeight: '800', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.15s' }}
+      style={{ padding: '6px 9px', borderRadius: '7px', border: '1px solid ' + (active ? '#7c3aed' : '#cbd5e1'), background: active ? '#f5f3ff' : 'white', color: disabled ? '#cbd5e1' : (active ? '#7c3aed' : '#334155'), cursor: disabled ? 'not-allowed' : 'pointer', fontWeight: '600', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.15s' }}
     >
       {children}
     </button>
@@ -621,24 +761,38 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 75px)', background: '#f8fafc', overflow: 'hidden' }} className="animate-fade-in">
 
-      {/* ── TOAST NOTIFICATION ── */}
+      {/* ── TOAST NOTIFICATION BANNER ── */}
       {toast && (
-        <div style={{ position: 'fixed', top: '90px', left: '50%', transform: 'translateX(-50%)', background: toast.type === 'error' ? '#dc2626' : toast.type === 'warn' ? '#f59e0b' : '#0f172a', color: 'white', padding: '10px 24px', borderRadius: '12px', fontSize: '13px', fontWeight: '800', zIndex: 99999, boxShadow: '0 8px 30px rgba(0,0,0,0.25)', animation: 'fadeIn 0.15s ease-out', pointerEvents: 'none' }}>
+        <div style={{ position: 'fixed', top: '90px', left: '50%', transform: 'translateX(-50%)', background: toast.type === 'error' ? '#dc2626' : toast.type === 'warn' ? '#d97706' : '#0f172a', color: 'white', padding: '10px 24px', borderRadius: '12px', fontSize: '13px', fontWeight: '600', zIndex: 99999, boxShadow: '0 8px 30px rgba(0,0,0,0.25)', animation: 'fadeIn 0.15s ease-out', pointerEvents: 'none' }}>
           {toast.msg}
         </div>
       )}
 
       {/* ── LEFT SIDEBAR ── */}
       <div style={{ width: '320px', background: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', height: '100%', flexShrink: 0 }}>
-        <div style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <LayoutGrid size={20} color="#7c3aed" />
-          <div>
-            <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>Floor Designer</div>
-            <div style={{ fontSize: '11px', color: '#64748b' }}>Advanced Layout Editor</div>
+        {/* Header */}
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <LayoutGrid size={22} color="#7c3aed" />
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>Floor Designer</div>
+              <div style={{ fontSize: '11px', color: '#64748b' }}>Pro Layout Studio</div>
+            </div>
+          </div>
+          {/* Export / Import buttons */}
+          <div style={{ display: 'flex', gap: '4px' }}>
+            <button onClick={exportLayoutJSON} title="Export Layout JSON Backup" style={{ padding: '6px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', color: '#475569' }}>
+              <Download size={14} />
+            </button>
+            <label title="Import Layout JSON Backup" style={{ padding: '6px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', color: '#475569', display: 'flex', alignItems: 'center' }}>
+              <Upload size={14} />
+              <input type="file" accept=".json" onChange={importLayoutJSON} style={{ display: 'none' }} />
+            </label>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '4px', padding: '10px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+        {/* Tab Bar */}
+        <div style={{ display: 'flex', gap: '4px', padding: '8px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
           <button style={sTab('add')} onClick={() => setActiveSideTab('add')}>＋ Add</button>
           <button style={sTab('properties')} onClick={() => setActiveSideTab('properties')}>⚙ Props</button>
           <button style={sTab('arrange')} onClick={() => setActiveSideTab('arrange')}>⬛ Align</button>
@@ -651,8 +805,8 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
           {activeSideTab === 'add' && (
             <>
               <div>
-                <div style={{ fontSize: '11px', fontWeight: '900', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '12px' }}>Quick Add Templates</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '10px' }}>Table Templates</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {[
                     { shape: 'circle', seats: 2, label: 'Couple Round', sub: '2 seats', icon: '◉' },
                     { shape: 'circle', seats: 4, label: 'Round Table', sub: '4 seats', icon: '⬤' },
@@ -661,24 +815,41 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
                     { shape: 'rectangle', seats: 8, label: 'Banquet Table', sub: '8 seats', icon: '▬▬' },
                   ].map(({ shape, seats, label, sub, icon }) => (
                     <button key={label} onClick={() => addTableTemplate(shape, seats)}
-                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: 'transparent', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '9px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: 'white', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.background = '#f5f3ff'; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = 'transparent'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = 'white'; }}
                     >
-                      <span style={{ fontSize: '22px', width: '28px', textAlign: 'center' }}>{icon}</span>
+                      <span style={{ fontSize: '20px', width: '26px', textAlign: 'center', color: '#7c3aed' }}>{icon}</span>
                       <div>
-                        <div style={{ fontSize: '12px', fontWeight: '800', color: '#1e293b' }}>{label}</div>
-                        <div style={{ fontSize: '11px', color: '#64748b' }}>{sub} · {shape}</div>
+                        <div style={{ fontSize: '12px', fontWeight: '500', color: '#1e293b' }}>{label}</div>
+                        <div style={{ fontSize: '10px', color: '#64748b' }}>{sub} · {shape}</div>
                       </div>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* ── LAYOUT TEMPLATES ── */}
+              {/* Architectural Elements / Props */}
               <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px' }}>
-                <div style={{ fontSize: '11px', fontWeight: '900', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '10px' }}>Layout Templates</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '14px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '10px' }}>Floor Decor & Obstacles</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                  {ARCH_PROPS.map(prop => (
+                    <button key={prop.type} onClick={() => addArchProp(prop)}
+                      style={{ padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.15s' }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.background = '#f5f3ff'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = 'white'; }}
+                    >
+                      <span style={{ fontSize: '16px' }}>{prop.icon}</span>
+                      <span style={{ fontSize: '11px', fontWeight: '500', color: '#334155' }}>{prop.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Layout Templates */}
+              <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '10px' }}>Grid Presets</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '12px' }}>
                   {[
                     { r: 2, c: 3, label: '2 × 3' },
                     { r: 3, c: 3, label: '3 × 3' },
@@ -686,67 +857,62 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
                     { r: 4, c: 5, label: '4 × 5' },
                   ].map(({ r, c, label }) => (
                     <button key={label} onClick={() => applyLayoutTemplate(r, c, 50, 50)}
-                      style={{ padding: '10px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: 'white', cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s' }}
+                      style={{ padding: '8px', borderRadius: '8px', border: '1.5px solid #e2e8f0', background: 'white', cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s' }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.background = '#f5f3ff'; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = 'white'; }}
                     >
-                      <div style={{ fontSize: '15px', fontWeight: '900', color: '#7c3aed' }}>{label}</div>
-                      <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '700' }}>{r * c} tables</div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#7c3aed' }}>{label}</div>
+                      <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{r * c} tables</div>
                     </button>
                   ))}
                 </div>
 
-                <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '14px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '11px', fontWeight: '900', color: '#475569', marginBottom: '10px' }}>Custom Grid</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+                {/* Custom Grid */}
+                <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '12px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#475569', marginBottom: '8px' }}>Custom Grid Builder</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '8px' }}>
                     <div>
-                      <label style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>Rows</label>
+                      <label style={{ fontSize: '10px', fontWeight: '500', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Rows</label>
                       <input type="number" min="1" max="10" value={templateRows} onChange={e => setTemplateRows(Math.max(1, Math.min(10, Number(e.target.value))))}
-                        style={{ width: '100%', boxSizing: 'border-box', padding: '7px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '900', outline: 'none' }} />
+                        style={{ width: '100%', boxSizing: 'border-box', padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: '600', outline: 'none' }} />
                     </div>
                     <div>
-                      <label style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>Columns</label>
+                      <label style={{ fontSize: '10px', fontWeight: '500', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Columns</label>
                       <input type="number" min="1" max="10" value={templateCols} onChange={e => setTemplateCols(Math.max(1, Math.min(10, Number(e.target.value))))}
-                        style={{ width: '100%', boxSizing: 'border-box', padding: '7px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '900', outline: 'none' }} />
+                        style={{ width: '100%', boxSizing: 'border-box', padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: '600', outline: 'none' }} />
                     </div>
+                  </div>
+                  <div style={{ marginBottom: '6px' }}>
+                    <label style={{ fontSize: '10px', fontWeight: '500', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>H-Gap: {templateSpacingX}px</label>
+                    <input type="range" min="20" max="120" step="5" value={templateSpacingX} onChange={e => setTemplateSpacingX(Number(e.target.value))} style={{ width: '100%', accentColor: '#7c3aed', cursor: 'pointer' }} />
                   </div>
                   <div style={{ marginBottom: '8px' }}>
-                    <label style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>H-Spacing: {templateSpacingX}px</label>
-                    <input type="range" min="20" max="120" step="5" value={templateSpacingX} onChange={e => setTemplateSpacingX(Number(e.target.value))}
-                      style={{ width: '100%', accentColor: '#7c3aed', cursor: 'pointer' }} />
-                  </div>
-                  <div style={{ marginBottom: '10px' }}>
-                    <label style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>V-Spacing: {templateSpacingY}px</label>
-                    <input type="range" min="20" max="120" step="5" value={templateSpacingY} onChange={e => setTemplateSpacingY(Number(e.target.value))}
-                      style={{ width: '100%', accentColor: '#7c3aed', cursor: 'pointer' }} />
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#7c3aed', fontWeight: '800', marginBottom: '8px', textAlign: 'center' }}>
-                    Will create {templateRows * templateCols} tables
+                    <label style={{ fontSize: '10px', fontWeight: '500', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>V-Gap: {templateSpacingY}px</label>
+                    <input type="range" min="20" max="120" step="5" value={templateSpacingY} onChange={e => setTemplateSpacingY(Number(e.target.value))} style={{ width: '100%', accentColor: '#7c3aed', cursor: 'pointer' }} />
                   </div>
                   <button onClick={() => applyLayoutTemplate(templateRows, templateCols, templateSpacingX, templateSpacingY)}
-                    style={{ width: '100%', padding: '10px', borderRadius: '10px', border: 'none', background: '#7c3aed', color: 'white', fontWeight: '900', fontSize: '12px', cursor: 'pointer' }}>
-                    Apply {templateRows}×{templateCols} Grid
+                    style={{ width: '100%', padding: '8px', borderRadius: '8px', border: 'none', background: '#7c3aed', color: 'white', fontWeight: '600', fontSize: '11px', cursor: 'pointer' }}>
+                    Generate {templateRows}×{templateCols} Grid ({templateRows * templateCols} Tables)
                   </button>
                 </div>
               </div>
 
+              {/* Grid & Canvas View Options */}
               <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px' }}>
-                <div style={{ fontSize: '11px', fontWeight: '900', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '10px' }}>Canvas Settings</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <label style={{ fontSize: '12px', fontWeight: '700', color: '#334155' }}>Grid Snap</label>
-                    <button onClick={() => setGridSnap(!gridSnap)} style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '900', border: 'none', cursor: 'pointer', background: gridSnap ? '#ecfdf5' : '#f1f5f9', color: gridSnap ? '#059669' : '#64748b' }}>
-                      {gridSnap ? 'ON' : 'OFF'}
-                    </button>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <label style={{ fontSize: '12px', fontWeight: '700', color: '#334155', whiteSpace: 'nowrap' }}>Grid Size: {gridSize}px</label>
-                    <input type="range" min="5" max="50" step="5" value={gridSize} onChange={e => setGridSize(Number(e.target.value))} style={{ flex: 1, accentColor: '#7c3aed', cursor: 'pointer' }} />
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px' }}>View & Grid Style</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {[['dots', 'Dot Grid'], ['mesh', 'Square Mesh'], ['clean', 'Clean Canvas']].map(([st, lb]) => (
+                      <button key={st} onClick={() => setGridStyle(st)}
+                        style={{ flex: 1, padding: '6px 4px', borderRadius: '6px', fontSize: '10px', fontWeight: '500', border: `1px solid ${gridStyle === st ? '#7c3aed' : '#cbd5e1'}`, background: gridStyle === st ? '#f5f3ff' : 'white', color: gridStyle === st ? '#7c3aed' : '#475569', cursor: 'pointer' }}>
+                        {lb}
+                      </button>
+                    ))}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <label style={{ fontSize: '12px', fontWeight: '700', color: '#334155' }}>Snap to Tables</label>
-                    <button onClick={() => setSnapToTables(!snapToTables)} style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '900', border: 'none', cursor: 'pointer', background: snapToTables ? '#eff6ff' : '#f1f5f9', color: snapToTables ? '#2563eb' : '#64748b' }}>
-                      {snapToTables ? 'ON' : 'OFF'}
+                    <label style={{ fontSize: '12px', fontWeight: '500', color: '#334155' }}>Pixel Rulers</label>
+                    <button onClick={() => setShowRulers(!showRulers)} style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '600', border: 'none', cursor: 'pointer', background: showRulers ? '#eff6ff' : '#f1f5f9', color: showRulers ? '#2563eb' : '#64748b' }}>
+                      {showRulers ? 'SHOW' : 'HIDE'}
                     </button>
                   </div>
                 </div>
@@ -757,111 +923,134 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
           {/* ── TAB: PROPERTIES ── */}
           {activeSideTab === 'properties' && (
             <>
-              {selectedTable ? (
+              {selectedIds.size > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div style={{ padding: '10px 12px', background: '#f5f3ff', borderRadius: '10px', fontSize: '11px', color: '#7c3aed', fontWeight: '800' }}>
-                    Table: <strong>{selectedTable.name}</strong>
-                    {selectedIds.size > 1 && <span style={{ color: '#64748b', marginLeft: '8px' }}>+{selectedIds.size - 1} more selected</span>}
+                  <div style={{ padding: '10px 12px', background: '#f5f3ff', borderRadius: '10px', fontSize: '11px', color: '#7c3aed', fontWeight: '600', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      {selectedIds.size === 1 ? (
+                        <>Table: <strong>{selectedTable?.name}</strong></>
+                      ) : (
+                        <>Batch Edit: <strong>{selectedIds.size} tables selected</strong></>
+                      )}
+                    </div>
+                    <button onClick={toggleLockSelected} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#7c3aed' }} title="Toggle Position Lock">
+                      {selectedTablesList.every(t => t.isLocked) ? <Lock size={15} /> : <Unlock size={15} />}
+                    </button>
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Table Name</label>
-                    <input type="text" value={selectedTable.name || ''} onChange={e => handlePropertyChange('name', e.target.value)}
-                      style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '13px', fontWeight: '900', background: 'white', outline: 'none' }} />
-                  </div>
+                  {/* Name input (only for single selection) */}
+                  {selectedIds.size === 1 && selectedTable && (
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Table / Prop Name</label>
+                      <input type="text" value={selectedTable.name || ''} onChange={e => handlePropertyChange('name', e.target.value)}
+                        style={{ width: '100%', boxSizing: 'border-box', padding: '8px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13px', fontWeight: '600', background: 'white', outline: 'none' }} />
+                    </div>
+                  )}
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Position (X, Y)</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>X (Left)</label>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '2px 8px' }}>
-                          <span style={{ fontSize: '11px', color: '#7c3aed', fontWeight: '900' }}>X</span>
+                  {/* Position X, Y */}
+                  {selectedIds.size === 1 && selectedTable && (
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Position (X, Y)</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '2px 8px' }}>
+                          <span style={{ fontSize: '11px', color: '#7c3aed', fontWeight: '600' }}>X</span>
                           <input type="number" value={Math.round(selectedTable.pos?.x || 0)} onChange={e => handlePropertyChange('pos.x', e.target.value)}
-                            style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '13px', fontWeight: '900', padding: '6px 0', outline: 'none', width: '100%' }} />
-                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>px</span>
+                            style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '12px', fontWeight: '600', padding: '5px 0', outline: 'none', width: '100%' }} />
                         </div>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>Y (Top)</label>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '2px 8px' }}>
-                          <span style={{ fontSize: '11px', color: '#7c3aed', fontWeight: '900' }}>Y</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '2px 8px' }}>
+                          <span style={{ fontSize: '11px', color: '#7c3aed', fontWeight: '600' }}>Y</span>
                           <input type="number" value={Math.round(selectedTable.pos?.y || 0)} onChange={e => handlePropertyChange('pos.y', e.target.value)}
-                            style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '13px', fontWeight: '900', padding: '6px 0', outline: 'none', width: '100%' }} />
-                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>px</span>
+                            style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '12px', fontWeight: '600', padding: '5px 0', outline: 'none', width: '100%' }} />
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
+                  {/* Rotation Angle */}
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Seats ({selectedTable.seats})</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <button onClick={() => handlePropertyChange('seats', Math.max(1, selectedTable.seats - 1))}
-                        style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>−</button>
-                      <span style={{ flex: 1, textAlign: 'center', fontSize: '18px', fontWeight: '800' }}>{selectedTable.seats}</span>
-                      <button onClick={() => handlePropertyChange('seats', selectedTable.seats + 1)}
-                        style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>+</button>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+                      Rotation Angle ({selectedTable?.rotation || 0}°)
+                    </label>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      {[0, 45, 90, 135, 180, 270].map(deg => (
+                        <button key={deg} onClick={() => handlePropertyChange('rotation', deg)}
+                          style={{ flex: 1, padding: '6px 2px', borderRadius: '6px', fontSize: '10px', fontWeight: '600', cursor: 'pointer', border: `1px solid ${selectedTable?.rotation === deg ? '#7c3aed' : '#cbd5e1'}`, background: selectedTable?.rotation === deg ? '#f5f3ff' : 'white', color: selectedTable?.rotation === deg ? '#7c3aed' : '#475569' }}>
+                          {deg}°
+                        </button>
+                      ))}
                     </div>
                   </div>
 
+                  {/* Seats Adjuster */}
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Shape</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Seats ({selectedTable?.seats || 4})</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button onClick={() => handlePropertyChange('seats', Math.max(1, (selectedTable?.seats || 4) - 1))}
+                        style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', fontWeight: '600', fontSize: '16px' }}>−</button>
+                      <span style={{ flex: 1, textAlign: 'center', fontSize: '16px', fontWeight: '700' }}>{selectedTable?.seats || 4} Seats</span>
+                      <button onClick={() => handlePropertyChange('seats', (selectedTable?.seats || 4) + 1)}
+                        style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', fontWeight: '600', fontSize: '16px' }}>+</button>
+                    </div>
+                  </div>
+
+                  {/* Table Shape */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Shape</label>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       {[['circle', 'Round', '◉'], ['square', 'Square', '■'], ['rectangle', 'Long', '▬']].map(([sh, lb, ic]) => (
                         <button key={sh} onClick={() => handlePropertyChange('shape', sh)}
-                          style={{ flex: 1, padding: '8px 4px', borderRadius: '8px', fontSize: '11px', fontWeight: '800', cursor: 'pointer', border: `2px solid ${selectedTable.shape === sh ? '#7c3aed' : '#cbd5e1'}`, background: selectedTable.shape === sh ? '#f5f3ff' : 'white', color: selectedTable.shape === sh ? '#7c3aed' : '#475569' }}>
+                          style={{ flex: 1, padding: '8px 4px', borderRadius: '8px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', border: `2px solid ${selectedTable?.shape === sh ? '#7c3aed' : '#cbd5e1'}`, background: selectedTable?.shape === sh ? '#f5f3ff' : 'white', color: selectedTable?.shape === sh ? '#7c3aed' : '#475569' }}>
                           {ic} {lb}
                         </button>
                       ))}
                     </div>
                   </div>
 
+                  {/* Size Scale */}
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Size: {(selectedTable.scale || 1.0).toFixed(1)}×</label>
-                    <input type="range" min="0.6" max="2.5" step="0.1" value={selectedTable.scale || 1.0} onChange={e => handlePropertyChange('scale', e.target.value)}
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Scale Size: {(selectedTable?.scale || 1.0).toFixed(1)}×</label>
+                    <input type="range" min="0.6" max="2.5" step="0.1" value={selectedTable?.scale || 1.0} onChange={e => handlePropertyChange('scale', e.target.value)}
                       style={{ width: '100%', accentColor: '#7c3aed', cursor: 'pointer' }} />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8', fontWeight: '700', marginTop: '2px' }}>
-                      <span>Tiny</span><span>Normal</span><span>Massive</span>
-                    </div>
                   </div>
 
+                  {/* Move to Zone */}
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Move to Zone</label>
-                    <select value={selectedTable.type || ''} onChange={e => handlePropertyChange('type', e.target.value)}
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: '800', background: 'white' }}>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Move to Zone</label>
+                    <select value={selectedTable?.type || activeZone} onChange={e => handlePropertyChange('type', e.target.value)}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: '600', background: 'white' }}>
                       {sections.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  {/* Action Buttons */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                     <button onClick={duplicateSelected}
-                      style={{ flex: 1, border: '1px solid #e2e8f0', background: '#f5f3ff', color: '#7c3aed', padding: '10px', borderRadius: '10px', fontWeight: '900', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                      <Plus size={14} /> Duplicate
+                      style={{ border: '1px solid #cbd5e1', background: '#f5f3ff', color: '#7c3aed', padding: '9px', borderRadius: '8px', fontWeight: '600', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      <Copy size={14} /> Duplicate
                     </button>
                     <button onClick={deleteSelectedTable}
-                      style={{ flex: 1, border: 'none', background: '#fee2e2', color: '#dc2626', padding: '10px', borderRadius: '10px', fontWeight: '900', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      style={{ border: 'none', background: '#fee2e2', color: '#dc2626', padding: '9px', borderRadius: '8px', fontWeight: '600', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                       <Trash2 size={14} /> Delete
                     </button>
                   </div>
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '28px 16px', border: '1.5px dashed #cbd5e1', borderRadius: '16px', color: '#94a3b8', fontSize: '12px', fontWeight: '700' }}>
+                <div style={{ textAlign: 'center', padding: '28px 16px', border: '1.5px dashed #cbd5e1', borderRadius: '16px', color: '#94a3b8', fontSize: '12px', fontWeight: '500' }}>
                   <div style={{ fontSize: '28px', marginBottom: '8px' }}>👆</div>
-                  Click any table on the canvas to inspect and edit its properties.
-                  <div style={{ marginTop: '10px', fontSize: '11px', color: '#b0bec5' }}>Hold Shift to multi-select · Ctrl+D to duplicate</div>
+                  Click any table on the floor canvas to inspect & customize.
+                  <div style={{ marginTop: '10px', fontSize: '11px', color: '#b0bec5' }}>Hold Shift for multi-select · Drag marquee box to multi-select</div>
                 </div>
               )}
             </>
           )}
 
-          {/* ── TAB: ALIGN & ARRANGE ── */}
+          {/* ── TAB: ALIGN ── */}
           {activeSideTab === 'arrange' && (
             <>
               <div>
-                <div style={{ fontSize: '11px', fontWeight: '900', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '10px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '10px' }}>
                   Alignment
-                  <span style={{ fontSize: '11px', color: selectedIds.size >= 2 ? '#059669' : '#ef4444', fontWeight: '700', textTransform: 'none', marginLeft: '6px' }}>
+                  <span style={{ fontSize: '11px', color: selectedIds.size >= 2 ? '#059669' : '#ef4444', fontWeight: '500', textTransform: 'none', marginLeft: '6px' }}>
                     {selectedIds.size >= 2 ? `(${selectedIds.size} selected ✓)` : `(select 2+ tables)`}
                   </span>
                 </div>
@@ -875,47 +1064,47 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
                   <AlignBtn label="Bottom" title="Align bottom edges" icon="⬜⬤" onClick={() => alignTables('bottom')} />
                 </div>
 
-                <div style={{ fontSize: '11px', fontWeight: '900', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px', marginTop: '14px' }}>Distribute (3+ tables)</div>
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px', marginTop: '14px' }}>Distribute (3+ tables)</div>
                 <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
                   <AlignBtn label="Even H" title="Distribute horizontally" icon="⬤·⬤·⬤" onClick={() => distributeEqual('H')} />
                   <AlignBtn label="Even V" title="Distribute vertically" icon="⬤:⬤:⬤" onClick={() => distributeEqual('V')} />
                 </div>
 
-                <div style={{ fontSize: '11px', fontWeight: '900', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px', marginTop: '4px' }}>Bulk Actions</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <button onClick={autoArrangeGrid} style={{ padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'white', color: '#334155', cursor: 'pointer', fontWeight: '900', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.background = '#f5f3ff'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = 'white'; }}>
-                    <LayoutGrid size={14} /> Auto Grid Arrangement
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px' }}>Bulk Tools</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <button onClick={autoArrangeGrid} style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#334155', cursor: 'pointer', fontWeight: '600', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <LayoutGrid size={14} /> Auto Grid Layout
                   </button>
-                  <button onClick={snapAllToGrid} style={{ padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'white', color: '#334155', cursor: 'pointer', fontWeight: '900', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.background = '#f5f3ff'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = 'white'; }}>
+                  <button onClick={snapAllToGrid} style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#334155', cursor: 'pointer', fontWeight: '600', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Zap size={14} /> Snap All to Grid
                   </button>
                 </div>
               </div>
 
               <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px' }}>
-                <div style={{ fontSize: '11px', fontWeight: '900', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px' }}>Selection</div>
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px' }}>Selection Controls</div>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <button onClick={() => setSelectedIds(new Set((tables || []).filter(t => t.type === activeZone).map(t => String(t.id))))}
-                    style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#334155', cursor: 'pointer', fontWeight: '800', fontSize: '11px' }}>
+                    style={{ flex: 1, padding: '7px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#334155', cursor: 'pointer', fontWeight: '600', fontSize: '11px' }}>
                     Select All
                   </button>
                   <button onClick={() => setSelectedIds(new Set())}
-                    style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#334155', cursor: 'pointer', fontWeight: '800', fontSize: '11px' }}>
+                    style={{ flex: 1, padding: '7px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#334155', cursor: 'pointer', fontWeight: '600', fontSize: '11px' }}>
                     Deselect
                   </button>
                 </div>
               </div>
 
               <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px' }}>
-                <div style={{ fontSize: '11px', fontWeight: '900', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px' }}>Keyboard Shortcuts</div>
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px' }}>Keyboard Shortcuts</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#64748b' }}>
-                  {[['Ctrl+Z', 'Undo'], ['Ctrl+Y', 'Redo'], ['Ctrl+A', 'Select All'], ['Ctrl+D', 'Duplicate'], ['Delete', 'Delete Table'], ['Arrows', 'Nudge'], ['Shift+↑↓←→', 'Fine Nudge (1px)'], ['Escape', 'Deselect']].map(([key, desc]) => (
-                    <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
-                      <span style={{ fontWeight: '800', color: '#475569', background: '#f1f5f9', padding: '1px 6px', borderRadius: '4px', fontSize: '10px' }}>{key}</span>
+                  {[
+                    ['Ctrl+Z', 'Undo'], ['Ctrl+Y', 'Redo'], ['Ctrl+A', 'Select All'],
+                    ['Ctrl+D', 'Duplicate'], ['Ctrl+R', 'Rotate 45°'], ['Ctrl+L', 'Toggle Lock'],
+                    ['Delete', 'Delete Table'], ['Arrows', 'Nudge (15px)'], ['Shift+Arrows', 'Fine Nudge (1px)']
+                  ].map(([key, desc]) => (
+                    <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                      <span style={{ fontWeight: '500', color: '#475569', background: '#f1f5f9', padding: '1px 6px', borderRadius: '4px', fontSize: '10px' }}>{key}</span>
                       <span>{desc}</span>
                     </div>
                   ))}
@@ -928,26 +1117,26 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
           {activeSideTab === 'zones' && (
             <>
               <div>
-                <div style={{ fontSize: '11px', fontWeight: '900', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '10px' }}>Floor Zones</div>
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '10px' }}>Floor Zones / Areas</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
                   {sections.map(sec => (
                     <button key={sec} onClick={() => { setActiveZone(sec); setSelectedIds(new Set()); }}
-                      style={{ padding: '10px 14px', borderRadius: '10px', border: `2px solid ${activeZone === sec ? '#7c3aed' : '#e2e8f0'}`, background: activeZone === sec ? '#f5f3ff' : 'white', color: activeZone === sec ? '#7c3aed' : '#334155', cursor: 'pointer', fontWeight: '900', fontSize: '12px', textAlign: 'left', display: 'flex', justifyContent: 'space-between' }}>
+                      style={{ padding: '10px 14px', borderRadius: '10px', border: `2px solid ${activeZone === sec ? '#7c3aed' : '#e2e8f0'}`, background: activeZone === sec ? '#f5f3ff' : 'white', color: activeZone === sec ? '#7c3aed' : '#334155', cursor: 'pointer', fontWeight: '600', fontSize: '12px', textAlign: 'left', display: 'flex', justifyContent: 'space-between' }}>
                       {sec}
                       <span style={{ background: '#e2e8f0', borderRadius: '20px', padding: '1px 8px', fontSize: '11px', color: '#475569' }}>
-                        {tables.filter(t => t.type === sec).length}
+                        {tables.filter(t => t.type === sec).length} items
                       </span>
                     </button>
                   ))}
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input type="text" placeholder="New zone name..." value={newSectionName} onChange={e => setNewSectionName(e.target.value)}
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <input type="text" placeholder="New area name..." value={newSectionName} onChange={e => setNewSectionName(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && addNewZone()}
-                    style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', outline: 'none' }} />
-                  <button onClick={addNewZone} style={{ padding: '0 14px', borderRadius: '8px', background: '#7c3aed', border: 'none', color: 'white', fontWeight: '900', fontSize: '12px', cursor: 'pointer' }}>Add</button>
+                    style={{ flex: 1, padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', outline: 'none' }} />
+                  <button onClick={addNewZone} style={{ padding: '0 12px', borderRadius: '8px', background: '#7c3aed', border: 'none', color: 'white', fontWeight: '600', fontSize: '12px', cursor: 'pointer' }}>Add</button>
                 </div>
                 {sections.length > 1 && (
-                  <button onClick={deleteActiveZone} style={{ width: '100%', marginTop: '8px', background: 'transparent', border: '1px solid #fecaca', color: '#b91c1c', padding: '8px', borderRadius: '8px', fontSize: '11px', fontWeight: '800', cursor: 'pointer' }}>
+                  <button onClick={deleteActiveZone} style={{ width: '100%', marginTop: '10px', background: 'transparent', border: '1px solid #fecaca', color: '#b91c1c', padding: '8px', borderRadius: '8px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>
                     Delete "{activeZone}" zone
                   </button>
                 )}
@@ -959,20 +1148,23 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
 
       {/* ── CANVAS WORKSPACE ── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+
         {/* Top toolbar */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: 'white', borderBottom: '1px solid #e2e8f0', flexShrink: 0, gap: '8px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 16px', background: 'white', borderBottom: '1px solid #e2e8f0', flexShrink: 0, gap: '8px', flexWrap: 'wrap' }}>
+          {/* Zone tabs */}
           <div style={{ display: 'flex', gap: '4px', overflowX: 'auto' }} className="no-scrollbar">
             {sections.map(sec => (
               <button key={sec} onClick={() => { setActiveZone(sec); setSelectedIds(new Set()); }}
-                style={{ padding: '8px 14px', borderRadius: '999px', fontSize: '12px', fontWeight: '900', border: 'none', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap', background: activeZone === sec ? '#f5f3ff' : 'transparent', color: activeZone === sec ? '#7c3aed' : '#64748b' }}>
+                style={{ padding: '7px 14px', borderRadius: '999px', fontSize: '12px', fontWeight: '600', border: 'none', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap', background: activeZone === sec ? '#f5f3ff' : 'transparent', color: activeZone === sec ? '#7c3aed' : '#64748b' }}>
                 {sec} ({tables.filter(t => t.type === sec).length})
               </button>
             ))}
           </div>
 
+          {/* Right controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
             {selectedIds.size > 0 && (
-              <span style={{ fontSize: '11px', fontWeight: '800', color: '#7c3aed', background: '#f5f3ff', padding: '4px 10px', borderRadius: '20px', border: '1px solid #c4b5fd' }}>
+              <span style={{ fontSize: '11px', fontWeight: '600', color: '#7c3aed', background: '#f5f3ff', padding: '4px 10px', borderRadius: '20px', border: '1px solid #c4b5fd' }}>
                 {selectedIds.size} selected
               </span>
             )}
@@ -984,29 +1176,41 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
               <RefreshCw size={14} />
             </ToolBtn>
 
-            <div style={{ width: '1px', height: '22px', background: '#e2e8f0', margin: '0 2px' }} />
+            {selectedIds.size > 0 && (
+              <>
+                <ToolBtn title="Rotate 45° (Ctrl+R)" onClick={() => rotateSelected(45)}>
+                  <RotateCw size={14} />
+                </ToolBtn>
+                <ToolBtn title="Toggle Lock (Ctrl+L)" onClick={toggleLockSelected}>
+                  {selectedTablesList.every(t => t.isLocked) ? <Lock size={14} color="#7c3aed" /> : <Unlock size={14} />}
+                </ToolBtn>
+              </>
+            )}
 
+            <div style={{ width: '1px', height: '20px', background: '#e2e8f0', margin: '0 2px' }} />
+
+            {/* Zoom Slider */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f8fafc', padding: '4px 10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-              <span style={{ fontSize: '11px', fontWeight: '700', color: '#475569' }}>{zoom}%</span>
+              <span style={{ fontSize: '11px', fontWeight: '500', color: '#475569' }}>{zoom}%</span>
               <input type="range" min="30" max="160" step="10" value={zoom} onChange={e => setZoom(Number(e.target.value))} style={{ width: '60px', cursor: 'pointer', accentColor: '#7c3aed' }} />
             </div>
 
-            <ToolBtn title="Reset View (zoom + scroll)" onClick={resetView}>
+            <ToolBtn title="Reset View" onClick={resetView}>
               <Maximize2 size={13} />
             </ToolBtn>
-            <ToolBtn title="Reload layout from server" onClick={resetLayout}>
+            <ToolBtn title="Reload Layout from Server" onClick={resetLayout}>
               <RotateCcw size={13} /><span style={{ fontSize: '11px' }}>Reset</span>
             </ToolBtn>
 
-            <div style={{ width: '1px', height: '22px', background: '#e2e8f0', margin: '0 2px' }} />
+            <div style={{ width: '1px', height: '20px', background: '#e2e8f0', margin: '0 2px' }} />
 
-            <button onClick={() => { loadTables(); }} style={{ padding: '8px 16px', background: '#0f172a', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <button onClick={() => { loadTables(); }} style={{ padding: '7px 16px', background: '#0f172a', color: 'white', border: 'none', borderRadius: '9px', fontWeight: '600', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <CheckSquare size={14} /> Save & Exit
             </button>
           </div>
         </div>
 
-        {/* Scrollable canvas */}
+        {/* Scrollable Canvas area */}
         <div
           ref={canvasRef}
           data-canvas-bg="true"
@@ -1014,10 +1218,16 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
           onMouseUp={handleCanvasMouseUp}
           onMouseDown={handleCanvasMouseDown}
           onClick={() => { if (!draggedTableId) setSelectedIds(new Set()); }}
-          style={{ flex: 1, overflow: 'scroll', background: '#f1f5f9', backgroundImage: 'radial-gradient(#cbd5e1 1.5px, transparent 1.5px)', backgroundSize: `${gridSize * 2}px ${gridSize * 2}px`, position: 'relative', padding: '40px', cursor: isMarqueeSelecting ? 'crosshair' : 'default' }}
+          style={{
+            flex: 1, overflow: 'scroll', background: '#f1f5f9', position: 'relative', padding: '40px', cursor: isMarqueeSelecting ? 'crosshair' : 'default',
+            backgroundImage: gridStyle === 'dots' ? 'radial-gradient(#cbd5e1 1.5px, transparent 1.5px)' : gridStyle === 'mesh' ? 'linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px)' : 'none',
+            backgroundSize: gridStyle === 'mesh' ? `${gridSize}px ${gridSize}px` : `${gridSize * 2}px ${gridSize * 2}px`
+          }}
         >
+          {/* Zoom-scaled canvas */}
           <div style={{ width: '1900px', height: '1300px', position: 'relative', transform: `scale(${zoom / 100})`, transformOrigin: 'top left', transition: draggedTableId ? 'none' : 'transform 0.1s ease-out' }}>
 
+            {/* Smart Guidelines */}
             {guideLines.x.map((gx, i) => (
               <div key={`gx-${i}`} style={{ position: 'absolute', left: `${gx}px`, top: 0, bottom: 0, width: '1.5px', borderLeft: '1.5px dashed #7c3aed', pointerEvents: 'none', zIndex: 100, opacity: 0.8 }} />
             ))}
@@ -1025,10 +1235,12 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
               <div key={`gy-${i}`} style={{ position: 'absolute', top: `${gy}px`, left: 0, right: 0, height: '1.5px', borderTop: '1.5px dashed #7c3aed', pointerEvents: 'none', zIndex: 100, opacity: 0.8 }} />
             ))}
 
+            {/* Marquee Box */}
             {isMarqueeSelecting && marquee && Math.abs(marquee.endX - marquee.startX) > 5 && (
               <div style={{ position: 'absolute', left: `${Math.min(marquee.startX, marquee.endX)}px`, top: `${Math.min(marquee.startY, marquee.endY)}px`, width: `${Math.abs(marquee.endX - marquee.startX)}px`, height: `${Math.abs(marquee.endY - marquee.startY)}px`, border: '1.5px dashed #7c3aed', background: 'rgba(124, 58, 237, 0.07)', pointerEvents: 'none', zIndex: 98, borderRadius: '6px' }} />
             )}
 
+            {/* Tables & Architectural Props Rendering */}
             {tables.filter(t => t.type === activeZone).map(table => {
               const { width, height } = getTableDims(table);
               const isSelected = selectedIds.has(String(table.id));
@@ -1039,24 +1251,55 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
                   key={table.id}
                   onMouseDown={(e) => handleTableMouseDown(e, table.id)}
                   onClick={(e) => { e.stopPropagation(); if (!e.shiftKey) setSelectedIds(new Set([String(table.id)])); }}
-                  style={{ position: 'absolute', left: `${table.pos?.x || 100}px`, top: `${table.pos?.y || 100}px`, width: `${width}px`, height: `${height}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: draggedTableId === table.id ? 'grabbing' : 'grab', userSelect: 'none', transition: draggedTableId ? 'none' : 'filter 0.15s ease', filter: isSelected ? 'none' : undefined }}
+                  style={{
+                    position: 'absolute', left: `${table.pos?.x || 100}px`, top: `${table.pos?.y || 100}px`, width: `${width}px`, height: `${height}px`,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    cursor: table.isLocked ? 'not-allowed' : (draggedTableId === table.id ? 'grabbing' : 'grab'),
+                    userSelect: 'none', transform: `rotate(${table.rotation || 0}deg)`, transformOrigin: 'center center',
+                    transition: draggedTableId === table.id ? 'none' : 'transform 0.15s ease, filter 0.15s ease'
+                  }}
                 >
+                  {/* Selection Glow */}
                   {isSelected && (
-                    <div style={{ position: 'absolute', inset: '-5px', borderRadius: table.shape === 'circle' ? '50%' : '20px', border: `2px solid ${isPrimary ? '#7c3aed' : '#a78bfa'}`, background: 'rgba(124, 58, 237, 0.06)', pointerEvents: 'none', zIndex: 10, boxShadow: isPrimary ? '0 0 16px rgba(124,58,237,0.35)' : '0 0 8px rgba(124,58,237,0.15)' }} />
+                    <div style={{ position: 'absolute', inset: '-5px', borderRadius: table.shape === 'circle' ? '50%' : '14px', border: `2px solid ${isPrimary ? '#7c3aed' : '#a78bfa'}`, background: 'rgba(124, 58, 237, 0.06)', pointerEvents: 'none', zIndex: 10, boxShadow: isPrimary ? '0 0 16px rgba(124,58,237,0.35)' : '0 0 8px rgba(124,58,237,0.15)' }} />
                   )}
 
-                  <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-                    {table.shape === 'circle' ? renderChairsForCircle(table.seats || 4, width) : renderChairsForSquare(table.seats || 4, width, height)}
+                  {/* Locked indicator */}
+                  {table.isLocked && (
+                    <div style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#0f172a', color: 'white', borderRadius: '50%', padding: '3px', zIndex: 20, boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }} title="Locked Table">
+                      <Lock size={10} />
+                    </div>
+                  )}
+
+                  {/* Chairs (only for regular tables) */}
+                  {!table.isProp && (
+                    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+                      {table.shape === 'circle' ? renderChairsForCircle(table.seats || 4, width) : renderChairsForSquare(table.seats || 4, width, height)}
+                    </div>
+                  )}
+
+                  {/* Table / Prop Body */}
+                  <div style={{
+                    width: '100%', height: '100%', background: table.isProp ? '#fef3c7' : isSelected ? '#f5f3ff' : '#ffffff',
+                    border: `2.5px solid ${table.isProp ? '#d97706' : isSelected ? '#7c3aed' : '#1e293b'}`,
+                    borderRadius: table.shape === 'circle' ? '50%' : table.shape === 'square' ? '10px' : '12px',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: isSelected ? 'none' : '0 4px 10px rgba(0,0,0,0.08)', position: 'relative', zIndex: 2, boxSizing: 'border-box', padding: '4px'
+                  }}>
+                    {!table.isProp && <div style={{ width: '38%', height: '38%', borderRadius: '50%', border: '1.5px dashed #cbd5e1', position: 'absolute', opacity: 0.4 }} />}
+                    <span style={{ fontSize: `${Math.max(10, 13 * (table.scale || 1))}px`, fontWeight: '600', color: table.isProp ? '#92400e' : '#0f172a', zIndex: 3, textAlign: 'center', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', width: '88%' }}>
+                      {table.name}
+                    </span>
+                    {!table.isProp && (
+                      <span style={{ fontSize: `${Math.max(8, 9 * (table.scale || 1))}px`, fontWeight: '600', color: '#64748b', zIndex: 3 }}>
+                        {table.seats}p
+                      </span>
+                    )}
                   </div>
 
-                  <div style={{ width: '100%', height: '100%', background: isSelected ? '#f5f3ff' : '#ffffff', border: `2.5px solid ${isSelected ? '#7c3aed' : '#1e293b'}`, borderRadius: table.shape === 'circle' ? '50%' : table.shape === 'square' ? '10px' : '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: isSelected ? '0 0 0 0 transparent' : '0 4px 10px rgba(0,0,0,0.08)', position: 'relative', zIndex: 2, boxSizing: 'border-box', padding: '4px' }}>
-                    <div style={{ width: '38%', height: '38%', borderRadius: '50%', border: '1.5px dashed #e2e8f0', position: 'absolute', opacity: 0.4 }} />
-                    <span style={{ fontSize: `${Math.max(10, 13 * (table.scale || 1))}px`, fontWeight: '800', color: '#0f172a', zIndex: 3, textAlign: 'center', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', width: '88%' }}>{table.name}</span>
-                    <span style={{ fontSize: `${Math.max(8, 9 * (table.scale || 1))}px`, fontWeight: '800', color: '#64748b', zIndex: 3 }}>{table.seats}p</span>
-                  </div>
-
+                  {/* Live HUD Badge when dragging */}
                   {draggedTableId === table.id && draggingPos && (
-                    <div style={{ position: 'absolute', bottom: '-26px', left: '50%', transform: 'translateX(-50%)', background: '#0f172a', color: 'white', fontSize: '11px', fontWeight: '900', padding: '3px 8px', borderRadius: '6px', whiteSpace: 'nowrap', zIndex: 200, pointerEvents: 'none' }}>
+                    <div style={{ position: 'absolute', bottom: '-26px', left: '50%', transform: 'translateX(-50%)', background: '#0f172a', color: 'white', fontSize: '11px', fontWeight: '600', padding: '3px 8px', borderRadius: '6px', whiteSpace: 'nowrap', zIndex: 200, pointerEvents: 'none' }}>
                       {draggingPos.x}, {draggingPos.y}
                     </div>
                   )}
@@ -1065,20 +1308,33 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
             })}
           </div>
         </div>
+
+        {/* Bottom Zone Analytics HUD */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 20px', background: 'white', borderTop: '1px solid #e2e8f0', fontSize: '11px', color: '#64748b', fontWeight: '600', flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <span>Zone: <strong style={{ color: '#7c3aed' }}>{activeZone}</strong></span>
+            <span>Tables: <strong style={{ color: '#0f172a' }}>{zoneStats.count}</strong></span>
+            <span>Capacity: <strong style={{ color: '#0f172a' }}>{zoneStats.totalSeats} seats</strong></span>
+            <span>Breakdown: ◉ {zoneStats.roundCount} | ■ {zoneStats.squareCount} | ▬ {zoneStats.longCount}</span>
+          </div>
+          <div>
+            <span>Shortcuts: <strong>Ctrl+Z</strong> (Undo) · <strong>Ctrl+D</strong> (Duplicate) · <strong>Arrows</strong> (Nudge) · <strong>Shift+Click</strong> (Multi-select)</span>
+          </div>
+        </div>
       </div>
 
-      {/* ── DELETE MODAL ── */}
+      {/* Delete Confirmation Modal */}
       {tableToDelete && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
           <div className="animate-fade-in" style={{ background: 'white', padding: '32px', borderRadius: '20px', width: '360px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
             <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
               <Trash2 size={26} color="#dc2626" />
             </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>Delete {tableToDelete.name}?</h3>
-            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '22px', lineHeight: '1.5' }}>This permanently removes the table from the floor layout.</p>
+            <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0f172a', marginBottom: '8px' }}>Delete {tableToDelete.name}?</h3>
+            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '22px', lineHeight: '1.5' }}>This permanently removes the item from the floor layout.</p>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={() => setTableToDelete(null)} style={{ flex: 1, padding: '12px', background: '#f1f5f9', border: 'none', color: '#475569', borderRadius: '10px', fontWeight: '900', cursor: 'pointer' }}>Cancel</button>
-              <button onClick={confirmDeleteTable} style={{ flex: 1, padding: '12px', background: '#dc2626', border: 'none', color: 'white', borderRadius: '10px', fontWeight: '900', cursor: 'pointer' }}>Yes, Delete</button>
+              <button onClick={() => setTableToDelete(null)} style={{ flex: 1, padding: '12px', background: '#f1f5f9', border: 'none', color: '#475569', borderRadius: '10px', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={confirmDeleteTable} style={{ flex: 1, padding: '12px', background: '#dc2626', border: 'none', color: 'white', borderRadius: '10px', fontWeight: '600', cursor: 'pointer' }}>Yes, Delete</button>
             </div>
           </div>
         </div>

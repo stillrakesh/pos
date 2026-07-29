@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 :root {
   /* === BRAND COLORS === */
@@ -95,15 +95,16 @@
 
   /* MacBook Air / Laptop Tighter Scaling */
   @media (max-width: 1280px) {
-    --app-padding: 24px;
-    --panel-gap: 16px;
-    --font-size-base: 13.5px;
-    --header-height: 64px;
+    --app-padding: 16px;
+    --panel-gap: 14px;
+    --font-size-base: 13px;
+    --header-height: 58px;
   }
   @media (max-width: 1024px) {
-    --app-padding: 16px;
-    --panel-gap: 12px;
-    --font-size-base: 13px;
+    --app-padding: 12px;
+    --panel-gap: 10px;
+    --font-size-base: 12.5px;
+    --header-height: 54px;
   }
 }
 
@@ -152,6 +153,12 @@ body {
   box-shadow: 0 0 100px rgba(0,0,0,0.5); /* Lift the app off the background */
   position: relative;
   overflow: hidden;
+}
+
+@media (max-width: 1440px) {
+  .app-container {
+    max-width: 100%;
+  }
 }
 
 /* ================================================
@@ -206,6 +213,17 @@ body {
   border-right: 1px solid rgba(0, 0, 0, 0.1);
 }
 
+@media (max-width: 1280px) {
+  .menu-sidebar {
+    width: 140px;
+  }
+}
+@media (max-width: 1024px) {
+  .menu-sidebar {
+    width: 120px;
+  }
+}
+
 .menu-cat-btn {
   padding: var(--space-4) var(--space-5);
   border: none;
@@ -218,6 +236,19 @@ body {
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+}
+
+@media (max-width: 1280px) {
+  .menu-cat-btn {
+    padding: 12px 14px;
+    font-size: 12px;
+  }
+}
+@media (max-width: 1024px) {
+  .menu-cat-btn {
+    padding: 10px 12px;
+    font-size: 11.5px;
+  }
 }
 
 .menu-cat-btn:hover {
@@ -298,6 +329,19 @@ body {
   padding: var(--app-padding);
 }
 
+@media (max-width: 1280px) {
+  .items-grid {
+    grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+    gap: 8px;
+  }
+}
+@media (max-width: 1024px) {
+  .items-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 6px;
+  }
+}
+
 .item-card {
   background: white;
   border: 1px solid var(--border);
@@ -312,6 +356,19 @@ body {
   box-shadow: var(--shadow-sm);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+}
+
+@media (max-width: 1280px) {
+  .item-card {
+    padding: 12px;
+    min-height: 100px;
+  }
+}
+@media (max-width: 1024px) {
+  .item-card {
+    padding: 10px;
+    min-height: 85px;
+  }
 }
 
 .item-card:hover {
@@ -357,9 +414,21 @@ body {
   z-index: 5;
 }
 
+@media (max-width: 1440px) {
+  .billing-panel {
+    width: 400px;
+  }
+}
+
+@media (max-width: 1280px) {
+  .billing-panel {
+    width: 340px;
+  }
+}
+
 @media (max-width: 1024px) {
   .billing-panel {
-    width: 380px;
+    width: 300px;
   }
 }
 
@@ -495,6 +564,13 @@ body {
   border-top: 1px solid var(--border);
 }
 
+@media (max-width: 1280px) {
+  .footer-btn-grid {
+    padding: 8px;
+    gap: 4px;
+  }
+}
+
 .btn-maroon {
   background: var(--primary);
   color: white;
@@ -507,6 +583,13 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   transition: all 0.2s;
+}
+
+@media (max-width: 1280px) {
+  .btn-maroon {
+    padding: 10px var(--space-2);
+    font-size: 11px;
+  }
 }
 
 .btn-maroon:hover {
@@ -527,6 +610,13 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   transition: all 0.2s;
+}
+
+@media (max-width: 1280px) {
+  .btn-grey {
+    padding: 10px var(--space-2);
+    font-size: 11px;
+  }
 }
 
 .btn-grey:hover {

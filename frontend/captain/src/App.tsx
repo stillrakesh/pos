@@ -54,7 +54,7 @@ const TimeElapsed = ({ createdAt }: { createdAt: number | null | undefined }) =>
   
   if (!elapsed) return null;
   return (
-    <div style={{ fontSize: '10px', fontWeight: 900, color: '#b45309', background: '#fef3c7', padding: '2px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+    <div style={{ fontSize: '10px', fontWeight: '600', color: '#b45309', background: '#fef3c7', padding: '2px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
       <Clock size={10} /> {elapsed}
     </div>
   );
@@ -649,14 +649,14 @@ const App = () => {
       <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
         <header style={{ background: '#821a1d', color: '#fff', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Settings size={22} />
-          <span style={{ fontWeight: 800, fontSize: '18px' }}>CONNECTION SETTINGS</span>
+          <span style={{ fontWeight: '600', fontSize: '18px' }}>CONNECTION SETTINGS</span>
         </header>
 
 
         <div style={{ padding: '30px 20px', flex: 1, overflowY: 'auto' }}>
           
           <div style={{ background: '#fff', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 900, marginBottom: '8px' }}>Server Connection</h2>
+            <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>Server Connection</h2>
             <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '16px' }}>Enter the POS Server URL (e.g. http://192.168.1.50:3101)</p>
             <input 
               type="text" 
@@ -667,17 +667,17 @@ const App = () => {
             />
           </div>
           <div style={{ marginTop: '20px', background: '#fff', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 900, marginBottom: '8px' }}>Table Assignment</h2>
+            <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>Table Assignment</h2>
             <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '20px' }}>Select the tables you are currently serving. (Optional)</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
               {tables.map(t => (
                 <button key={t.id} onClick={() => toggleMyTable(t.id)}
-                  style={{ padding: '12px 6px', borderRadius: '12px', fontSize: '13px', fontWeight: 800, border: '1px solid', borderColor: myTables.includes(t.id) ? '#821a1d' : '#e2e8f0', background: myTables.includes(t.id) ? '#fef2f2' : 'transparent', color: myTables.includes(t.id) ? '#821a1d' : '#64748b' }}>
+                  style={{ padding: '12px 6px', borderRadius: '12px', fontSize: '13px', fontWeight: '600', border: '1px solid', borderColor: myTables.includes(t.id) ? '#821a1d' : '#e2e8f0', background: myTables.includes(t.id) ? '#fef2f2' : 'transparent', color: myTables.includes(t.id) ? '#821a1d' : '#64748b' }}>
                   T{t.number}
                 </button>
               ))}
             </div>
-            <button onClick={closeSettings} style={{ width: '100%', marginTop: '30px', background: '#821a1d', color: '#fff', padding: '18px', borderRadius: '16px', fontSize: '16px', fontWeight: 900, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+            <button onClick={closeSettings} style={{ width: '100%', marginTop: '30px', background: '#821a1d', color: '#fff', padding: '18px', borderRadius: '16px', fontSize: '16px', fontWeight: '600', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
               <CheckCircle2 size={20} /> SAVE & RETURN
             </button>
           </div>
@@ -699,11 +699,11 @@ const App = () => {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', flexDirection: 'column', padding: '20px', textAlign: 'center' }}>
         <WifiOff size={48} color="#ef4444" />
-        <h2 style={{ marginTop: '20px', fontWeight: 900, fontSize: '20px' }}>CONNECTION FAILED</h2>
+        <h2 style={{ marginTop: '20px', fontWeight: '600', fontSize: '20px' }}>CONNECTION FAILED</h2>
         <p style={{ marginTop: '10px', color: '#64748b', fontSize: '14px' }}>{fetchError}</p>
         <div style={{ display: 'flex', gap: '10px', marginTop: '30px' }}>
-          <button onClick={() => fetchData()} style={{ background: '#821a1d', color: '#fff', padding: '12px 24px', borderRadius: '12px', fontWeight: 900 }}>RETRY</button>
-          <button onClick={() => setShowSettings(true)} style={{ background: '#f1f5f9', color: '#64748b', padding: '12px 24px', borderRadius: '12px', fontWeight: 900 }}>SETTINGS</button>
+          <button onClick={() => fetchData()} style={{ background: '#821a1d', color: '#fff', padding: '12px 24px', borderRadius: '12px', fontWeight: '600' }}>RETRY</button>
+          <button onClick={() => setShowSettings(true)} style={{ background: '#f1f5f9', color: '#64748b', padding: '12px 24px', borderRadius: '12px', fontWeight: '600' }}>SETTINGS</button>
         </div>
       </div>
     );
@@ -760,7 +760,7 @@ const App = () => {
               <LayoutGrid size={20} color="#fff" />
             </div>
             <div>
-              <div style={{ fontWeight: 900, fontSize: '16px', color: '#fff', letterSpacing: '0.5px' }}>CAPTAIN</div>
+              <div style={{ fontWeight: '600', fontSize: '16px', color: '#fff', letterSpacing: '0.5px' }}>CAPTAIN</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '1px' }}>
                 <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: connectionState === 'connected' ? '#4ade80' : connectionState === 'reconnecting' ? '#facc15' : '#f87171' }} />
                 <span style={{ fontSize: '10px', color: connectionState === 'connected' ? '#86efac' : connectionState === 'reconnecting' ? '#fef08a' : '#fca5a5', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -782,8 +782,8 @@ const App = () => {
             <div style={{ fontSize: '26px', fontWeight: 950, color: '#0f172a', letterSpacing: '-1px', lineHeight: 1.1 }}>{timeStr}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Shift Status</div>
-            <div style={{ fontSize: '14px', fontWeight: 900, color: connectionState === 'connected' ? '#16a34a' : connectionState === 'reconnecting' ? '#ca8a04' : '#dc2626', marginTop: '2px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Shift Status</div>
+            <div style={{ fontSize: '14px', fontWeight: '600', color: connectionState === 'connected' ? '#16a34a' : connectionState === 'reconnecting' ? '#ca8a04' : '#dc2626', marginTop: '2px' }}>
               {connectionState === 'connected' ? '● Online' : connectionState === 'reconnecting' ? '● Reconnecting' : '● Offline'}
             </div>
           </div>
@@ -792,22 +792,22 @@ const App = () => {
         {/* Stats Row */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '16px', flexShrink: 0 }}>
           <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px 18px', boxShadow: '0 2px 4px rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Tables</div>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Tables</div>
             <div style={{ fontSize: '32px', fontWeight: 950, color: '#0f172a', marginTop: '4px', lineHeight: 1 }}>
               {occupiedCount}<span style={{ fontSize: '14px', color: '#cbd5e1', fontWeight: 700 }}>/{totalTables}</span>
             </div>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: '#821a1d', marginTop: '4px' }}>Occupied Now</div>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: '#821a1d', marginTop: '4px' }}>Occupied Now</div>
           </div>
           <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px 18px', boxShadow: '0 2px 4px rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Pickups</div>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Pickups</div>
             <div style={{ fontSize: '32px', fontWeight: 950, color: '#0f172a', marginTop: '4px', lineHeight: 1 }}>{activePickupCount}</div>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: '#f59e0b', marginTop: '4px' }}>Active Orders</div>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: '#f59e0b', marginTop: '4px' }}>Active Orders</div>
           </div>
         </div>
 
         {/* Mode Cards */}
         <div style={{ flex: 1, padding: '4px 16px 32px', display: 'flex', flexDirection: 'column', gap: '12px', justifyContent: 'flex-end' }}>
-          <div style={{ fontSize: '11px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px', paddingLeft: '4px', marginBottom: '4px' }}>Select Mode</div>
+          <div style={{ fontSize: '11px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px', paddingLeft: '4px', marginBottom: '4px' }}>Select Mode</div>
 
           <motion.button
             whileHover={{ y: -2, boxShadow: '0 12px 28px rgba(130,26,29,0.15)' }}
@@ -893,19 +893,19 @@ const App = () => {
               </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <LayoutGrid size={20} />
-                <span style={{ fontWeight: 800, fontSize: '16px', letterSpacing: '0.5px' }}>{appMode === 'pro' ? 'CAPTAIN PRO' : 'TABLES'}</span>
+                <span style={{ fontWeight: '600', fontSize: '16px', letterSpacing: '0.5px' }}>{appMode === 'pro' ? 'CAPTAIN PRO' : 'TABLES'}</span>
               </div>
               <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.3)', margin: '0 4px' }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: connectionState === 'connected' ? 'rgba(34,197,94,0.2)' : connectionState === 'reconnecting' ? 'rgba(234,179,8,0.2)' : 'rgba(239,68,68,0.2)', padding: '4px 8px', borderRadius: '20px' }}>
                 {connectionState === 'connected' ? <Wifi size={12} color="#4ade80" /> : connectionState === 'reconnecting' ? <RefreshCw size={12} color="#facc15" className="animate-spin" /> : <WifiOff size={12} color="#f87171" />}
-                <span style={{ fontSize: '10px', fontWeight: 900, color: connectionState === 'connected' ? '#4ade80' : connectionState === 'reconnecting' ? '#facc15' : '#f87171' }}>
+                <span style={{ fontSize: '10px', fontWeight: '600', color: connectionState === 'connected' ? '#4ade80' : connectionState === 'reconnecting' ? '#facc15' : '#f87171' }}>
                   {connectionState === 'connected' ? 'LIVE' : connectionState === 'reconnecting' ? 'RECONNECTING' : 'OFFLINE'}
                 </span>
               </div>
               {offlineQueueLength > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(249,115,22,0.2)', padding: '4px 8px', borderRadius: '20px', border: '1px solid rgba(249,115,22,0.3)' }}>
                   <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f97316' }} />
-                  <span style={{ fontSize: '10px', fontWeight: 900, color: '#f97316', letterSpacing: '0.5px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: '600', color: '#f97316', letterSpacing: '0.5px' }}>
                     {offlineQueueLength} PENDING SYNC
                   </span>
                 </div>
@@ -920,7 +920,7 @@ const App = () => {
 
           <div style={{ padding: '24px 16px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
             <div>
-              <h1 style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a' }}>{myTables.length > 0 ? 'My Tables' : 'Real-time Floor'}</h1>
+              <h1 style={{ fontSize: '20px', fontWeight: '600', color: '#0f172a' }}>{myTables.length > 0 ? 'My Tables' : 'Real-time Floor'}</h1>
               <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>{myTables.length > 0 ? `Showing ${myTables.length} assigned tables` : 'Live table status from POS'}</p>
             </div>
           </div>
@@ -933,7 +933,7 @@ const App = () => {
                   style={{ background: '#fff', border: isOcc ? '2px solid transparent' : '1px solid #e2e8f0', borderRadius: '24px', padding: '24px 20px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', position: 'relative', overflow: 'hidden' }}>
                   {isOcc && (
                     <div style={{ position: 'absolute', top: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                      <div style={{ padding: '4px 12px', background: t.status === 'draft' ? '#2563eb' : (t.status === 'kot_pending' || t.status === 'kot_printed') ? '#ca8a04' : t.status === 'billing' ? '#16a34a' : '#64748b', color: '#fff', fontSize: '9px', fontWeight: 900, borderBottomLeftRadius: '12px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                      <div style={{ padding: '4px 12px', background: t.status === 'draft' ? '#2563eb' : (t.status === 'kot_pending' || t.status === 'kot_printed') ? '#ca8a04' : t.status === 'billing' ? '#16a34a' : '#64748b', color: '#fff', fontSize: '9px', fontWeight: '600', borderBottomLeftRadius: '12px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                         {(t.status === 'kot_pending' || t.status === 'kot_printed') ? 'RUNNING' : t.status.toUpperCase()}
                       </div>
                       <div style={{ paddingRight: '8px' }}>
@@ -945,7 +945,7 @@ const App = () => {
                     <span style={{ fontSize: '28px', fontWeight: 950, color: isOcc ? '#0f172a' : '#1e293b' }}>{t.number}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#94a3b8' }}>
                       <LayoutGrid size={14} />
-                      <span style={{ fontSize: '11px', fontWeight: 800 }}>{t.capacity} Seats</span>
+                      <span style={{ fontSize: '11px', fontWeight: '600' }}>{t.capacity} Seats</span>
                     </div>
                   </div>
                   <div>{isOcc ? (<div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}><div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><UtensilsCrossed size={14} color="#64748b" /><span style={{ fontSize: '13px', fontWeight: 700, color: '#64748b' }}>{t.orderCount} Items</span></div><span style={{ fontSize: '16px', fontWeight: 950, color: '#0f172a' }}>₹{t.orderValue}</span></div>) : (<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#cbd5e1' }} /><span style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8' }}>AVAILABLE</span></div>)}</div>
@@ -960,7 +960,7 @@ const App = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <button onClick={reset} style={{ color: '#fff', background: 'rgba(255,255,255,0.15)', padding: '6px', borderRadius: '10px' }}><ChevronLeft size={24} /></button>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontWeight: 900, fontSize: '16px' }}>Table {table.number}</span>
+                <span style={{ fontWeight: '600', fontSize: '16px' }}>Table {table.number}</span>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -970,7 +970,7 @@ const App = () => {
                     <>
                       <button 
                         onClick={() => setClearingTable(table)} 
-                        style={{ color: '#fff', background: 'rgba(239, 68, 68, 0.25)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '14px', padding: '10px 16px', fontSize: '11px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px', backdropFilter: 'blur(10px)', transition: 'all 0.2s' }}
+                        style={{ color: '#fff', background: 'rgba(239, 68, 68, 0.25)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '14px', padding: '10px 16px', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', backdropFilter: 'blur(10px)', transition: 'all 0.2s' }}
                       >
                         <Trash2 size={15} color="#fecaca" /> CLEAR
                       </button>
@@ -986,13 +986,13 @@ const App = () => {
                     <>
                       <button 
                         onClick={() => setClearingTable(table)} 
-                        style={{ color: '#fff', background: 'rgba(239, 68, 68, 0.25)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '14px', padding: '10px 16px', fontSize: '11px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px', backdropFilter: 'blur(10px)' }}
+                        style={{ color: '#fff', background: 'rgba(239, 68, 68, 0.25)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '14px', padding: '10px 16px', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', backdropFilter: 'blur(10px)' }}
                       >
                         <Trash2 size={15} color="#fecaca" /> CLEAR
                       </button>
                       <button 
                         onClick={() => setSettlingTable(table)} 
-                        style={{ color: '#047857', background: '#ecfdf5', border: '1.5px solid #d1fae5', borderRadius: '20px', padding: '10px 18px', fontSize: '11px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(4,120,87,0.15)' }}
+                        style={{ color: '#047857', background: '#ecfdf5', border: '1.5px solid #d1fae5', borderRadius: '20px', padding: '10px 18px', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(4,120,87,0.15)' }}
                       >
                         <Banknote size={16} color="#047857" /> SETTLE BILL
                       </button>
@@ -1005,7 +1005,7 @@ const App = () => {
                   <button onClick={() => setShowMerge(true)} style={{ color: '#fff', background: 'rgba(255,255,255,0.1)', padding: '6px', borderRadius: '10px' }}><ArrowRightLeft size={20} /></button>
                   <button onClick={() => setShowSplit(true)} style={{ color: '#fff', background: 'rgba(255,255,255,0.1)', padding: '6px', borderRadius: '10px' }}><LayoutGrid size={20} /></button>
                   <button onClick={() => setShowSettings(true)} style={{ color: '#fff', background: 'rgba(255,255,255,0.1)', padding: '6px', borderRadius: '10px' }}><Settings size={20} /></button>
-                  <button onClick={reset} style={{ color: '#fff', background: 'rgba(255,255,255,0.2)', borderRadius: '8px', padding: '6px 12px', fontSize: '11px', fontWeight: 800 }}>CLOSE</button>
+                  <button onClick={reset} style={{ color: '#fff', background: 'rgba(255,255,255,0.2)', borderRadius: '8px', padding: '6px 12px', fontSize: '11px', fontWeight: '600' }}>CLOSE</button>
                 </>
               )}
             </div>
@@ -1019,7 +1019,7 @@ const App = () => {
             </div>
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }} className="hide-scrollbar">
               {categories.map(c => (
-                <button key={c} onClick={() => setCategory(c)} style={{ padding: '8px 18px', borderRadius: '25px', fontSize: '13px', fontWeight: 800, whiteSpace: 'nowrap', background: category === c ? '#fbbf24' : '#f1f5f9', color: category === c ? '#000' : '#64748b', border: category === c ? '2px solid #b45309' : 'none' }}>{c}</button>
+                <button key={c} onClick={() => setCategory(c)} style={{ padding: '8px 18px', borderRadius: '25px', fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap', background: category === c ? '#fbbf24' : '#f1f5f9', color: category === c ? '#000' : '#64748b', border: category === c ? '2px solid #b45309' : 'none' }}>{c}</button>
               ))}
             </div>
           </div>
@@ -1027,7 +1027,7 @@ const App = () => {
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }} className="hide-scrollbar">
             {table?.activeItems && table.activeItems.length > 0 && category === 'All' && search === '' && (
               <div style={{ marginBottom: '20px', padding: '16px', background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                <h4 style={{ fontSize: '13px', fontWeight: 800, color: '#64748b', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', justifyContent: 'space-between' }}>
+                <h4 style={{ fontSize: '13px', fontWeight: '600', color: '#64748b', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', justifyContent: 'space-between' }}>
                   <span>Already Ordered</span>
                   {table.activeItems.some(i => i.status === 'held') && (
                     <button 
@@ -1042,7 +1042,7 @@ const App = () => {
                           fetchData(true);
                         } catch (e) { console.error(e); }
                       }}
-                      style={{ background: '#b45309', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: '8px', fontSize: '10px', fontWeight: 900, cursor: 'pointer' }}
+                      style={{ background: '#b45309', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: '8px', fontSize: '10px', fontWeight: '600', cursor: 'pointer' }}
                     >
                       FIRE HELD
                     </button>
@@ -1052,10 +1052,10 @@ const App = () => {
                   {table.activeItems.map((ai, idx) => (
                     <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>{ai.name}</span>
-                        {ai.status === 'held' && <span style={{ fontSize: '10px', background: '#fef3c7', color: '#b45309', padding: '2px 6px', borderRadius: '4px', fontWeight: 800 }}>HELD</span>}
+                        <span style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b' }}>{ai.name}</span>
+                        {ai.status === 'held' && <span style={{ fontSize: '10px', background: '#fef3c7', color: '#b45309', padding: '2px 6px', borderRadius: '4px', fontWeight: '500' }}>HELD</span>}
                       </div>
-                      <span style={{ fontSize: '14px', fontWeight: 900, color: '#821a1d', background: '#fef2f2', padding: '2px 8px', borderRadius: '8px' }}>x{ai.quantity}</span>
+                      <span style={{ fontSize: '14px', fontWeight: '600', color: '#821a1d', background: '#fef2f2', padding: '2px 8px', borderRadius: '8px' }}>x{ai.quantity}</span>
                     </div>
                   ))}
                 </div>
@@ -1117,7 +1117,7 @@ const App = () => {
                     )}
 
                     <div style={{ paddingLeft: '8px' }}>
-                      <p style={{ fontSize: '15px', fontWeight: 800, lineHeight: 1.2, color: '#1e293b' }}>{item.name}</p>
+                      <p style={{ fontSize: '15px', fontWeight: '600', lineHeight: 1.2, color: '#1e293b' }}>{item.name}</p>
                       <p style={{ fontSize: '16px', fontWeight: 950, color: '#821a1d' }}>₹{item.price}</p>
                     </div>
                   </div>
@@ -1129,8 +1129,8 @@ const App = () => {
           {totalQty > 0 && !showCart && (
             <motion.div initial={{ y: 100 }} animate={{ y: 0 }} style={{ position: 'fixed', bottom: '20px', left: '16px', right: '16px', zIndex: 30 }}>
               <button onClick={() => setShowCart(true)} style={{ width: '100%', background: '#821a1d', color: '#fff', borderRadius: '18px', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 10px 25px rgba(130,26,29,0.4)', border: 'none' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><div style={{ background: 'rgba(255,255,255,0.2)', padding: '4px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 900 }}>{totalQty} ITEMS</div><span style={{ fontSize: '15px', fontWeight: 800 }}>VIEW CART</span></div>
-                <span style={{ fontSize: '20px', fontWeight: 900 }}>₹{total}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><div style={{ background: 'rgba(255,255,255,0.2)', padding: '4px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: '600' }}>{totalQty} ITEMS</div><span style={{ fontSize: '15px', fontWeight: '600' }}>VIEW CART</span></div>
+                <span style={{ fontSize: '20px', fontWeight: '600' }}>₹{total}</span>
               </button>
             </motion.div>
           )}
@@ -1144,8 +1144,8 @@ const App = () => {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCart(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 40, backdropFilter: 'blur(6px)' }} />
             <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, maxHeight: '90vh', zIndex: 50, background: '#fff', borderTopLeftRadius: '28px', borderTopRightRadius: '28px', display: 'flex', flexDirection: 'column' }}>
               <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div><h2 style={{ fontSize: '20px', fontWeight: 900 }}>{appMode === 'pro' ? 'Modify Table' : 'Confirm KOT'}</h2><p style={{ fontSize: '13px', color: '#64748b' }}>Table {table?.number}</p></div>
-                <button onClick={() => setShowCart(false)} style={{ fontSize: '24px', fontWeight: 900, background: 'none', border: 'none' }}>×</button>
+                <div><h2 style={{ fontSize: '20px', fontWeight: '600' }}>{appMode === 'pro' ? 'Modify Table' : 'Confirm KOT'}</h2><p style={{ fontSize: '13px', color: '#64748b' }}>Table {table?.number}</p></div>
+                <button onClick={() => setShowCart(false)} style={{ fontSize: '24px', fontWeight: '700', background: 'none', border: 'none' }}>×</button>
               </div>
 
               <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
@@ -1160,11 +1160,11 @@ const App = () => {
                       <div key={i.uniqueId || i.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: '#f8fafc', padding: '16px', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ fontWeight: 800, color: '#1e293b', fontSize: '15px' }}>{i.name}</div>
-                            {i.course && <span style={{ fontSize: '10px', background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', fontWeight: 800 }}>{i.course}</span>}
+                            <div style={{ fontWeight: '500', color: '#1e293b', fontSize: '15px' }}>{i.name}</div>
+                            {i.course && <span style={{ fontSize: '10px', background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', fontWeight: '500' }}>{i.course}</span>}
                             <button 
                               onClick={() => setOrder(p => p.map(item => (item.uniqueId || item.id) === (i.uniqueId || i.id) ? { ...item, status: item.status === 'held' ? 'fired' : 'held' } : item))}
-                              style={{ fontSize: '10px', background: i.status === 'held' ? '#fef3c7' : '#f1f5f9', color: i.status === 'held' ? '#b45309' : '#64748b', padding: '2px 6px', borderRadius: '4px', fontWeight: 800, border: 'none', cursor: 'pointer' }}
+                              style={{ fontSize: '10px', background: i.status === 'held' ? '#fef3c7' : '#f1f5f9', color: i.status === 'held' ? '#b45309' : '#64748b', padding: '2px 6px', borderRadius: '4px', fontWeight: '500', border: 'none', cursor: 'pointer' }}
                             >
                               {i.status === 'held' ? 'HELD' : 'FIRE NOW'}
                             </button>
@@ -1178,13 +1178,13 @@ const App = () => {
                             </div>
                           )}
                           
-                          <div style={{ color: '#821a1d', fontWeight: 900, fontSize: '13px', marginTop: '4px' }}>₹{i.price * i.quantity}</div>
+                          <div style={{ color: '#821a1d', fontWeight: '600', fontSize: '13px', marginTop: '4px' }}>₹{i.price * i.quantity}</div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', padding: '6px 12px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
                           <button onClick={() => dec(i.uniqueId || i.id)} style={{ border: 'none', background: 'none', color: '#821a1d', padding: '4px' }}>
                             {i.quantity > 1 ? <Minus size={18} /> : <Trash2 size={18} />}
                           </button>
-                          <span style={{ fontWeight: 900, color: '#1e293b', minWidth: '20px', textAlign: 'center' }}>{i.quantity}</span>
+                          <span style={{ fontWeight: '600', color: '#1e293b', minWidth: '20px', textAlign: 'center' }}>{i.quantity}</span>
                           <button onClick={() => setOrder(p => p.map(item => (item.uniqueId || item.id) === (i.uniqueId || i.id) ? { ...item, quantity: item.quantity + 1 } : item))} style={{ border: 'none', background: 'none', color: '#16a34a', padding: '4px' }}><Plus size={18} /></button>
                         </div>
                       </div>
@@ -1214,7 +1214,7 @@ const App = () => {
                           fetchData(true);
                         } catch (err: any) { console.error(err); } finally { setSending(false); }
                       }}
-                      style={{ background: '#475569', color: '#fff', borderRadius: '16px', padding: '14px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none' }}
+                      style={{ background: '#475569', color: '#fff', borderRadius: '16px', padding: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none' }}
                     >
                       <Save size={18} /> SAVE
                     </button>
@@ -1225,7 +1225,7 @@ const App = () => {
                         setQuickPrintTable(table);
                         setShowQuickPrint(true);
                       }}
-                      style={{ background: '#1e293b', color: '#fff', borderRadius: '16px', padding: '14px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', opacity: sending ? 0.7 : 1 }}
+                      style={{ background: '#1e293b', color: '#fff', borderRadius: '16px', padding: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', opacity: sending ? 0.7 : 1 }}
                     >
                       {sending ? <div className="animate-spin" style={{ width: '18px', height: '18px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%' }} /> : <Printer size={18} />}
                       {sending ? 'SYNCING...' : 'BILL'}
@@ -1253,7 +1253,7 @@ const App = () => {
                         reset();
                         fetchData(true);
                       }}
-                      style={{ background: '#d97706', color: '#fff', borderRadius: '16px', padding: '14px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none' }}
+                      style={{ background: '#d97706', color: '#fff', borderRadius: '16px', padding: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none' }}
                     >
                       <SendHorizontal size={18} /> KOT
                     </button>
@@ -1280,7 +1280,7 @@ const App = () => {
                         reset();
                         fetchData(true);
                       }}
-                      style={{ background: '#821a1d', color: '#fff', borderRadius: '16px', padding: '14px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none' }}
+                      style={{ background: '#821a1d', color: '#fff', borderRadius: '16px', padding: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none' }}
                     >
                       <Printer size={18} /> KOT+PRNT
                     </button>
@@ -1312,13 +1312,13 @@ const App = () => {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowShift(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 40, backdropFilter: 'blur(6px)' }} />
             <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, maxHeight: '90vh', zIndex: 50, background: '#fff', borderTopLeftRadius: '28px', borderTopRightRadius: '28px', display: 'flex', flexDirection: 'column' }}>
               <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div><h2 style={{ fontSize: '20px', fontWeight: 900 }}>Shift Table</h2><p style={{ fontSize: '13px', color: '#64748b' }}>Select target table</p></div>
-                <button onClick={() => setShowShift(false)} style={{ fontSize: '24px', fontWeight: 900, background: 'none', border: 'none' }}>×</button>
+                <div><h2 style={{ fontSize: '20px', fontWeight: '700' }}>Shift Table</h2><p style={{ fontSize: '13px', color: '#64748b' }}>Select target table</p></div>
+                <button onClick={() => setShowShift(false)} style={{ fontSize: '24px', fontWeight: '700', background: 'none', border: 'none' }}>×</button>
               </div>
               <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                    {tables.filter(t => t.status === 'vacant').map(t => (
-                     <button key={t.id} onClick={() => handleShift(t.id)} style={{ padding: '16px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', fontWeight: 800 }}>T{t.number}</button>
+                     <button key={t.id} onClick={() => handleShift(t.id)} style={{ padding: '16px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', fontWeight: '600' }}>T{t.number}</button>
                    ))}
                    {tables.filter(t => t.status === 'vacant').length === 0 && <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#64748b', padding: '20px' }}>No vacant tables available</p>}
                  </div>
@@ -1334,13 +1334,13 @@ const App = () => {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowMerge(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 40, backdropFilter: 'blur(6px)' }} />
             <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, maxHeight: '90vh', zIndex: 50, background: '#fff', borderTopLeftRadius: '28px', borderTopRightRadius: '28px', display: 'flex', flexDirection: 'column' }}>
               <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div><h2 style={{ fontSize: '20px', fontWeight: 900 }}>Merge Table</h2><p style={{ fontSize: '13px', color: '#64748b' }}>Select secondary table to merge into this one</p></div>
-                <button onClick={() => setShowMerge(false)} style={{ fontSize: '24px', fontWeight: 900, background: 'none', border: 'none' }}>×</button>
+                <div><h2 style={{ fontSize: '20px', fontWeight: '600' }}>Merge Table</h2><p style={{ fontSize: '13px', color: '#64748b' }}>Select secondary table to merge into this one</p></div>
+                <button onClick={() => setShowMerge(false)} style={{ fontSize: '24px', fontWeight: '700', background: 'none', border: 'none' }}>×</button>
               </div>
               <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                    {tables.filter(t => t.id !== tableId && t.status !== 'vacant').map(t => (
-                     <button key={t.id} onClick={() => handleMerge(t.id)} style={{ padding: '16px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', fontWeight: 800 }}>T{t.number}</button>
+                     <button key={t.id} onClick={() => handleMerge(t.id)} style={{ padding: '16px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', fontWeight: '600' }}>T{t.number}</button>
                    ))}
                    {tables.filter(t => t.id !== tableId && t.status !== 'vacant').length === 0 && <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#64748b', padding: '20px' }}>No active tables available to merge</p>}
                  </div>
@@ -1356,13 +1356,13 @@ const App = () => {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSplit(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 40, backdropFilter: 'blur(6px)' }} />
             <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, maxHeight: '90vh', zIndex: 50, background: '#fff', borderTopLeftRadius: '28px', borderTopRightRadius: '28px', display: 'flex', flexDirection: 'column' }}>
               <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div><h2 style={{ fontSize: '20px', fontWeight: 900 }}>Split Table</h2><p style={{ fontSize: '13px', color: '#64748b' }}>Select target table for quick split (moves 1st item)</p></div>
-                <button onClick={() => setShowSplit(false)} style={{ fontSize: '24px', fontWeight: 900, background: 'none', border: 'none' }}>×</button>
+                <div><h2 style={{ fontSize: '20px', fontWeight: '600' }}>Split Table</h2><p style={{ fontSize: '13px', color: '#64748b' }}>Select target table for quick split (moves 1st item)</p></div>
+                <button onClick={() => setShowSplit(false)} style={{ fontSize: '24px', fontWeight: '700', background: 'none', border: 'none' }}>×</button>
               </div>
               <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                    {tables.filter(t => t.status === 'vacant').map(t => (
-                     <button key={t.id} onClick={() => handleSplit(t.id)} style={{ padding: '16px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', fontWeight: 800 }}>T{t.number}</button>
+                     <button key={t.id} onClick={() => handleSplit(t.id)} style={{ padding: '16px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', fontWeight: '600' }}>T{t.number}</button>
                    ))}
                    {tables.filter(t => t.status === 'vacant').length === 0 && <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#64748b', padding: '20px' }}>No vacant tables available for split</p>}
                  </div>
@@ -1377,7 +1377,7 @@ const App = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
             <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} style={{ background: '#fff', borderRadius: '32px', padding: '40px 24px', textAlign: 'center', width: '85%', maxWidth: '360px' }}>
               <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}><CheckCircle2 size={40} color="#22c55e" /></div>
-              <h3 style={{ fontSize: '22px', fontWeight: 900 }}>KOT SENT!</h3>
+              <h3 style={{ fontSize: '22px', fontWeight: '600' }}>KOT SENT!</h3>
             </motion.div>
           </motion.div>
         )}
@@ -1391,22 +1391,22 @@ const App = () => {
             <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, maxHeight: '90vh', zIndex: 70, background: '#fff', borderTopLeftRadius: '28px', borderTopRightRadius: '28px', display: 'flex', flexDirection: 'column' }}>
               <div style={{ padding: '24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <h2 style={{ fontSize: '20px', fontWeight: 900 }}>Customize {customizingItem.item.name}</h2>
+                  <h2 style={{ fontSize: '20px', fontWeight: '700' }}>Customize {customizingItem.item.name}</h2>
                 </div>
-                <button onClick={() => setCustomizingItem(null)} style={{ fontSize: '24px', fontWeight: 900, background: 'none', border: 'none' }}>×</button>
+                <button onClick={() => setCustomizingItem(null)} style={{ fontSize: '24px', fontWeight: '700', background: 'none', border: 'none' }}>×</button>
               </div>
 
               <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 
                 {/* Course Selection */}
                 <div>
-                  <h3 style={{ fontSize: '14px', fontWeight: 900, color: '#1e293b', marginBottom: '12px' }}>COURSE TAGGING</h3>
+                  <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '12px' }}>COURSE TAGGING</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
                     {['Starter', 'Main', 'Dessert'].map(c => (
                       <button 
                         key={c}
                         onClick={() => setCustomizingItem({ ...customizingItem, course: c as any })}
-                        style={{ padding: '12px', borderRadius: '12px', border: `2px solid ${customizingItem.course === c ? '#821a1d' : '#e2e8f0'}`, background: customizingItem.course === c ? '#fff1f2' : '#fff', fontWeight: 800, color: customizingItem.course === c ? '#821a1d' : '#64748b' }}
+                        style={{ padding: '12px', borderRadius: '12px', border: `2px solid ${customizingItem.course === c ? '#821a1d' : '#e2e8f0'}`, background: customizingItem.course === c ? '#fff1f2' : '#fff', fontWeight: '600', color: customizingItem.course === c ? '#821a1d' : '#64748b' }}
                       >
                         {c}
                       </button>
@@ -1417,7 +1417,7 @@ const App = () => {
                 {/* Modifiers */}
                 {customizingItem.item.modifiers?.map(mg => (
                   <div key={mg.name}>
-                    <h3 style={{ fontSize: '14px', fontWeight: 900, color: '#1e293b', marginBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
                       {mg.name} {mg.required && <span style={{ color: '#ef4444' }}>*Required</span>}
                     </h3>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -1425,7 +1425,7 @@ const App = () => {
                         <button 
                           key={opt.name}
                           onClick={() => setCustomizingItem({ ...customizingItem, selectedMods: { ...customizingItem.selectedMods, [mg.name]: opt.name }})}
-                          style={{ padding: '12px', borderRadius: '12px', border: `2px solid ${customizingItem.selectedMods[mg.name] === opt.name ? '#821a1d' : '#e2e8f0'}`, background: customizingItem.selectedMods[mg.name] === opt.name ? '#fff1f2' : '#fff', fontWeight: 800, color: customizingItem.selectedMods[mg.name] === opt.name ? '#821a1d' : '#64748b', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                          style={{ padding: '12px', borderRadius: '12px', border: `2px solid ${customizingItem.selectedMods[mg.name] === opt.name ? '#821a1d' : '#e2e8f0'}`, background: customizingItem.selectedMods[mg.name] === opt.name ? '#fff1f2' : '#fff', fontWeight: '600', color: customizingItem.selectedMods[mg.name] === opt.name ? '#821a1d' : '#64748b', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                         >
                           <span>{opt.name}</span>
                           {opt.price > 0 && <span style={{ fontSize: '11px', marginTop: '4px' }}>+₹{opt.price}</span>}
@@ -1438,7 +1438,7 @@ const App = () => {
                 {/* Add-ons */}
                 {customizingItem.item.add_ons && customizingItem.item.add_ons.length > 0 && (
                   <div>
-                    <h3 style={{ fontSize: '14px', fontWeight: 900, color: '#1e293b', marginBottom: '12px' }}>ADD-ONS</h3>
+                    <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '12px' }}>ADD-ONS</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       {customizingItem.item.add_ons.map(addon => {
                         const isSelected = customizingItem.selectedAddOns.includes(addon.name);
@@ -1451,7 +1451,7 @@ const App = () => {
                                 : [...customizingItem.selectedAddOns, addon.name];
                               setCustomizingItem({ ...customizingItem, selectedAddOns: newAddons });
                             }}
-                            style={{ padding: '16px', borderRadius: '12px', border: `2px solid ${isSelected ? '#821a1d' : '#e2e8f0'}`, background: isSelected ? '#fff1f2' : '#fff', fontWeight: 800, color: isSelected ? '#821a1d' : '#1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                            style={{ padding: '16px', borderRadius: '12px', border: `2px solid ${isSelected ? '#821a1d' : '#e2e8f0'}`, background: isSelected ? '#fff1f2' : '#fff', fontWeight: '600', color: isSelected ? '#821a1d' : '#1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                           >
                             <span>{addon.name}</span>
                             <span>+₹{addon.price}</span>
@@ -1529,7 +1529,7 @@ const App = () => {
                     });
                     setCustomizingItem(null);
                   }}
-                  style={{ width: '100%', background: '#821a1d', color: '#fff', borderRadius: '16px', padding: '16px', fontWeight: 900, border: 'none', fontSize: '16px', cursor: 'pointer' }}
+                  style={{ width: '100%', background: '#821a1d', color: '#fff', borderRadius: '16px', padding: '16px', fontWeight: '600', border: 'none', fontSize: '16px', cursor: 'pointer' }}
                 >
                   Confirm Item
                 </button>
@@ -1545,8 +1545,8 @@ const App = () => {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setViewShiftHistory(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 60, backdropFilter: 'blur(6px)' }} />
             <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, maxHeight: '90vh', zIndex: 70, background: '#fff', borderTopLeftRadius: '28px', borderTopRightRadius: '28px', display: 'flex', flexDirection: 'column' }}>
               <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div><h2 style={{ fontSize: '20px', fontWeight: 900 }}>Table Shift History</h2><p style={{ fontSize: '13px', color: '#64748b' }}>Active shifts for running orders</p></div>
-                <button onClick={() => setViewShiftHistory(false)} style={{ fontSize: '24px', fontWeight: 900, background: 'none', border: 'none' }}>×</button>
+                <div><h2 style={{ fontSize: '20px', fontWeight: '600' }}>Table Shift History</h2><p style={{ fontSize: '13px', color: '#64748b' }}>Active shifts for running orders</p></div>
+                <button onClick={() => setViewShiftHistory(false)} style={{ fontSize: '24px', fontWeight: '700', background: 'none', border: 'none' }}>×</button>
               </div>
               <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
                 {shiftHistory.length === 0 ? (
@@ -1556,9 +1556,9 @@ const App = () => {
                     {shiftHistory.map((s, i) => (
                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
                         <div>
-                          <span style={{ fontWeight: 800, color: '#1e293b' }}>T{s.from}</span>
+                          <span style={{ fontWeight: '600', color: '#1e293b' }}>T{s.from}</span>
                           <span style={{ margin: '0 10px', color: '#94a3b8' }}>➔</span>
-                          <span style={{ fontWeight: 900, color: '#16a34a' }}>T{s.to}</span>
+                          <span style={{ fontWeight: '600', color: '#16a34a' }}>T{s.to}</span>
                         </div>
                         <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8' }}>{new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
@@ -1691,7 +1691,7 @@ const ClearTableModal = ({ onClose, onConfirm }: { table: Table, onClose: () => 
           This will immediately remove all items from this table and restore it to vacant status. This action cannot be undone.
         </p>
         <div style={{ display: 'flex', gap: '12px', width: '100%', marginTop: '12px' }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '16px', borderRadius: '18px', border: '1.5px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 900, fontSize: '15px' }}>Go Back</button>
+          <button onClick={onClose} style={{ flex: 1, padding: '16px', borderRadius: '18px', border: '1.5px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: '600', fontSize: '15px' }}>Go Back</button>
           <button onClick={onConfirm} style={{ flex: 1, padding: '16px', borderRadius: '18px', border: 'none', background: '#ef4444', color: 'white', fontWeight: 950, fontSize: '15px', boxShadow: '0 8px 16px rgba(239,68,68,0.2)' }}>Yes, Discard</button>
         </div>
       </motion.div>
@@ -1794,23 +1794,23 @@ const ProSettlementModal = ({ table, settings, onClose, onComplete }: { table: T
          </div>
 
          <div style={{ background: '#fff1f2', borderRadius: '24px', padding: '16px', textAlign: 'center', border: '1px solid #fecaca' }}>
-            <div style={{ fontSize: '10px', fontWeight: 900, color: '#991b1b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>Total Payable</div>
+            <div style={{ fontSize: '10px', fontWeight: '600', color: '#991b1b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>Total Payable</div>
             <div style={{ fontSize: '38px', fontWeight: 950, color: '#821a1d', letterSpacing: '-1px' }}>₹{grandTotal}</div>
          </div>
 
          {/* Breakdown & Toggles */}
          <div style={{ background: '#f8fafc', borderRadius: '20px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid #e2e8f0' }}>
             {/* Item subtotal row */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 800, color: '#64748b' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600', color: '#64748b' }}>
                <span>Item Total</span>
                <span>₹{itemSubtotal}</span>
             </div>
 
             {/* Service Charge row — matches QuickPrintModal toggle exactly */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: serviceChargeEnabled ? '#fef2f2' : '#f8fafc', borderRadius: '14px', border: `1px solid ${serviceChargeEnabled ? '#fee2e2' : '#e2e8f0'}` }}>
-               <div style={{ fontSize: '14px', fontWeight: 900, color: serviceChargeEnabled ? '#991b1b' : '#64748b' }}>Service Charge ({scRate}%)</div>
+               <div style={{ fontSize: '14px', fontWeight: '600', color: serviceChargeEnabled ? '#991b1b' : '#64748b' }}>Service Charge ({scRate}%)</div>
                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '15px', fontWeight: 900, color: serviceChargeEnabled ? '#991b1b' : '#94a3b8' }}>₹{service}</span>
+                  <span style={{ fontSize: '15px', fontWeight: '600', color: serviceChargeEnabled ? '#991b1b' : '#94a3b8' }}>₹{service}</span>
                   <button
                     onClick={() => setServiceChargeEnabled(!serviceChargeEnabled)}
                     style={{ width: '44px', height: '24px', borderRadius: '12px', background: serviceChargeEnabled ? '#10b981' : '#cbd5e1', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}
@@ -1822,9 +1822,9 @@ const ProSettlementModal = ({ table, settings, onClose, onComplete }: { table: T
 
             {/* GST row — matches QuickPrintModal toggle exactly */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: gstEnabled ? '#f0fdf4' : '#f8fafc', borderRadius: '14px', border: `1px solid ${gstEnabled ? '#dcfce7' : '#e2e8f0'}` }}>
-               <div style={{ fontSize: '14px', fontWeight: 900, color: gstEnabled ? '#166534' : '#64748b' }}>GST ({gstRate}%)</div>
+               <div style={{ fontSize: '14px', fontWeight: '600', color: gstEnabled ? '#166534' : '#64748b' }}>GST ({gstRate}%)</div>
                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '15px', fontWeight: 900, color: gstEnabled ? '#166534' : '#94a3b8' }}>₹{gst}</span>
+                  <span style={{ fontSize: '15px', fontWeight: '600', color: gstEnabled ? '#166534' : '#94a3b8' }}>₹{gst}</span>
                   <button
                     onClick={() => setGstEnabled(!gstEnabled)}
                     style={{ width: '44px', height: '24px', borderRadius: '12px', background: gstEnabled ? '#10b981' : '#cbd5e1', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}
@@ -1854,12 +1854,12 @@ const ProSettlementModal = ({ table, settings, onClose, onComplete }: { table: T
          </div>
 
          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Detailed Payment</label>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase' }}>Detailed Payment</label>
             
             {payments.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {payments.map((p, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', background: '#f8fafc', padding: '10px 16px', borderRadius: '12px', fontSize: '14px', fontWeight: 'bold', border: '1px solid #e2e8f0' }}>
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', background: '#f8fafc', padding: '10px 16px', borderRadius: '12px', fontSize: '14px', fontWeight: '600', border: '1px solid #e2e8f0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       {p.method === 'Cash' && <Banknote size={14} />}
                       {p.method === 'UPI' && <Smartphone size={14} />}
@@ -1880,7 +1880,7 @@ const ProSettlementModal = ({ table, settings, onClose, onComplete }: { table: T
                 <button
                   key={m}
                   onClick={() => setMethod(m)}
-                  style={{ flex: 1, padding: '12px', borderRadius: '12px', fontWeight: '900', fontSize: '13px', border: '2px solid', borderColor: method === m ? '#821a1d' : '#f1f5f9', background: method === m ? '#fef2f2' : 'white', color: method === m ? '#821a1d' : '#64748b' }}
+                  style={{ flex: 1, padding: '12px', borderRadius: '12px', fontWeight: '600', fontSize: '13px', border: '2px solid', borderColor: method === m ? '#821a1d' : '#f1f5f9', background: method === m ? '#fef2f2' : 'white', color: method === m ? '#821a1d' : '#64748b' }}
                 >
                   {m}
                 </button>
@@ -1893,18 +1893,18 @@ const ProSettlementModal = ({ table, settings, onClose, onComplete }: { table: T
                 value={amountPaidStr}
                 onChange={(e) => setAmountPaidStr(e.target.value)}
                 placeholder="Amount Received..."
-                style={{ flex: 1, padding: '16px', borderRadius: '16px', border: '2px solid #f1f5f9', background: '#f8fafc', fontSize: '16px', fontWeight: '900', outline: 'none' }}
+                style={{ flex: 1, padding: '16px', borderRadius: '16px', border: '2px solid #f1f5f9', background: '#f8fafc', fontSize: '16px', fontWeight: '600', outline: 'none' }}
               />
               <button 
                 onClick={handleAddPayment}
                 disabled={!amountPaidStr || processing}
-                style={{ padding: '0 20px', borderRadius: '16px', background: amountPaidStr ? '#10b981' : '#cbd5e1', color: 'white', border: 'none', fontWeight: '900' }}
+                style={{ padding: '0 20px', borderRadius: '16px', background: amountPaidStr ? '#10b981' : '#cbd5e1', color: 'white', border: 'none', fontWeight: '600' }}
               >
                 Add
               </button>
             </div>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '900' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
               <span style={{ color: isExactPaid ? '#10b981' : '#f59e0b' }}>
                 {isExactPaid ? 'Payment Received' : `Pending ₹${grandTotal - totalPaid}`}
               </span>
@@ -1936,9 +1936,9 @@ const ProSettlementModal = ({ table, settings, onClose, onComplete }: { table: T
                       value={tipAmount}
                       onChange={(e) => setTipAmount(e.target.value)}
                       placeholder="Enter Tip..."
-                      style={{ flex: 1, padding: '10px 14px', borderRadius: '12px', border: '1.5px solid #fed7aa', background: 'white', fontSize: '14px', fontWeight: '900', outline: 'none' }}
+                      style={{ flex: 1, padding: '10px 14px', borderRadius: '12px', border: '1.5px solid #fed7aa', background: 'white', fontSize: '14px', fontWeight: '600', outline: 'none' }}
                     />
-                    <button onClick={() => setShowTipEntry(false)} style={{ padding: '0 16px', borderRadius: '12px', background: '#10b981', color: 'white', border: 'none', fontWeight: '900' }}>
+                    <button onClick={() => setShowTipEntry(false)} style={{ padding: '0 16px', borderRadius: '12px', background: '#10b981', color: 'white', border: 'none', fontWeight: '600' }}>
                       OK
                     </button>
                   </div>
@@ -1948,7 +1948,7 @@ const ProSettlementModal = ({ table, settings, onClose, onComplete }: { table: T
          </div>
 
          <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
-            <button onClick={onClose} style={{ flex: 1, padding: '18px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '16px', fontWeight: '900' }}>Cancel</button>
+            <button onClick={onClose} style={{ flex: 1, padding: '18px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '16px', fontWeight: '600' }}>Cancel</button>
             <button 
               disabled={!isExactPaid || processing} 
               onClick={() => {
@@ -2014,12 +2014,12 @@ const QuickPrintModal = ({ order, settings, onClose, onPrint }: {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '28px' }}>
           <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '24px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '14px', color: '#64748b', fontWeight: 800, marginBottom: '4px' }}>Subtotal</div>
+            <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>Subtotal</div>
             <div style={{ fontSize: '28px', fontWeight: '950', color: '#1e293b' }}>₹{subtotal}</div>
           </div>
 
           <div>
-            <div style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Discount</div>
+            <div style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Discount</div>
             <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '16px', padding: '6px' }}>
               <input 
                 type="number" 
@@ -2031,11 +2031,11 @@ const QuickPrintModal = ({ order, settings, onClose, onPrint }: {
               <div style={{ display: 'flex', gap: '4px', marginLeft: '6px' }}>
                 <button 
                   onClick={() => setDiscountType('amount')}
-                  style={{ width: '44px', height: '44px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '900', background: discountType === 'amount' ? 'white' : 'transparent', color: discountType === 'amount' ? '#821a1d' : '#64748b', boxShadow: discountType === 'amount' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none' }}
+                  style={{ width: '44px', height: '44px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '600', background: discountType === 'amount' ? 'white' : 'transparent', color: discountType === 'amount' ? '#821a1d' : '#64748b', boxShadow: discountType === 'amount' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none' }}
                 >₹</button>
                 <button 
                   onClick={() => setDiscountType('percent')}
-                  style={{ width: '44px', height: '44px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '900', background: discountType === 'percent' ? 'white' : 'transparent', color: discountType === 'percent' ? '#821a1d' : '#64748b', boxShadow: discountType === 'percent' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none' }}
+                  style={{ width: '44px', height: '44px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '600', background: discountType === 'percent' ? 'white' : 'transparent', color: discountType === 'percent' ? '#821a1d' : '#64748b', boxShadow: discountType === 'percent' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none' }}
                 >%</button>
               </div>
             </div>
@@ -2043,10 +2043,10 @@ const QuickPrintModal = ({ order, settings, onClose, onPrint }: {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', background: '#fef2f2', borderRadius: '20px', border: '1px solid #fee2e2' }}>
             <div>
-              <div style={{ fontSize: '14px', fontWeight: '900', color: '#991b1b' }}>Service Charge ({scRate}%)</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#991b1b' }}>Service Charge ({scRate}%)</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '16px', fontWeight: '900', color: '#991b1b' }}>₹{service}</span>
+              <span style={{ fontSize: '16px', fontWeight: '600', color: '#991b1b' }}>₹{service}</span>
               <button 
                 onClick={() => setServiceChargeEnabled(!serviceChargeEnabled)}
                 style={{ width: '44px', height: '24px', borderRadius: '12px', background: serviceChargeEnabled ? '#10b981' : '#cbd5e1', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}
@@ -2058,10 +2058,10 @@ const QuickPrintModal = ({ order, settings, onClose, onPrint }: {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', background: '#f0fdf4', borderRadius: '20px', border: '1px solid #dcfce7' }}>
             <div>
-              <div style={{ fontSize: '14px', fontWeight: '900', color: '#166534' }}>GST ({gstRate}%)</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#166534' }}>GST ({gstRate}%)</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '16px', fontWeight: '900', color: '#166534' }}>₹{gstAmount}</span>
+              <span style={{ fontSize: '16px', fontWeight: '600', color: '#166534' }}>₹{gstAmount}</span>
               <button 
                 onClick={() => setGstEnabled(!gstEnabled)}
                 style={{ width: '44px', height: '24px', borderRadius: '12px', background: gstEnabled ? '#10b981' : '#cbd5e1', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}
@@ -2072,7 +2072,7 @@ const QuickPrintModal = ({ order, settings, onClose, onPrint }: {
           </div>
 
           <div style={{ borderTop: '2px dashed #e2e8f0', paddingTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '15px', color: '#64748b', fontWeight: '900' }}>PAYABLE AMOUNT</div>
+            <div style={{ fontSize: '15px', color: '#64748b', fontWeight: '700' }}>PAYABLE AMOUNT</div>
             <div style={{ fontSize: '28px', fontWeight: '950', color: '#821a1d' }}>₹{grandTotal}</div>
           </div>
         </div>

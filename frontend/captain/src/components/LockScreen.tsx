@@ -90,7 +90,7 @@ export const LockScreen: React.FC<LockScreenProps> = ({
           </div>
         </div>
         
-        <h1 style={{ fontSize: '28px', fontWeight: 900, marginBottom: '12px', color: '#1e293b', letterSpacing: '-0.5px' }}>{title}</h1>
+        <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '12px', color: '#1e293b', letterSpacing: '-0.5px' }}>{title}</h1>
         <p style={{ color: '#64748b', fontSize: '15px', fontWeight: 500, marginBottom: '40px', textAlign: 'center', maxWidth: '280px', lineHeight: 1.5 }}>
           {description}
         </p>
@@ -155,14 +155,14 @@ export const LockScreen: React.FC<LockScreenProps> = ({
 
         {/* Status Messages */}
           {error && (
-            <div style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '14px', backgroundColor: '#fef2f2', padding: '10px 24px', borderRadius: '14px', border: '1px solid #fecaca', textAlign: 'center', animation: 'fade-in 0.3s ease-out forwards' }}>
+            <div style={{ color: '#ef4444', fontWeight: '600', fontSize: '14px', backgroundColor: '#fef2f2', padding: '10px 24px', borderRadius: '14px', border: '1px solid #fecaca', textAlign: 'center', animation: 'fade-in 0.3s ease-out forwards' }}>
               Incorrect PIN. Try again.
             </div>
           )}
           {onCancel && (
             <button 
               onClick={onCancel}
-              style={{ display: 'block', margin: '16px auto 0', background: 'none', border: 'none', color: '#64748b', fontWeight: 800, fontSize: '14px', cursor: 'pointer' }}
+              style={{ display: 'block', margin: '16px auto 0', background: 'none', border: 'none', color: '#64748b', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}
             >
               CANCEL
             </button>

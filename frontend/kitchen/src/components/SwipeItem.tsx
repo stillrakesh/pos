@@ -130,7 +130,7 @@ export const SwipeItem: React.FC<SwipeItemProps> = ({
         <span style={{
           color: '#fff',
           fontSize: '13px',
-          fontWeight: 900,
+          fontWeight: '600',
           letterSpacing: '1.5px',
           textTransform: 'uppercase' as const,
         }}>ITEM READY ✓</span>
