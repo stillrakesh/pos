@@ -43,6 +43,18 @@
       "type": "distribution",
       "artifactName": "Restaurant-POS-v${version}-Installer.${ext}"
     },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "Restaurant-POS-v${version}-Windows-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
     "dmg": {
       "format": "UDZO",
       "background": "build/background.png",
