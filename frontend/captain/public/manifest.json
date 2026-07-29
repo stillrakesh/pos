@@ -1,0 +1,16 @@
+{
+  "short_name": "Captain POS",
+  "name": "Tyde POS Captain App",
+  "icons": [
+    {
+      "src": "/captain/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": "/captain/",
+  "background_color": "#0f172a",
+  "theme_color": "#94161c",
+  "display": "standalone",
+  "orientation": "portrait"
+}
