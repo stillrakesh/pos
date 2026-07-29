@@ -14,8 +14,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          submodules: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -29,11 +27,20 @@ jobs:
           cp node-v20.12.2-darwin-x64/bin/node ./bundled-node-mac
           chmod +x ./bundled-node-mac
 
-      - name: Install Root Dependencies
-        run: npm install --legacy-peer-deps
+      - name: Install All Sub-App Dependencies
+        run: |
+          npm install --legacy-peer-deps
+          cd frontend/captain && npm install --legacy-peer-deps && cd ../..
+          cd frontend/kitchen && npm install --legacy-peer-deps && cd ../..
 
-      - name: Build Web & Sub-Apps
+      - name: Build All Apps
         run: npm run build
+
+      - name: Setup Git Tag for Electron Builder
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a v1.6.6 -m "v1.6.6" || true
 
       - name: Package Mac App (.dmg)
         env:
