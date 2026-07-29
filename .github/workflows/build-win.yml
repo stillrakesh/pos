@@ -34,26 +34,32 @@ jobs:
         working-directory: frontend/kitchen
         run: npm install --legacy-peer-deps
 
-      - name: Build Root App
-        run: npx vite build 2>&1 || { echo "=== VITE BUILD FAILED ==="; exit 1; }
-
-      - name: Build Captain App
-        working-directory: frontend/captain
-        run: npm run build
-
-      - name: Build Kitchen App
-        working-directory: frontend/kitchen
-        run: npm run build
+      - name: Build All Apps
+        run: |
+          echo "=== Root Vite Build ===" > build-output.log 2>&1
+          npx vite build >> build-output.log 2>&1 || echo "ROOT_BUILD_FAILED" >> build-output.log
+          echo "=== Captain Build ===" >> build-output.log 2>&1
+          cd frontend/captain && npm run build >> ../../build-output.log 2>&1 || echo "CAPTAIN_BUILD_FAILED" >> ../../build-output.log
+          cd ../kitchen && npm run build >> ../../build-output.log 2>&1 || echo "KITCHEN_BUILD_FAILED" >> ../../build-output.log
+          cd ../..
+          cat build-output.log
+          if grep -q "_FAILED" build-output.log; then exit 1; fi
 
       - name: Package Windows App
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
         run: npx electron-builder --win --x64 --publish never
 
-      - name: Upload Windows Installer
+      - name: Upload Build Logs
         uses: actions/upload-artifact@v4
         if: always()
         with:
+          name: Windows-Build-Logs
+          path: build-output.log
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
           name: Windows-Installer
-          path: |
-            release/*.exe
+          path: release/*.exe
