@@ -18,13 +18,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Download macOS Node Binary
         run: |
-          curl -LO https://nodejs.org/dist/v20.12.2/node-v20.12.2-darwin-x64.tar.gz
-          tar -xzf node-v20.12.2-darwin-x64.tar.gz
-          cp node-v20.12.2-darwin-x64/bin/node ./bundled-node-mac
+          curl -LO https://nodejs.org/dist/v22.16.0/node-v22.16.0-darwin-x64.tar.gz
+          tar -xzf node-v22.16.0-darwin-x64.tar.gz
+          cp node-v22.16.0-darwin-x64/bin/node ./bundled-node-mac
           chmod +x ./bundled-node-mac
 
       - name: Install Root Dependencies
@@ -39,7 +39,7 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Build Root App
-        run: npx vite build
+        run: npx vite build 2>&1 || { echo "=== VITE BUILD FAILED ==="; exit 1; }
 
       - name: Build Captain App
         working-directory: frontend/captain

@@ -21,7 +21,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install Root Dependencies
         run: npm install --legacy-peer-deps
@@ -35,7 +35,7 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Build Root App
-        run: npx vite build
+        run: npx vite build 2>&1 || { echo "=== VITE BUILD FAILED ==="; exit 1; }
 
       - name: Build Captain App
         working-directory: frontend/captain
