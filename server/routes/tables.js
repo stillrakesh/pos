@@ -220,9 +220,9 @@ function handleTableUpdate(req, res) {
       scale: req.body.scale
     });
 
-    if (status && (status.toUpperCase() === 'AVAILABLE' || status.toUpperCase() === 'VACANT')) {
+    if (status && (status.toUpperCase() === 'AVAILABLE' || status.toUpperCase() === 'VACANT' || status.toUpperCase() === 'FREE')) {
       clearShiftForTable(table.table_number);
-      statements.clearTableKotTickets(table.table_number);
+      statements.clearTableKotTickets(table.table_number, table.id, table.name);
       const io = req.app.get('io');
       if (io) io.emit('kds_updated');
     } else if (order_items !== undefined) {

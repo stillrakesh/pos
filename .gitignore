@@ -29,3 +29,7 @@ data/*.db-wal
 data/*.db-shm
 backup/
 
+# Build releases & binaries
+release/
+bundled-node.exe
+bundled-node-mac

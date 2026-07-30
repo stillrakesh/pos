@@ -1095,13 +1095,23 @@ export const statements = {
     return { changes: db.getRowsModified() };
   },
 
-  clearTableKotTickets(tableNumber) {
-    if (!tableNumber) return { changes: 0 };
-    let raw = String(tableNumber).trim().toUpperCase();
-    let norm = raw.startsWith('TABLE ') ? raw.substring(6).trim() : raw;
+  clearTableKotTickets(...identifiers) {
+    const ids = new Set();
+    identifiers.forEach(val => {
+      if (val !== undefined && val !== null && val !== '') {
+        const s = String(val).trim().toUpperCase();
+        ids.add(s);
+        const norm = s.replace(/^TABLE\s+/, '').trim();
+        ids.add(norm);
+        ids.add(`TABLE ${norm}`);
+      }
+    });
+    if (ids.size === 0) return { changes: 0 };
+    const arr = Array.from(ids);
+    const placeholders = arr.map(() => '?').join(',');
     db.run(
-      `UPDATE kot_tickets SET status = 'SERVED', updated_at = (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) WHERE (UPPER(table_number) = ? OR UPPER(table_number) = ? OR UPPER(table_number) = ?) AND status != 'SERVED'`,
-      [raw, norm, `TABLE ${norm}`]
+      `UPDATE kot_tickets SET status = 'SERVED', updated_at = (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) WHERE UPPER(table_number) IN (${placeholders}) AND status != 'SERVED'`,
+      arr
     );
     persistToFile();
     return { changes: db.getRowsModified() };

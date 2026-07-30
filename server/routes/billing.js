@@ -232,9 +232,11 @@ router.post('/settle', (req, res) => {
 
     // Emit real-time events
     const io = req.app.get('io');
+    statements.clearTableKotTickets(tableNum, table ? table.id : table_id, table ? table.name : null);
     if (io) {
       const allTables = statements.getAllTables().map(normalizeTable);
       io.emit('table_updated', allTables);
+      io.emit('kds_updated');
       io.emit('order_updated', {
         id: String(table ? table.id : table_id), 
         table_id: String(table ? table.id : table_id),

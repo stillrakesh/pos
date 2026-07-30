@@ -1557,6 +1557,8 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
   const [searchTerm, setSearchTerm] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [activeCategoryTab, setActiveCategoryTab] = useState("All");
+  const [formError, setFormError] = useState('');
+  const [formSuccess, setFormSuccess] = useState('');
 
   useEffect(() => {
     if (!selectedCategory && categories.length > 0) {
@@ -1565,38 +1567,67 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
   }, [categories, selectedCategory]);
 
   const addCategory = async () => {
-    if (newCat && !categories.includes(newCat)) {
-        const updatedCats = [...categories, newCat];
-        setCategories(updatedCats);
-        setSelectedCategory(newCat);
-        setNewCat('');
-        try {
-          await apiService.saveCategories(updatedCats);
-        } catch (err) {
-          console.warn("Offline Mode: Category created locally.", err);
-        }
-    } else if (categories.includes(newCat)) {
-      alert("Category already exists");
+    setFormError('');
+    setFormSuccess('');
+    const trimmed = (newCat || '').trim();
+    if (!trimmed) {
+      setFormError("Please enter a Category Name");
+      return;
+    }
+    const catStrList = categories.map(c => typeof c === 'object' ? c.name : c);
+    const exists = catStrList.some(c => String(c).toLowerCase() === trimmed.toLowerCase());
+    if (exists) {
+      setFormError(`Category "${trimmed}" already exists`);
+      return;
+    }
+    const updatedCats = [...categories, trimmed];
+    setCategories(updatedCats);
+    setSelectedCategory(trimmed);
+    setNewCat('');
+    setFormSuccess(`Category "${trimmed}" added successfully! Select it below to add items.`);
+    try {
+      await apiService.saveCategories(updatedCats);
+    } catch (err) {
+      console.warn("Offline Mode: Category created locally.", err);
     }
   };
 
   const deleteCategory = (catName) => {
     if (window.confirm(`Are you sure you want to delete the category "${catName}"? This will not delete the items in this category.`)) {
       setCategories(categories.filter(c => (typeof c === 'object' ? c.name : c) !== catName));
+      if (selectedCategory === catName) {
+        const remaining = categories.filter(c => (typeof c === 'object' ? c.name : c) !== catName);
+        setSelectedCategory(remaining.length > 0 ? (typeof remaining[0] === 'object' ? remaining[0].name : remaining[0]) : '');
+      }
     }
   };
 
   const addItem = async () => {
-    if (!name || !price || !selectedCategory) return alert("Please fill Name, Price and Category");
+    setFormError('');
+    setFormSuccess('');
+
+    if (!name || !name.trim()) {
+      setFormError("Please enter the Item Name");
+      return;
+    }
+    if (!price || isNaN(Number(price)) || Number(price) <= 0) {
+      setFormError("Please enter a valid Price (e.g. 150)");
+      return;
+    }
+    if (!selectedCategory) {
+      setFormError("Please select a Category");
+      return;
+    }
+
     try {
       if (editingId) {
         // UPDATE MODE
         const updatedData = { 
-          name, 
+          name: name.trim(), 
           price: Number(price), 
           category: selectedCategory, 
           type, 
-          short_code: shortCode, 
+          short_code: shortCode.trim(), 
           modifier_groups: modifierGroups, 
           add_ons: addOns,
           inStock: true,
@@ -1611,16 +1642,16 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
           setShortCode("");
           setModifierGroups([]);
           setAddOns([]);
-          alert("Item updated successfully!");
+          setFormSuccess(`Item "${updatedData.name}" updated successfully!`);
         }
       } else {
         // ADD MODE — Default inStock: true
         const { success, item } = await orderService.addMenuItem({ 
-          name, 
-          price, 
+          name: name.trim(), 
+          price: Number(price), 
           category: selectedCategory, 
           type, 
-          short_code: shortCode, 
+          short_code: shortCode.trim(), 
           modifier_groups: modifierGroups, 
           add_ons: addOns,
           inStock: true,
@@ -1634,10 +1665,11 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
           setShortCode("");
           setModifierGroups([]);
           setAddOns([]);
+          setFormSuccess(`Item "${newItemWithStock.name}" added to ${selectedCategory}!`);
         }
       }
     } catch (err) {
-      alert(err.message);
+      setFormError(err.message || "Failed to add item");
     }
   };
 
@@ -1804,6 +1836,20 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
             </div>
           </div>
           <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '16px' }}>Add new items or manage current inventory stock below.</p>
+          
+          {/* Inline Error & Success Banners (Non-blocking UI) */}
+          {formError && (
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>⚠️ {formError}</span>
+              <button onClick={() => setFormError('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#b91c1c', padding: 0 }}><X size={16} /></button>
+            </div>
+          )}
+          {formSuccess && (
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>✅ {formSuccess}</span>
+              <button onClick={() => setFormSuccess('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#15803d', padding: 0 }}><X size={16} /></button>
+            </div>
+          )}
           
           {/* Clean 2-Row Form Layout */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
@@ -4747,6 +4793,8 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   // --- TABLE CONTROLS ---
   const [showMergeModal, setShowMergeModal] = useState(false);
   const [showSplitModal, setShowSplitModal] = useState(false);
+  const [showReprintModal, setShowReprintModal] = useState(false);
+  const [reprintSelected, setReprintSelected] = useState([]);
 
   // --- BILLING & TAXES ---
   const isVacant = !table?.status || table.status === 'vacant';
@@ -4821,6 +4869,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
 
   // handleKOT: Send KOT to kitchen ONLY. No printing whatsoever.
   const handleKOT = async () => {
+    if (isProcessing) return;
     setProcessingType('KOT');
     setIsProcessing(true);
 
@@ -4921,7 +4970,13 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       return null;
     }).filter(Boolean);
 
-    if (deltaItems.length === 0) { alert("No new items to print KOT"); return; }
+    if (deltaItems.length === 0) {
+      setReprintSelected([]);
+      setShowReprintModal(true);
+      setIsProcessing(false);
+      setProcessingType(null);
+      return;
+    }
 
     if (isTakeaway) {
       // Print first (we still have state in scope), then save
@@ -4997,6 +5052,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   };
 
   const handleSave = async () => {
+    if (isProcessing) return;
     if (!cart || cart.length === 0) { alert("Please add at least 1 item to the order."); return; }
     if (!table) { alert("No table selected"); return; }
     const currentStatus = String(table.status || 'vacant').toLowerCase();
@@ -5028,6 +5084,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   };
 
   const handlePrintBill = async () => {
+    if (isProcessing) return;
     setProcessingType('Bill');
     setIsProcessing(true);
     try {
@@ -5500,63 +5557,10 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
 
       {/* Billing Panel */}
       <div className="billing-panel no-print">
-        <div style={{ background: 'var(--primary)', color: 'white', padding: 'clamp(8px, 0.8vw, 12px) clamp(12px, 1.2vw, 18px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontWeight: '600', fontSize: 'clamp(13px, 1.1vw, 16px)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {displayTitle}
-            {table?.covers && <span style={{ background: 'rgba(255,255,255,0.25)', padding: '3px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}><Users size={13} /> {table.covers}</span>}
-          </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            {(String(table?.id).startsWith('TAK-') || String(table?.id).startsWith('DEL-') || String(table?.id).startsWith('TA-') || String(table?.id).startsWith('DL-')) && (
-              <>
-                {(table.paymentStatus === 'PAID' || table.payment_status === 'PAID') ? (
-                  <button 
-                    onClick={() => { 
-                      if(confirm(`Cancel PAID order ${table.id}?`)) {
-                        onCancelOrder(table.id);
-                        onBack([]); // Close ordering view
-                      }
-                    }} 
-                    style={{ background: '#f97316', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <XCircle size={14} /> Cancel Order
-                  </button>
-                ) : (
-                  <button 
-                    onClick={() => { 
-                      if(confirm(`Confirm deletion of order ${table.id}?`)) {
-                        onSaveOrder(table.id, [], 'free'); 
-                      }
-                    }} 
-                    style={{ background: '#ef4444', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <Trash2 size={14} /> Delete
-                  </button>
-                )}
-              </>
-            )}
-            <button 
-              onClick={() => onBack(cart)} 
-              style={{ 
-                background: 'rgba(255,255,255,0.25)', 
-                border: '1px solid rgba(255,255,255,0.4)', 
-                color: 'white', 
-                padding: '6px 14px', 
-                borderRadius: '8px', 
-                fontSize: '12px', 
-                cursor: 'pointer', 
-                fontWeight: '600',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <X size={15} /> Close
-            </button>
-          </div>
-        </div>
-
-        <div style={{ padding: '10px 16px', display: 'flex', borderBottom: '1px solid #e2e8f0', alignItems: 'center', gap: '12px', background: '#ffffff' }}>
+        <div style={{ padding: '8px 12px', display: 'flex', borderBottom: '1px solid #e2e8f0', alignItems: 'center', gap: '8px', background: '#ffffff', flexWrap: 'wrap' }}>
+          <button onClick={() => onBack(cart)} style={{ background: '#f1f5f9', border: 'none', color: '#475569', padding: '7px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }} title="Back">
+            <ChevronLeft size={18} />
+          </button>
           {tables ? (
             <select
               value={table?.id || ''}
@@ -5568,17 +5572,18 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
               style={{ 
                 border: '2px solid var(--primary)', 
                 color: '#0f172a', 
-                padding: '7px 12px', 
+                padding: '6px 10px', 
                 borderRadius: '8px', 
-                fontSize: '14px', 
+                fontSize: '13px', 
                 fontWeight: '600', 
                 outline: 'none', 
                 background: '#ffffff',
                 cursor: 'pointer',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                minWidth: '90px',
+                flexShrink: 0
               }}
             >
-              <option value={table?.id} disabled style={{ fontWeight: '600', color: '#0f172a', fontSize: '14px' }}>{displayTitle}</option>
+              <option value={table?.id} disabled style={{ fontWeight: '600', color: '#0f172a', fontSize: '13px' }}>{displayTitle}</option>
               {tables.map(t => {
                 const rawStatus = String(t.status || '').toLowerCase();
                 const statusLabel = rawStatus === 'kot_pending' || rawStatus === 'kot_printed' ? 'Running' : rawStatus === 'billed' ? 'Billed' : rawStatus === 'vacant' ? 'Vacant' : (t.status || 'Active');
@@ -5586,7 +5591,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
                   <option 
                     key={t.id} 
                     value={t.id} 
-                    style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px', padding: '6px' }}
+                    style={{ fontWeight: '700', color: '#0f172a', fontSize: '13px', padding: '6px' }}
                   >
                     {t.name} ({statusLabel})
                   </option>
@@ -5594,35 +5599,64 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
               })}
             </select>
           ) : (
-            <div style={{ border: '2px solid var(--primary)', color: '#0f172a', padding: '7px 12px', borderRadius: '8px', fontSize: '14px', fontWeight: '600' }}>
+            <div style={{ border: '2px solid var(--primary)', color: '#0f172a', padding: '6px 10px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', flexShrink: 0 }}>
               {displayTitle}
             </div>
           )}
-          <button onClick={() => onBack(cart)} style={{ background: 'transparent', border: 'none', fontSize: '12px', color: '#64748b', cursor: 'pointer', textDecoration: 'underline', fontWeight: '600' }}>
-            {table && (String(table.id).startsWith('DEL-') || String(table.id).startsWith('TAK-') || String(table.id).startsWith('TA-') || String(table.id).startsWith('DL-')) ? 'Back to Online' : 'Back to Tables'}
-          </button>
-          <div style={{ marginLeft: 'auto', background: 'var(--primary)', color: 'white', padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', letterSpacing: '0.3px' }}>
+          {table?.covers && <span style={{ background: '#f1f5f9', padding: '4px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: '600', color: '#475569', display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}><Users size={12} /> {table.covers}</span>}
+
+          {/* Merge / Split for Dine-In tables */}
+          {!isPickup && IS_LOCAL && (
+            <>
+              <button 
+                onClick={() => setShowMergeModal(true)}
+                style={{ padding: '5px 10px', fontSize: '11px', fontWeight: '500', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer', color: '#475569', whiteSpace: 'nowrap', flexShrink: 0 }}
+              >
+                Merge
+              </button>
+              <button 
+                onClick={() => setShowSplitModal(true)}
+                style={{ padding: '5px 10px', fontSize: '11px', fontWeight: '500', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer', color: '#475569', whiteSpace: 'nowrap', flexShrink: 0 }}
+              >
+                Split
+              </button>
+            </>
+          )}
+
+          {/* Cancel/Delete for Pickup orders */}
+          {(String(table?.id).startsWith('TAK-') || String(table?.id).startsWith('DEL-') || String(table?.id).startsWith('TA-') || String(table?.id).startsWith('DL-')) && (
+            <>
+              {(table.paymentStatus === 'PAID' || table.payment_status === 'PAID') ? (
+                <button 
+                  onClick={() => { 
+                    if(confirm(`Cancel PAID order ${table.id}?`)) {
+                      onCancelOrder(table.id);
+                      onBack([]);
+                    }
+                  }} 
+                  style={{ padding: '5px 10px', fontSize: '11px', fontWeight: '600', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '6px', cursor: 'pointer', color: '#c2410c', whiteSpace: 'nowrap', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '3px' }}
+                >
+                  <XCircle size={13} /> Cancel
+                </button>
+              ) : (
+                <button 
+                  onClick={() => { 
+                    if(confirm(`Confirm deletion of order ${table.id}?`)) {
+                      onSaveOrder(table.id, [], 'free'); 
+                    }
+                  }} 
+                  style={{ padding: '5px 10px', fontSize: '11px', fontWeight: '600', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', cursor: 'pointer', color: '#dc2626', whiteSpace: 'nowrap', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '3px' }}
+                >
+                  <Trash2 size={13} /> Delete
+                </button>
+              )}
+            </>
+          )}
+
+          <div style={{ marginLeft: 'auto', background: 'var(--primary)', color: 'white', padding: '5px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '600', letterSpacing: '0.3px', flexShrink: 0 }}>
             {table?.type === 'Delivery' ? 'Delivery' : table?.type === 'Takeaway' ? 'Takeaway' : 'Dine In'}
           </div>
         </div>
-
-        {/* --- TABLE ACTIONS --- */}
-        {!isPickup && IS_LOCAL && (
-          <div style={{ padding: '8px 16px', display: 'flex', gap: '10px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-            <button 
-              onClick={() => setShowMergeModal(true)}
-              style={{ flex: 1, padding: '8px', fontSize: '12px', fontWeight: '500', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', color: '#334155', transition: 'all 0.15s ease' }}
-            >
-              Merge Table
-            </button>
-            <button 
-              onClick={() => setShowSplitModal(true)}
-              style={{ flex: 1, padding: '8px', fontSize: '12px', fontWeight: '500', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', color: '#334155', transition: 'all 0.15s ease' }}
-            >
-              Split Table
-            </button>
-          </div>
-        )}
 
         {/* --- CRM & CUSTOMER INFO SECTION --- */}
         <div style={{ padding: '12px 16px', background: isPickup ? '#faf5ff' : '#fafbfc', borderBottom: '1px solid #e2e8f0' }}>
@@ -5965,6 +5999,109 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
           onSplit={handleSplitSubmit}
           onClose={() => setShowSplitModal(false)}
         />
+      )}
+
+      {/* KOT Reprint Modal */}
+      {showReprintModal && cart.length > 0 && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="animate-fade-in" style={{ background: 'white', borderRadius: '16px', width: '400px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 60px -12px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
+            {/* Header */}
+            <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #f1f5f9' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#0f172a' }}>Reprint KOT</h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Select items from the cart to reprint KOT</p>
+                </div>
+                <button onClick={() => setShowReprintModal(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', padding: '6px', cursor: 'pointer', color: '#64748b', display: 'flex' }}>
+                  <X size={18} />
+                </button>
+              </div>
+              {/* Select All */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '14px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#475569' }}>
+                <input
+                  type="checkbox"
+                  checked={reprintSelected.length === cart.length}
+                  onChange={(e) => {
+                    if (e.target.checked) setReprintSelected(cart.map((_, i) => i));
+                    else setReprintSelected([]);
+                  }}
+                  style={{ width: '16px', height: '16px', accentColor: 'var(--primary)', cursor: 'pointer' }}
+                />
+                Select All ({cart.length} items)
+              </label>
+            </div>
+
+            {/* Items List */}
+            <div style={{ padding: '8px 16px', overflowY: 'auto', flex: 1 }}>
+              {cart.map((item, idx) => {
+                const isChecked = reprintSelected.includes(idx);
+                return (
+                  <label
+                    key={idx}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 8px',
+                      borderRadius: '10px', cursor: 'pointer', transition: 'background 0.15s',
+                      background: isChecked ? '#fef2f2' : 'transparent',
+                      borderBottom: idx < cart.length - 1 ? '1px solid #f8fafc' : 'none'
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => {
+                        setReprintSelected(prev =>
+                          prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]
+                        );
+                      }}
+                      style={{ width: '18px', height: '18px', accentColor: 'var(--primary)', cursor: 'pointer', flexShrink: 0 }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
+                      {item.note && <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>Note: {item.note}</div>}
+                    </div>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#64748b', flexShrink: 0 }}>×{item.qty}</div>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#334155', flexShrink: 0, minWidth: '50px', textAlign: 'right' }}>₹{(item.price * item.qty).toFixed(0)}</div>
+                  </label>
+                );
+              })}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => setShowReprintModal(false)}
+                style={{ flex: 1, padding: '12px', fontSize: '13px', fontWeight: '600', background: '#f1f5f9', border: 'none', borderRadius: '10px', cursor: 'pointer', color: '#475569' }}
+              >
+                Cancel
+              </button>
+              <button
+                disabled={reprintSelected.length === 0}
+                onClick={async () => {
+                  const selectedItems = reprintSelected.map(i => ({ ...cart[i] }));
+                  setShowReprintModal(false);
+                  await printPosToSerial({
+                    orderId: table?.id,
+                    tableName: table?.name || `Table ${table?.id}`,
+                    customerName, customerPhone,
+                    items: selectedItems,
+                    subtotal, serviceCharge, roundOff, grandTotal,
+                    orderType: table?.type || 'Dine In'
+                  }, 'KOT', settings);
+                }}
+                style={{
+                  flex: 2, padding: '12px', fontSize: '13px', fontWeight: '700',
+                  background: reprintSelected.length > 0 ? 'var(--primary)' : '#e2e8f0',
+                  border: 'none', borderRadius: '10px', cursor: reprintSelected.length > 0 ? 'pointer' : 'not-allowed',
+                  color: reprintSelected.length > 0 ? 'white' : '#94a3b8',
+                  transition: 'all 0.2s ease',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                }}
+              >
+                <Printer size={15} /> Reprint KOT ({reprintSelected.length})
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modifier Modal Overlay */}
@@ -7018,6 +7155,24 @@ function MainApp() {
 
           // 🛡️ PREVENT CLOBBERING: If we are currently editing a table, 
           // or if it was recently saved locally, do NOT let the global sync overwrite it.
+          // Filter out captain orders for tables that are now vacant
+          const vacantIdentifiers = safeTables
+            .filter(t => !t.status || t.status.toLowerCase() === 'vacant' || t.status.toLowerCase() === 'available')
+            .flatMap(t => [
+              String(t.id).toUpperCase(),
+              String(t.name || '').toUpperCase(),
+              String(t.table_number || '').toUpperCase(),
+              String(t.name || '').toUpperCase().replace(/^TABLE\s+/, '')
+            ]);
+
+          if (vacantIdentifiers.length > 0) {
+            setNewCaptainOrders(prev => prev.filter(o => {
+              const tNum = String(o.table_number || '').toUpperCase();
+              const normNum = tNum.replace(/^TABLE\s+/, '');
+              return !vacantIdentifiers.includes(tNum) && !vacantIdentifiers.includes(normNum);
+            }));
+          }
+
           return normalized.map(newT => {
             const tid = String(newT.id);
             const isVacantFromServer = !newT.status || newT.status.toLowerCase() === 'vacant' || newT.status.toLowerCase() === 'available';
@@ -7061,6 +7216,15 @@ function MainApp() {
           if (matchFn(t)) {
             const items = payload.items || [];
             const isNowVacant = !payload.status || payload.status.toLowerCase() === 'vacant' || payload.status.toLowerCase() === 'available';
+            if (isNowVacant) {
+              const tVal = String(payload.table_number || payload.table_id || t.name || t.id).toUpperCase();
+              const normVal = tVal.replace(/^TABLE\s+/, '');
+              setNewCaptainOrders(prev => prev.filter(o => {
+                const oVal = String(o.table_number || '').toUpperCase();
+                const oNorm = oVal.replace(/^TABLE\s+/, '');
+                return oVal !== tVal && oNorm !== normVal;
+              }));
+            }
             return { 
               ...t, 
               status: payload.status, 

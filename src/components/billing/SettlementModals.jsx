@@ -53,7 +53,7 @@ export const QuickPrintModal = ({ table, settings, onClose, onPrint }) => {
                 <button 
                   onClick={() => setDiscountType('amount')}
                   style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: '600', background: discountType === 'amount' ? 'white' : 'transparent' }}
-                >â‚¹</button>
+                >₹</button>
                 <button 
                   onClick={() => setDiscountType('percent')}
                   style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: '600', background: discountType === 'percent' ? 'white' : 'transparent' }}
