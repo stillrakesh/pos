@@ -45,7 +45,7 @@ const __dirname  = path.dirname(__filename);
 import { logShift, clearShiftForTable, setIo, getActiveShifts } from './shifts.js';
 const app        = express();
 const httpServer = createServer(app);
-const PORT       = process.env.PORT || 3100;
+const PORT       = process.env.PORT || 3101;
 
 const io = new Server(httpServer, {
   cors: {

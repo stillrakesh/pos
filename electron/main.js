@@ -72,7 +72,7 @@ function startBackend() {
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: '1', // <--- THIS IS THE MAGIC KEY
-      PORT: isPackaged ? '3100' : '3101',
+      PORT: process.env.PORT || '3101',
       DATA_DIR: dataPath,
       APP_PATH: app.getAppPath()
     },
@@ -150,7 +150,7 @@ function createWindow() {
 
   mainWindow.maximize();
 
-  const port = app.isPackaged ? '3100' : '3101';
+  const port = process.env.PORT || '3101';
   const targetURL = `http://127.0.0.1:${port}`;
   const healthURL = `http://127.0.0.1:${port}/api/health`;
 
