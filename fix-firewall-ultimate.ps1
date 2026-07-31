@@ -3,7 +3,7 @@
 # ============================================================
 # This script finds the EXACT node.exe and electron.exe
 # being used by the POS system right now and completely
-# allows them through the firewall for all networks.
+# allows them through the firewall for all networks (Public & Private).
 # ============================================================
 
 Write-Host "Finding running Node and Electron processes..." -ForegroundColor Cyan
@@ -14,9 +14,7 @@ $electronProcess = Get-Process electron -ErrorAction SilentlyContinue | Select-O
 
 if ($nodeProcess -and $nodeProcess.Path) {
     Write-Host "Found Node: $($nodeProcess.Path)" -ForegroundColor Green
-    # Remove old rules for this exact path
     netsh advfirewall firewall delete rule name="POS Node Allow" | Out-Null
-    # Add new allow rule
     netsh advfirewall firewall add rule name="POS Node Allow" dir=in action=allow program="$($nodeProcess.Path)" enable=yes profile=any | Out-Null
     Write-Host "✅ Whitelisted Node.exe" -ForegroundColor Green
 } else {
@@ -25,22 +23,23 @@ if ($nodeProcess -and $nodeProcess.Path) {
 
 if ($electronProcess -and $electronProcess.Path) {
     Write-Host "Found Electron: $($electronProcess.Path)" -ForegroundColor Green
-    # Remove old rules
     netsh advfirewall firewall delete rule name="POS Electron Allow" | Out-Null
-    # Add new allow rule
     netsh advfirewall firewall add rule name="POS Electron Allow" dir=in action=allow program="$($electronProcess.Path)" enable=yes profile=any | Out-Null
     Write-Host "✅ Whitelisted Electron.exe" -ForegroundColor Green
 } else {
     Write-Host "⚠️ Could not find running electron.exe." -ForegroundColor Yellow
 }
 
-# Also ensure the port rule is active
-netsh advfirewall firewall delete rule name="POS Port 3001" | Out-Null
-netsh advfirewall firewall add rule name="POS Port 3001" dir=in action=allow protocol=TCP localport=3001 enable=yes profile=any | Out-Null
-Write-Host "✅ Whitelisted Port 3001" -ForegroundColor Green
+# Ensure Ports 3101 & 5175 are allowed across ALL network profiles (Private & Public)
+netsh advfirewall firewall delete rule name="POS Port 3101" | Out-Null
+netsh advfirewall firewall add rule name="POS Port 3101" dir=in action=allow protocol=TCP localport=3101 enable=yes profile=any | Out-Null
+Write-Host "✅ Whitelisted Port 3101 (Backend API & Socket.IO)" -ForegroundColor Green
+
+netsh advfirewall firewall delete rule name="POS Port 5175" | Out-Null
+netsh advfirewall firewall add rule name="POS Port 5175" dir=in action=allow protocol=TCP localport=5175 enable=yes profile=any | Out-Null
+Write-Host "✅ Whitelisted Port 5175 (Vite Web App)" -ForegroundColor Green
 
 Write-Host ""
-Write-Host "SUCCESS: The exact executable paths have been allowed through the firewall." -ForegroundColor Cyan
-Write-Host "Please test the connection on your phone again!" -ForegroundColor Yellow
+Write-Host "SUCCESS: Firewall rules for Restaurant POS have been configured for Public & Private Wi-Fi." -ForegroundColor Cyan
+Write-Host "Please test the Captain App on your iPhone/Android again!" -ForegroundColor Yellow
 Write-Host ""
-pause

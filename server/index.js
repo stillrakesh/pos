@@ -67,15 +67,16 @@ app.set('io', io);
 let cachedPickupOrders = [];
 
 io.on('connection', (socket) => {
-  console.log('DEVICE CONNECTED:', socket.id);
+  const clientIp = socket.handshake.address || socket.conn.remoteAddress;
+  console.log(`📱 DEVICE CONNECTED: ${socket.id} from IP: ${clientIp}`);
   
   // Broadcast updated active connected sockets count
   try {
-    io.emit('device_count_updated', { count: io.sockets.sockets.size });
+    io.emit('device_count_updated', { count: io.sockets.sockets.size, lastConnectedIp: clientIp });
   } catch (e) {}
 
   socket.on('disconnect', () => {
-    console.log('DEVICE DISCONNECTED:', socket.id);
+    console.log(`❌ DEVICE DISCONNECTED: ${socket.id} (IP: ${clientIp})`);
     try {
       io.emit('device_count_updated', { count: io.sockets.sockets.size });
     } catch (e) {}
@@ -798,19 +799,52 @@ app.get('/api/health', (req, res) => {
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-// Network info (used by frontends to discover LAN IP)
-app.get('/api/network', (req, res) => {
-  res.json({ 
-    ip: getLocalIP(), 
-    port: PORT,
-    connectedDevicesCount: io ? io.sockets.sockets.size : 0,
-    hostname: os.hostname(),
-    localDomain: `${os.hostname().toLowerCase()}.local`
-  });
+// Instant Mobile LAN Connection Tester Page
+app.get(['/ping', '/test'], (req, res) => {
+  const clientIp = req.ip || req.socket.remoteAddress || 'Unknown';
+  const serverIp = getLocalIP();
+  const userAgent = req.headers['user-agent'] || 'Unknown';
+  console.log(`🌐 [LAN TEST PING] Phone/Device connected from IP: ${clientIp} (User-Agent: ${userAgent})`);
+
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>POS LAN Connection Success</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #fff; padding: 24px; text-align: center; }
+        .card { background: #1e293b; border-radius: 20px; padding: 32px 24px; max-width: 420px; margin: 20px auto; border: 1px solid #334155; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        .badge { background: #10b981; color: #fff; font-weight: 700; padding: 8px 16px; borderRadius: 20px; display: inline-block; margin-bottom: 16px; }
+        h1 { font-size: 22px; margin: 0 0 8px 0; color: #38bdf8; }
+        p { color: #94a3b8; font-size: 14px; margin: 8px 0; }
+        .btn { display: block; background: #0284c7; color: #fff; text-decoration: none; padding: 14px; border-radius: 12px; font-weight: 700; margin-top: 16px; font-size: 15px; }
+        .info { background: #0f172a; padding: 12px; border-radius: 10px; text-align: left; font-family: monospace; font-size: 12px; color: #cbd5e1; margin-top: 16px; word-break: break-all; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="badge">✅ Wi-Fi LAN Connected!</div>
+        <h1>POS Server Reachable</h1>
+        <p>Your device is on the same network and successfully communicating with Tyde POS Server!</p>
+        
+        <a href="/captain/" class="btn">📱 Open Captain Waiter App</a>
+        <a href="/kitchen/" class="btn" style="background: #334155; margin-top: 10px;">🍳 Open Kitchen KDS</a>
+
+        <div class="info">
+          <div><b>Server IP:</b> ${serverIp}:${PORT}</div>
+          <div><b>Your Device IP:</b> ${clientIp}</div>
+          <div><b>Time:</b> ${new Date().toLocaleTimeString()}</div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `);
 });
 
-// Comprehensive Network Diagnostics for Captain & Mobile connectivity
-app.get('/api/network-diagnostics', (req, res) => {
+// Network info (used by frontends to discover LAN IP)
+const handleNetworkDiagnostics = (req, res) => {
   try {
     const nets = os.networkInterfaces();
     const interfaces = [];
@@ -863,7 +897,24 @@ app.get('/api/network-diagnostics', (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+};
+
+app.get('/api/network', (req, res) => {
+  res.json({ 
+    ip: getLocalIP(), 
+    port: PORT,
+    connectedDevicesCount: io ? io.sockets.sockets.size : 0,
+    hostname: os.hostname(),
+    localDomain: `${os.hostname().toLowerCase()}.local`
+  });
 });
+
+app.get('/api/network/ip', (req, res) => {
+  res.json({ ip: getLocalIP(), port: PORT });
+});
+
+app.get('/api/network/diagnostics', handleNetworkDiagnostics);
+app.get('/api/network-diagnostics', handleNetworkDiagnostics);
 
 // ─────────────────────────────────────────────────────────────
 // Serve POS UI (built static bundle)
@@ -987,25 +1038,32 @@ function broadcastOrderUpdate(tableId) {
 
 function getLocalIP() {
   const nets = os.networkInterfaces();
+  const ignoredKeywords = ['virtual', 'vbox', 'vmware', 'docker', 'vethernet', 'nordvpn', 'expressvpn', 'tap', 'wsl', 'loopback', 'hyper-v', 'zerotier', 'tailscale'];
   
   // 1. Prioritize common active physical interfaces (Wi-Fi, Ethernet, Hotspot bridges)
   const priorityOrder = ['Wi-Fi', 'Ethernet', 'en0', 'en1', 'bridge100', 'pdp_ip0', 'eth0', 'wlan0', 'WLAN', 'Local Area Connection'];
   
   for (const name of priorityOrder) {
+    const isIgnored = ignoredKeywords.some(k => name.toLowerCase().includes(k));
+    if (isIgnored) continue;
     const net = nets[name];
     if (net) {
       for (const iface of net) {
-        if (iface.family === 'IPv4' && !iface.internal && !iface.address.startsWith('169.254.')) {
+        if (iface.family === 'IPv4' && !iface.internal && !iface.address.startsWith('169.254.') && !iface.address.startsWith('127.')) {
           return iface.address;
         }
       }
     }
   }
 
-  // 2. Fallback to any active non-internal IPv4 (ignoring link-local 169.254.x.x)
+  // 2. Fallback to any active non-internal IPv4 (ignoring link-local 169.254.x.x & virtual adapters)
   for (const name of Object.keys(nets)) {
+    const isIgnored = ignoredKeywords.some(k => name.toLowerCase().includes(k));
+    if (isIgnored) continue;
     for (const net of nets[name]) {
-      if (net.family === 'IPv4' && !net.internal && !net.address.startsWith('169.254.')) return net.address;
+      if (net.family === 'IPv4' && !net.internal && !net.address.startsWith('169.254.') && !net.address.startsWith('127.')) {
+        return net.address;
+      }
     }
   }
   

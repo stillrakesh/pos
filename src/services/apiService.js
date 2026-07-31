@@ -507,6 +507,19 @@ export const apiService = {
     return resilientFetch(`${BASE_URL}/api/billing/history`);
   },
 
+  async checkHealth() {
+    try {
+      const res = await fetch(`${BASE_URL}/api/health`, { signal: AbortSignal.timeout(3000) });
+      return res.ok;
+    } catch (e) {
+      return false;
+    }
+  },
+
+  async fetchNetworkDiagnostics() {
+    return resilientFetch(`${BASE_URL}/api/network/diagnostics`);
+  },
+
   async updateBillPaymentMethod(id, payment_method) {
     return resilientFetch(`${BASE_URL}/api/billing/history/${id}`, {
       method: 'PATCH',

@@ -11,7 +11,7 @@
     "dev": "vite --host --port 5175",
     "server": "PORT=3101 node server/index.js",
     "dev:all": "concurrently \"vite --host --port 5175\" \"PORT=3101 node server/index.js\"",
-    "build": "vite build && cd frontend/captain && npm run build && cd ../kitchen && npm run build",
+    "build": "vite build && (cd frontend/captain && npm install && npm run build) && (cd frontend/kitchen && npm install && npm run build)",
     "lint": "eslint .",
     "preview": "vite preview",
     "desktop": "electron .",
@@ -48,6 +48,7 @@
       "target": [
         "nsis"
       ],
+      "requestedExecutionLevel": "highestAvailable",
       "artifactName": "Restaurant-POS-v${version}-Windows-Setup.${ext}"
     },
     "nsis": {

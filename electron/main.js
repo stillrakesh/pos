@@ -23,13 +23,92 @@ function logToFile(msg) {
   } catch (e) {}
 }
 
-function ensureFirewallRules() {
-  if (process.platform !== 'win32') return;
-  const cmd = `powershell -Command "New-NetFirewallRule -DisplayName 'Restaurant POS Ports (3100, 3101)' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 3100,3101 -Profile Any -Enabled True -ErrorAction SilentlyContinue"`;
-  exec(cmd, (err) => {
-    if (err) logToFile(`Firewall rule check: ${err.message}`);
-    else logToFile(`Firewall rule verified on startup.`);
+function requestElevatedFirewallSetup() {
+  return new Promise((resolve) => {
+    if (process.platform !== 'win32') {
+      resolve({ success: true, message: 'Firewall elevation only required on Windows' });
+      return;
+    }
+
+    const port = process.env.PORT || '3101';
+    const ports = ['3100', port, '5175'].join(',');
+    const exePath = process.execPath;
+
+    // PowerShell script to execute elevated NetFirewallRule creation
+    const psScript = `
+      $ruleName = 'Restaurant POS Network Access';
+      Remove-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue;
+      New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Action Allow -Protocol TCP -LocalPort ${ports} -Profile Any -Enabled True;
+      $appRule = 'Restaurant POS App';
+      Remove-NetFirewallRule -DisplayName $appRule -ErrorAction SilentlyContinue;
+      New-NetFirewallRule -DisplayName $appRule -Direction Inbound -Action Allow -Program '${exePath}' -Profile Any -Enabled True;
+    `.replace(/\n\s+/g, ' ');
+
+    const cmd = `powershell -Command "Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command \\"${psScript}\\"' -Verb RunAs -Wait"`;
+    
+    exec(cmd, { windowsHide: false }, (err) => {
+      if (err) {
+        logToFile(`Elevated Firewall Setup Error: ${err.message}`);
+        resolve({ success: false, message: err.message });
+      } else {
+        logToFile(`Elevated Firewall Setup SUCCEEDED for ports ${ports}`);
+        resolve({ success: true, message: 'Firewall rules created successfully for all network profiles!' });
+      }
+    });
   });
+}
+
+function ensureFirewallRules() {
+  const port = process.env.PORT || '3101';
+  const ports = ['3100', port, '5175'];
+
+  if (process.platform === 'win32') {
+    // ── Windows: Create inbound TCP allow rules for ALL network profiles ──
+    // This covers Private, Public, and Domain networks so switching Wi-Fi
+    // routers never blocks incoming connections from phones/tablets.
+    const ruleName = 'Restaurant POS Network Access';
+    const portList = ports.join(',');
+
+    // Step 1: Delete any stale rules with the same name (idempotent)
+    const deleteCmd = `netsh advfirewall firewall delete rule name="${ruleName}" 2>nul`;
+    // Step 2: Create a single rule covering all POS ports on ALL profiles
+    const addCmd = `netsh advfirewall firewall add rule name="${ruleName}" dir=in action=allow protocol=TCP localport=${portList} profile=any enable=yes`;
+    // Step 3: Also whitelist the exact Electron executable (covers edge cases
+    // where per-app blocking overrides port rules)
+    const exePath = process.execPath.replace(/\\/g, '\\\\');
+    const exeRuleName = 'Restaurant POS App';
+    const deleteExeCmd = `netsh advfirewall firewall delete rule name="${exeRuleName}" 2>nul`;
+    const addExeCmd = `netsh advfirewall firewall add rule name="${exeRuleName}" dir=in action=allow program="${exePath}" profile=any enable=yes`;
+
+    const fullCmd = `${deleteCmd} & ${addCmd} & ${deleteExeCmd} & ${addExeCmd}`;
+    exec(fullCmd, { shell: true, windowsHide: true }, (err) => {
+      if (err) {
+        logToFile(`Firewall config (non-admin, expected): ${err.message}`);
+        // Fallback: try PowerShell with less privileges
+        const psCmd = `powershell -WindowStyle Hidden -Command "try { New-NetFirewallRule -DisplayName '${ruleName}' -Direction Inbound -Action Allow -Protocol TCP -LocalPort ${portList} -Profile Any -Enabled True -ErrorAction SilentlyContinue } catch {}"`;
+        exec(psCmd, { windowsHide: true }, (psErr) => {
+          if (psErr) logToFile(`Firewall PS fallback: ${psErr.message}`);
+          else logToFile('Firewall rules applied via PowerShell fallback.');
+        });
+      } else {
+        logToFile(`Firewall rules verified: ports ${portList} allowed on all profiles.`);
+      }
+    });
+  } else if (process.platform === 'darwin') {
+    // ── macOS: Allow the app through Application Firewall ──
+    // macOS uses socketfilterfw for per-app rules (not port-based).
+    // If the macOS firewall is active, we need to whitelist our binary.
+    const appPath = process.execPath;
+    const cmds = [
+      `/usr/libexec/ApplicationFirewall/socketfilterfw --add "${appPath}" 2>/dev/null`,
+      `/usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp "${appPath}" 2>/dev/null`
+    ];
+    exec(cmds.join(' && '), { shell: '/bin/bash' }, (err) => {
+      if (err) logToFile(`macOS firewall config: ${err.message}`);
+      else logToFile('macOS firewall: app whitelisted.');
+    });
+  }
+  // Linux: iptables typically not an issue for desktop LAN apps; no action needed.
 }
 
 /**
@@ -170,6 +249,10 @@ function createWindow() {
 }
 
 // --- IPC Handlers for Printing ---
+ipcMain.handle('request-firewall-setup', async () => {
+  return await requestElevatedFirewallSetup();
+});
+
 ipcMain.handle('get-printers', async (event) => {
   return await event.sender.getPrintersAsync();
 });

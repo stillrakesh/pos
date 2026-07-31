@@ -25,6 +25,7 @@ import * as orderService from './services/orderService';
 import { apiService } from './services/apiService';
 import logger from './services/loggerService';
 import SystemDiagnosticsModal from './components/settings/SystemDiagnosticsModal';
+import LanConnectModal from './components/settings/LanConnectModal';
 
 // --- Grand Total Calculation Helper (matches backend normalization) ---
 const calculateGrandTotal = (items, tableSettings) => {
@@ -6403,6 +6404,7 @@ function MainApp() {
   // --- SYSTEM & DEVICE STATUS ---
   const [socketConnected, setSocketConnected] = useState(false);
   const [showDiagnosticsModal, setShowDiagnosticsModal] = useState(false);
+  const [showLanModal, setShowLanModal] = useState(false);
   const [isDbLoaded, setIsDbLoaded] = useState(true); 
   const [deviceStatus, setDeviceStatus] = useState('APPROVED');
   const [isSyncing, setIsSyncing] = useState(false);
@@ -8049,6 +8051,15 @@ function MainApp() {
               </span>
             </div>
 
+            {/* Mobile QR & LAN Connect Button */}
+            <button
+              onClick={() => setShowLanModal(true)}
+              title="Scan QR Code to connect Captain App / Mobile Phones"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: 'clamp(4px, 0.5vw, 8px) clamp(8px, 1vw, 14px)', borderRadius: '12px', background: '#0f172a', color: '#38bdf8', border: '1px solid #334155', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}
+            >
+              <Smartphone size={14} color="#38bdf8" /> Mobile QR
+            </button>
+
             <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '16px', padding: '4px 12px', alignItems: 'center', border: '1px solid #e2e8f0' }}>
               <Search size={15} color="#94a3b8" />
               <input
@@ -8352,6 +8363,12 @@ function MainApp() {
           <SystemDiagnosticsModal
             isOpen={showDiagnosticsModal}
             onClose={() => setShowDiagnosticsModal(false)}
+          />
+
+          {/* MOBILE QR & LAN CONNECT MODAL */}
+          <LanConnectModal
+            isOpen={showLanModal}
+            onClose={() => setShowLanModal(false)}
           />
 
           {/* COVERS MODAL */}
