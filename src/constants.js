@@ -12,14 +12,13 @@ const getApiPort = () => {
   return 3101;
 };
 
-const isLocalhost = window.location.hostname === 'localhost'
-  || window.location.hostname === '127.0.0.1'
-  || !window.location.hostname;
-
+const isViteDev = window.location.port === '5175';
 const apiPort = getApiPort();
 
-export const BASE_URL = isLocalhost
-  ? `http://127.0.0.1:${apiPort}`
-  : `http://${window.location.hostname}:${apiPort}`;
+export const BASE_URL = isViteDev
+  ? `http://127.0.0.1:3101`
+  : (typeof window !== 'undefined' && window.location.origin && window.location.origin !== 'null' && !window.location.origin.startsWith('file:')
+      ? window.location.origin
+      : `http://127.0.0.1:${apiPort}`);
 
 export const CLOUD_URL = 'https://restaurant-cloud-backend.onrender.com';

@@ -1,7 +1,7 @@
 {
   "name": "restaurant-pos",
   "productName": "Restaurant POS",
-  "version": "1.6.6",
+  "version": "1.6.7",
   "description": "Restaurant POS Desktop App",
   "author": "Tyde Cafe",
   "private": true,
@@ -54,7 +54,9 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false,
+      "shortcutName": "Restaurant POS"
     },
     "dmg": {
       "format": "UDZO",

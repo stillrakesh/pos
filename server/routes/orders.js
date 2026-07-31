@@ -6,13 +6,33 @@ import { normalizeTable } from '../utils/normalization.js';
 const router = Router();
 
 // Helper to normalize table names (e.g. 'Table A1' -> 'A1', 'a1' -> 'A1')
-function normalizeTableNumber(num) {
+export function normalizeTableNumber(num) {
   if (!num) return '';
   let s = String(num).trim().toUpperCase();
   if (s.startsWith('TABLE ')) {
     s = s.substring(6).trim();
   }
   return s;
+}
+
+export function findTable(allTables, searchKey) {
+  if (!allTables || !searchKey && searchKey !== 0) return null;
+  const sStr = String(searchKey).trim().toUpperCase();
+  const sNorm = normalizeTableNumber(searchKey);
+
+  return (allTables || []).find(t => {
+    const matchId = String(t.id).trim().toUpperCase();
+    const matchNum = String(t.table_number || '').trim().toUpperCase();
+    const matchNorm = normalizeTableNumber(t.table_number);
+
+    return (
+      matchId === sStr ||
+      matchNum === sStr ||
+      (sNorm && matchNorm === sNorm) ||
+      (sNorm && matchId === sNorm) ||
+      (sNorm && matchNum === sNorm)
+    );
+  }) || null;
 }
 
 // Helper to extract item quantity safely (POS cart uses `qty`, DB snapshots use `quantity`)
@@ -227,19 +247,7 @@ router.post('/', (req, res) => {
 
     // --- Resolve target table ---
     const allTables = statements.getAllTables();
-    let targetTable = allTables.find(t => {
-      const matchId = String(t.id);
-      const matchNum = String(t.table_number).toUpperCase();
-      const searchId = table_id ? String(table_id).toUpperCase() : null;
-      const searchNum = table_number ? String(table_number).toUpperCase() : null;
-
-      return (
-        (searchId && matchId === searchId) || 
-        (searchId && matchNum === searchId) ||
-        (searchNum && matchNum === searchNum) || 
-        (searchNum && matchId === searchNum)
-      );
-    });
+    let targetTable = findTable(allTables, table_id) || findTable(allTables, table_number) || findTable(allTables, resolvedTableNum);
 
     const isVirtual = String(resolvedTableNum).toUpperCase().startsWith('TA-') || String(resolvedTableNum).toUpperCase().startsWith('DL-') || String(resolvedTableNum).toUpperCase().startsWith('DEL-') || String(resolvedTableNum).toUpperCase().startsWith('ONL-') || String(resolvedTableNum).toUpperCase().startsWith('TAK-');
 
@@ -466,7 +474,7 @@ router.put('/:tableId', (req, res) => {
     const isVirtual = String(tableId).toUpperCase().startsWith('TA-') || String(tableId).toUpperCase().startsWith('DL-') || String(tableId).toUpperCase().startsWith('DEL-') || String(tableId).toUpperCase().startsWith('ONL-') || String(tableId).toUpperCase().startsWith('TAK-');
 
     const allTables = statements.getAllTables();
-    let targetTable = allTables.find(t => String(t.id) === String(tableId) || String(t.table_number).toUpperCase() === String(tableId).toUpperCase());
+    let targetTable = findTable(allTables, tableId);
     
     if (!targetTable && !isVirtual) {
       return res.status(404).json({ error: 'Table not found' });

@@ -222,16 +222,11 @@ app.use('/signing', signingRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/analytics', analyticsRouter);
 app.use('/api/auth', authRouter);
-app.use('/api/customers', customersRouter);
-app.use('/customers', customersRouter);
-app.use('/api/audit', auditRouter);
-app.use('/api/inventory', inventoryRouter);
+app.use('/api/inventory', inventoryRouter(statements));
+app.use('/inventory', inventoryRouter(statements));
 app.use('/api/kds', kdsRouter);
 app.use('/audit', auditRouter);
 app.use('/auth', authRouter);
-
-app.use('/api/inventory', inventoryRouter(statements));
-app.use('/inventory', inventoryRouter(statements));
 
 // ─────────────────────────────────────────────────────────────
 // Printers API — expose network printers from db for frontend

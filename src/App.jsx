@@ -7664,11 +7664,14 @@ function MainApp() {
             gst_enabled: extraData.gst_enabled,
             gst_rate: extraData.gst_rate
           });
+          const isFreshOrder = !t.createdAt || t.status === 'vacant' || t.status === 'available' || !t.orders?.length;
+          const newCreatedAt = isFreshOrder ? Date.now() : t.createdAt;
           return { 
             ...t, 
             status: newStatus || 'occupied', 
             orders: orderItems,
             total: total,
+            createdAt: newCreatedAt,
             customerName: extraData.customerName || t.customerName || t.customer_name || '',
             customer_name: extraData.customerName || t.customer_name || t.customerName || '',
             phone: extraData.customerPhone || t.phone || '',
@@ -7721,7 +7724,7 @@ function MainApp() {
       }
     } catch (syncErr) {
       console.warn("⚠️ saveOrderToTable Backend Sync Failed:", syncErr);
-      alert("❌ SYNC ERROR: Order was saved locally but failed to reach the server. Please check connection.");
+      alert(`❌ SYNC ERROR: Order was saved locally but failed to reach the server. (${syncErr.message || 'Please check connection'})`);
       // Mark table as unsynced
       setTables(prev => prev.map(t => {
         if (String(t.id).toUpperCase() === tid || String(t.table_number).toUpperCase() === tid) {

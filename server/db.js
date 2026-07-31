@@ -33,7 +33,12 @@ export const getDb = () => db;
  * Must be called (and awaited) before using any statements.
  */
 export async function initDatabase() {
-  const SQL = await initSqlJs();
+  const SQL = await initSqlJs({
+    locateFile: file => {
+      const wasmPath = join(__dirname, '..', 'node_modules', 'sql.js', 'dist', file);
+      return existsSync(wasmPath) ? wasmPath : file;
+    }
+  });
 
   // Load existing DB from disk if it exists
   if (existsSync(DB_PATH)) {
