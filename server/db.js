@@ -203,6 +203,7 @@ export async function initDatabase() {
     if (!orderColumnNames.includes('gst_rate')) db.run("ALTER TABLE orders ADD COLUMN gst_rate REAL DEFAULT 0");
     if (!orderColumnNames.includes('service_charge_enabled')) db.run("ALTER TABLE orders ADD COLUMN service_charge_enabled INTEGER DEFAULT 0");
     if (!orderColumnNames.includes('service_charge_rate')) db.run("ALTER TABLE orders ADD COLUMN service_charge_rate REAL DEFAULT 0");
+    if (!orderColumnNames.includes('service_charge')) db.run("ALTER TABLE orders ADD COLUMN service_charge REAL DEFAULT 0");
     if (!orderColumnNames.includes('discount_amount')) db.run("ALTER TABLE orders ADD COLUMN discount_amount REAL DEFAULT 0");
     if (!orderColumnNames.includes('discount_rate')) db.run("ALTER TABLE orders ADD COLUMN discount_rate REAL DEFAULT 0");
     if (!orderColumnNames.includes('bill_number')) db.run("ALTER TABLE orders ADD COLUMN bill_number TEXT");

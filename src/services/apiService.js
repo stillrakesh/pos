@@ -1,4 +1,5 @@
 import { BASE_URL, CLOUD_URL } from '../constants';
+import logger from './loggerService';
 
 /**
  * ApiService: Centralized module for all network requests.
@@ -18,7 +19,8 @@ const RETRY_BASE_DELAY_MS = 300;
  *   NOT on 4xx (to prevent double-submitting orders).
  */
 const fetchWithRetry = async (url, options = {}, retries = DEFAULT_RETRIES, timeoutMs = DEFAULT_TIMEOUT_MS) => {
-  const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes((options.method || 'GET').toUpperCase());
+  const method = (options.method || 'GET').toUpperCase();
+  const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -32,13 +34,14 @@ const fetchWithRetry = async (url, options = {}, retries = DEFAULT_RETRIES, time
 
       // Don't retry client errors (4xx) on mutations — the request was received
       if (!res.ok && isMutation && res.status >= 400 && res.status < 500) {
+        logger.warn('API', `HTTP ${res.status} on ${method} ${url}`, { method, url, status: res.status });
         return res; // Let handleResponse deal with the error
       }
 
       // Retry server errors (5xx) 
       if (!res.ok && res.status >= 500 && attempt < retries) {
         const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
-        console.warn(`[API] Server error ${res.status} on ${url}, retrying in ${delay}ms (${attempt + 1}/${retries})`);
+        logger.warn('API', `Server error ${res.status} on ${method} ${url}, retrying in ${delay}ms (${attempt + 1}/${retries})`);
         await new Promise(r => setTimeout(r, delay));
         continue;
       }
@@ -48,10 +51,11 @@ const fetchWithRetry = async (url, options = {}, retries = DEFAULT_RETRIES, time
       // Network error or timeout — always retry
       if (attempt < retries) {
         const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
-        console.warn(`[API] ${err.name === 'TimeoutError' ? 'Timeout' : 'Network error'} on ${url}, retrying in ${delay}ms (${attempt + 1}/${retries})`);
+        logger.warn('API', `${err.name === 'TimeoutError' ? 'Timeout' : 'Network error'} on ${method} ${url}, retrying in ${delay}ms (${attempt + 1}/${retries})`);
         await new Promise(r => setTimeout(r, delay));
         continue;
       }
+      logger.error('API', `Network failure on ${method} ${url}: ${err.message}`, { method, url, error: err.message, stack: err.stack });
       throw err; // Final attempt failed
     }
   }
@@ -59,12 +63,20 @@ const fetchWithRetry = async (url, options = {}, retries = DEFAULT_RETRIES, time
 
 /** Shorthand: fetch with retry + handle JSON response */
 const resilientFetch = (url, options, retries, timeoutMs) =>
-  fetchWithRetry(url, options, retries, timeoutMs).then(handleResponse);
+  fetchWithRetry(url, options, retries, timeoutMs)
+    .then(handleResponse)
+    .catch(err => {
+      const method = (options?.method || 'GET').toUpperCase();
+      logger.error('API', `${method} ${url} failed: ${err.message}`, { url, method, error: err.message });
+      throw err;
+    });
 
 const handleResponse = async (res) => {
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || `Request failed with status ${res.status}`);
+    const msg = errorData.message || errorData.error || `Request failed with status ${res.status}`;
+    logger.error('API', `HTTP ${res.status} Response: ${msg}`, { status: res.status, url: res.url, errorData });
+    throw new Error(msg);
   }
   return res.json();
 };

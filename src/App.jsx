@@ -23,6 +23,8 @@ import CaptainOrders from './components/billing/CaptainOrders';
 import { formatCurrency, getOrderTotal } from './utils/formatters';
 import * as orderService from './services/orderService';
 import { apiService } from './services/apiService';
+import logger from './services/loggerService';
+import SystemDiagnosticsModal from './components/settings/SystemDiagnosticsModal';
 
 // --- Grand Total Calculation Helper (matches backend normalization) ---
 const calculateGrandTotal = (items, tableSettings) => {
@@ -2208,7 +2210,7 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
 
 /* --- SYSTEM SETTINGS VIEW --- */
 /* --- ADVANCED GLOBAL SETTINGS VIEW --- */
-const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullReset, devices = [], onUpdateDeviceStatus, onDeleteDevice, isConnected, onRestoreData, appVersion, categories }) => {
+const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullReset, devices = [], onUpdateDeviceStatus, onDeleteDevice, isConnected, onRestoreData, appVersion, categories, onOpenDiagnostics }) => {
   const [activeTab, setActiveTab] = useState('design');
   const [localSettings, setLocalSettings] = useState(settings);
   const [notification, setNotification] = useState(null);
@@ -2439,7 +2441,15 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
               </div>
 
               <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <h4 style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b', marginBottom: '8px' }}>Connection Stats</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b', margin: 0 }}>Connection Stats</h4>
+                  <button
+                    onClick={onOpenDiagnostics}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#0f172a', color: '#38bdf8', border: '1px solid #334155', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
+                  >
+                    <Zap size={14} color="#38bdf8" /> Open System Diagnostics & Logs
+                  </button>
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                    <div style={{ fontSize: '12px', color: '#64748b' }}>WebSocket Status: <b style={{ color: isConnected ? '#10b981' : '#dc2626' }}>{isConnected ? 'Active' : 'Idle'}</b></div>
                    <div style={{ fontSize: '12px', color: '#64748b' }}>Project Base Endpoint: <b>{BASE_URL}</b></div>
@@ -6392,12 +6402,43 @@ function MainApp() {
 
   // --- SYSTEM & DEVICE STATUS ---
   const [socketConnected, setSocketConnected] = useState(false);
+  const [showDiagnosticsModal, setShowDiagnosticsModal] = useState(false);
   const [isDbLoaded, setIsDbLoaded] = useState(true); 
   const [deviceStatus, setDeviceStatus] = useState('APPROVED');
   const [isSyncing, setIsSyncing] = useState(false);
   const [isGlobalActionPending, setIsGlobalActionPending] = useState(false);
   const [deviceId, setDeviceId] = useState('LOCAL-DEVICE');
   const [lanUrl, setLanUrl] = useState('');
+
+  // Background Auto-Retry Sync Worker for Unsynced Tables
+  useEffect(() => {
+    const timer = setInterval(async () => {
+      const unsynced = tables.filter(t => t.isUnsynced && t.orders && t.orders.length > 0);
+      if (unsynced.length === 0) return;
+
+      for (const table of unsynced) {
+        try {
+          const backendStatus = String(table.status || 'occupied').toUpperCase();
+          await apiService.updateOrder(table.id, {
+            items: table.orders,
+            status: backendStatus,
+            customerName: table.customerName || table.customer_name || '',
+            phone: table.phone || '',
+            gst_enabled: table.gst_enabled,
+            gst_rate: table.gst_rate,
+            service_charge_enabled: table.service_charge_enabled,
+            service_charge_rate: table.service_charge_rate
+          });
+          logger.success('KOT', `Background auto-retry synced Table ${table.table_number || table.id} to server.`);
+          setTables(prev => prev.map(t => t.id === table.id ? { ...t, isUnsynced: false } : t));
+        } catch (err) {
+          logger.warn('KOT', `Background auto-retry sync for Table ${table.table_number || table.id} pending: ${err.message}`);
+        }
+      }
+    }, 10000);
+
+    return () => clearInterval(timer);
+  }, [tables]);
   const [takeawayCounter, setTakeawayCounter] = useState(() => loadFromLocal('pos_ta_counter', 1));
   const [lastCounterDate, setLastCounterDate] = useState(() => loadFromLocal('pos_ta_date', new Date().toDateString()));
   const [appVersion, setAppVersion] = useState({ version: 'v1.0-stable', lastUpdated: '2026-04-19' });
@@ -7997,7 +8038,11 @@ function MainApp() {
             )}
 
             {/* Connection Indicator */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: socketConnected ? '#ecfdf5' : '#fef2f2', padding: 'clamp(4px, 0.5vw, 8px) clamp(8px, 1vw, 14px)', borderRadius: '12px', border: '1px solid', borderColor: socketConnected ? '#10b981' : '#ef4444', transition: 'all 0.3s' }}>
+            <div 
+              onClick={() => setShowDiagnosticsModal(true)}
+              title="Click to view System Diagnostics & Logs"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', background: socketConnected ? '#ecfdf5' : '#fef2f2', padding: 'clamp(4px, 0.5vw, 8px) clamp(8px, 1vw, 14px)', borderRadius: '12px', border: '1px solid', borderColor: socketConnected ? '#10b981' : '#ef4444', transition: 'all 0.3s', cursor: 'pointer' }}
+            >
               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: socketConnected ? '#10b981' : '#ef4444', boxShadow: `0 0 10px ${socketConnected ? '#10b981' : '#ef4444'}` }}></div>
               <span style={{ fontSize: '11px', fontWeight: '600', color: socketConnected ? '#065f46' : '#991b1b', textTransform: 'uppercase' }}>
                 {socketConnected ? 'Connected' : 'Disconnected'}
@@ -8169,6 +8214,7 @@ function MainApp() {
               onRestoreData={restoreFromCloud}
               appVersion={appVersion}
               categories={categories}
+              onOpenDiagnostics={() => setShowDiagnosticsModal(true)}
             />
           )}
           {view === 'printersettings' && (
@@ -8301,6 +8347,12 @@ function MainApp() {
               loadTables={loadTables}
             />
           )}
+
+          {/* SYSTEM DIAGNOSTICS & ERROR LOGS MODAL */}
+          <SystemDiagnosticsModal
+            isOpen={showDiagnosticsModal}
+            onClose={() => setShowDiagnosticsModal(false)}
+          />
 
           {/* COVERS MODAL */}
           {pendingCoversTable && (
