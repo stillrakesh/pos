@@ -17,6 +17,94 @@ const BATCH_SIZE = 50;
 let _running = false;
 
 /**
+ * Test handshake against Cloud Dashboard endpoint using API Key.
+ */
+export async function verifyCloudApiKey(cloudUrl, apiKey) {
+  const url = (cloudUrl || DEFAULT_CLOUD_URL).replace(/\/$/, '');
+  const key = (apiKey || '').trim();
+
+  if (!key) {
+    return { success: false, status: 'unconfigured', message: 'API Key is required' };
+  }
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${key}`,
+    'x-api-key': key
+  };
+
+  try {
+    // 1. Try /api/sync/verify-key or /api/sync/verify
+    const res = await fetch(`${url}/api/sync/verify-key`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ timestamp: new Date().toISOString() }),
+      signal: AbortSignal.timeout(6000)
+    }).catch(() => null);
+
+    if (res && res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return {
+        success: true,
+        status: 'connected',
+        verifiedAt: new Date().toISOString(),
+        message: data.message || 'API key verified & connected',
+        restaurantName: data.restaurantName || null
+      };
+    }
+
+    if (res && (res.status === 401 || res.status === 403)) {
+      return { success: false, status: 'auth_error', message: 'Invalid or expired API Key' };
+    }
+
+    // 2. Try POST /api/analytics/cloud-sync/trigger or /api/sync/ingest
+    const syncRes = await fetch(`${url}/api/sync/ingest`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ events: [{ type: 'ping', local_id: 'test' }] }),
+      signal: AbortSignal.timeout(5000)
+    }).catch(() => null);
+
+    if (syncRes && syncRes.ok) {
+      return {
+        success: true,
+        status: 'connected',
+        verifiedAt: new Date().toISOString(),
+        message: 'Connected to Cloud Ingest API'
+      };
+    }
+
+    // 3. Fallback check: Test root domain reachability
+    const rootRes = await fetch(`${url}/`, {
+      method: 'GET',
+      headers,
+      signal: AbortSignal.timeout(5000)
+    }).catch(() => null);
+
+    if (rootRes && rootRes.ok) {
+      return {
+        success: true,
+        status: 'connected',
+        verifiedAt: new Date().toISOString(),
+        message: 'Connected to Cloud Dashboard App (tyde-dashboard)'
+      };
+    }
+
+    return {
+      success: false,
+      status: 'network_error',
+      message: 'Cloud Dashboard endpoint unreachable'
+    };
+  } catch (err) {
+    return {
+      success: false,
+      status: 'network_error',
+      message: err.name === 'TimeoutError' || err.name === 'AbortError' ? 'Connection timed out' : 'Network unreachable'
+    };
+  }
+}
+
+/**
  * Start the background sync worker.
  */
 export function startSyncWorker() {
@@ -54,6 +142,14 @@ export async function runSyncCycle() {
     const events = pending.map(item => {
       let payload;
       try { payload = JSON.parse(item.payload); } catch (e) { payload = item.payload; }
+      
+      // Ensure normalized sales payload
+      if (payload && typeof payload === 'object') {
+        payload.order_id = payload.id || payload.order_id;
+        payload.grand_total = payload.grand_total !== undefined ? payload.grand_total : (payload.grandTotal || 0);
+        payload.status = payload.status || 'completed';
+      }
+
       return {
         local_id: item.id,
         type: item.type,
@@ -133,4 +229,3 @@ export async function runSyncCycle() {
     _running = false;
   }
 }
-

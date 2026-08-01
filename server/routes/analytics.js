@@ -5,7 +5,7 @@
  */
 import { Router } from 'express';
 import { statements } from '../db.js';
-import { startSyncWorker, runSyncCycle } from '../syncWorker.js';
+import { startSyncWorker, runSyncCycle, verifyCloudApiKey } from '../syncWorker.js';
 
 const router = Router();
 
@@ -70,6 +70,29 @@ router.get('/cloud-sync', (req, res) => {
   }
 });
 
+// ─── POST /api/analytics/cloud-sync/verify ─────────────────────
+router.post('/cloud-sync/verify', async (req, res) => {
+  try {
+    const { apiKey, cloudUrl } = req.body;
+    const result = await verifyCloudApiKey(cloudUrl, apiKey);
+    
+    // Store status in DB
+    statements.setConfig({
+      key: 'cloud_sync_status',
+      value: {
+        lastSyncAt: new Date().toISOString(),
+        status: result.status,
+        message: result.message,
+        verifiedAt: result.verifiedAt || null
+      }
+    });
+
+    res.json({ success: result.success, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, status: 'error', message: err.message });
+  }
+});
+
 // ─── POST /api/analytics/cloud-sync ────────────────────────────
 router.post('/cloud-sync', async (req, res) => {
   try {
@@ -78,14 +101,26 @@ router.post('/cloud-sync', async (req, res) => {
     const newConfig = {
       ...existing,
       apiKey: apiKey !== undefined ? String(apiKey).trim() : (existing.apiKey || ''),
-      cloudUrl: cloudUrl !== undefined ? String(cloudUrl).trim() : (existing.cloudUrl || 'http://localhost:3000')
+      cloudUrl: cloudUrl !== undefined ? String(cloudUrl).trim() : (existing.cloudUrl || 'https://tyde-dashboard-tan.vercel.app')
     };
     statements.setConfig({ key: 'cloud_sync_config', value: newConfig });
     
+    // Run verification immediately
+    const verifyResult = await verifyCloudApiKey(newConfig.cloudUrl, newConfig.apiKey);
+    statements.setConfig({
+      key: 'cloud_sync_status',
+      value: {
+        lastSyncAt: new Date().toISOString(),
+        status: verifyResult.status,
+        message: verifyResult.message,
+        verifiedAt: verifyResult.verifiedAt || null
+      }
+    });
+
     // Trigger sync cycle immediately upon saving config
     runSyncCycle().catch(err => console.warn('Manual sync trigger error:', err));
     
-    res.json({ success: true, config: newConfig });
+    res.json({ success: true, config: newConfig, verify: verifyResult });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

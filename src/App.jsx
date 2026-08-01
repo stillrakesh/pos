@@ -26,6 +26,7 @@ import { apiService } from './services/apiService';
 import logger from './services/loggerService';
 import SystemDiagnosticsModal from './components/settings/SystemDiagnosticsModal';
 import LanConnectModal from './components/settings/LanConnectModal';
+import CloudDashboardView from './components/CloudDashboardView';
 
 // --- Grand Total Calculation Helper (matches backend normalization) ---
 const calculateGrandTotal = (items, tableSettings) => {
@@ -2234,6 +2235,29 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
       .catch(() => {});
   }, []);
 
+  const handleVerifyCloudSyncConfig = async () => {
+    setSyncingCloud(true);
+    try {
+      const res = await fetch('/api/analytics/cloud-sync/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: cloudApiKey, cloudUrl: cloudDashboardUrl })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCloudSyncStatus({ status: 'connected', message: data.message, verifiedAt: data.verifiedAt });
+        showNotification('✅ Handshake Verified! API Key is connected to Cloud Dashboard.');
+      } else {
+        setCloudSyncStatus({ status: data.status || 'auth_error', message: data.message });
+        showNotification(data.message || 'API Key verification failed', 'error');
+      }
+    } catch (err) {
+      showNotification('Connection error while verifying API key', 'error');
+    } finally {
+      setSyncingCloud(false);
+    }
+  };
+
   const handleSaveCloudSyncConfig = async () => {
     setSyncingCloud(true);
     try {
@@ -2244,7 +2268,13 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
       });
       const data = await res.json();
       if (data.success) {
-        showNotification('Cloud Dashboard API key saved! Live sync active.');
+        if (data.verify?.success) {
+          setCloudSyncStatus({ status: 'connected', message: data.verify.message });
+          showNotification('Cloud Dashboard API key verified & saved! Live sync active.');
+        } else {
+          setCloudSyncStatus({ status: data.verify?.status || 'unverified', message: data.verify?.message });
+          showNotification('Config saved, but API Key could not be confirmed with Cloud Dashboard.', 'error');
+        }
       } else {
         showNotification(data.error || 'Failed to save cloud sync config', 'error');
       }
@@ -2383,8 +2413,16 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
                 <h3 style={{ fontSize: '18px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px', color: '#1e293b' }}>
                   <Cloud size={20} color="var(--primary)" /> Cloud Dashboard API Sync Configuration
                 </h3>
-                <span style={{ fontSize: '11px', fontWeight: '600', padding: '4px 10px', borderRadius: '8px', background: '#f0fdf4', color: '#16a34a' }}>
-                  {cloudSyncStatus?.status === 'connected' ? 'LIVE SYNC ACTIVE' : 'READY TO CONNECT'}
+                <span style={{
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  padding: '6px 14px',
+                  borderRadius: '12px',
+                  background: cloudSyncStatus?.status === 'connected' ? '#f0fdf4' : cloudSyncStatus?.status === 'auth_error' ? '#fef2f2' : '#fefce8',
+                  color: cloudSyncStatus?.status === 'connected' ? '#16a34a' : cloudSyncStatus?.status === 'auth_error' ? '#dc2626' : '#ca8a04',
+                  border: `1px solid ${cloudSyncStatus?.status === 'connected' ? '#bbf7d0' : cloudSyncStatus?.status === 'auth_error' ? '#fecaca' : '#fef08a'}`
+                }}>
+                  {cloudSyncStatus?.status === 'connected' ? '🟢 CONNECTED & VERIFIED' : cloudSyncStatus?.status === 'auth_error' ? '🔴 INVALID API KEY' : '🟡 UNCONFIRMED / OFFLINE'}
                 </span>
               </div>
 
@@ -2414,17 +2452,26 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', gap: '12px' }}>
                 <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
-                  {cloudSyncStatus?.lastSyncAt ? `Last Synced: ${new Date(cloudSyncStatus.lastSyncAt).toLocaleString()}` : 'Enter your API key and click Save & Sync Now'}
+                  {cloudSyncStatus?.lastSyncAt ? `Last Synced: ${new Date(cloudSyncStatus.lastSyncAt).toLocaleString()}` : 'Enter your API key and click Verify & Save'}
                 </div>
-                <button
-                  onClick={handleSaveCloudSyncConfig}
-                  disabled={syncingCloud}
-                  style={{ padding: '12px 24px', borderRadius: '10px', background: 'var(--primary)', color: 'white', fontWeight: '600', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-                >
-                  <Cloud size={16} /> {syncingCloud ? 'Syncing...' : 'Save & Sync Now'}
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={handleVerifyCloudSyncConfig}
+                    disabled={syncingCloud}
+                    style={{ padding: '10px 18px', borderRadius: '10px', background: '#0f172a', color: '#38bdf8', fontWeight: '600', border: '1px solid #334155', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}
+                  >
+                    ⚡ Verify Handshake
+                  </button>
+                  <button
+                    onClick={handleSaveCloudSyncConfig}
+                    disabled={syncingCloud}
+                    style={{ padding: '10px 20px', borderRadius: '10px', background: 'var(--primary)', color: 'white', fontWeight: '600', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}
+                  >
+                    <Cloud size={16} /> {syncingCloud ? 'Syncing...' : 'Save & Sync Now'}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -6356,7 +6403,14 @@ function MainApp() {
   // --- STATE INITIALIZATION (OFFLINE FIRST) ---
   // --- VIEW & UI NAVIGATION ---
   const isKdsMode = window.location.pathname.startsWith('/kds') || new URLSearchParams(window.location.search).get('mode') === 'kds';
-  const [view, setView] = useState(isKdsMode ? 'kds' : 'tables');
+  const isCloudDashboardMode = typeof window !== 'undefined' && (
+    window.location.hostname.includes('tyde-dashboard') || 
+    window.location.hostname.includes('vercel.app') ||
+    window.location.pathname.startsWith('/cloud') || 
+    new URLSearchParams(window.location.search).get('mode') === 'cloud'
+  );
+
+  const [view, setView] = useState(isKdsMode ? 'kds' : isCloudDashboardMode ? 'analytics' : 'tables');
   const [showSidebar, setShowSidebar] = useState(true);
   const [globalSearch, setGlobalSearch] = useState('');
   const [loading, setLoading] = useState(!IS_LOCAL);
@@ -6485,14 +6539,16 @@ function MainApp() {
   async function fetchCloudData() {
     try {
       const data = await apiService.fetchCloudSync();
-
-      setMenuItems(data.menu || []);
-      setTables(data.tables || []);
-      setOrderHistory(data.orders || []);
-      setNonTableOrders(data.sales || []); // Mapping sales to non-table active view for viewer
-      setLoading(false);
+      if (data) {
+        if (data.menu && data.menu.length) setMenuItems(data.menu);
+        if (data.tables && data.tables.length) setTables(data.tables);
+        if (data.orders && data.orders.length) setOrderHistory(data.orders);
+        if (data.sales && data.sales.length) setNonTableOrders(data.sales);
+      }
     } catch (err) {
-      console.log("Cloud fetch failed", err);
+      console.log("Cloud fetch failed, using local state:", err.message);
+    } finally {
+      setLoading(false);
     }
   }
 

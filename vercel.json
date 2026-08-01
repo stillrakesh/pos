@@ -7,6 +7,7 @@
     { "source": "/api/menu", "destination": "/api/menu.js" },
     { "source": "/api/orders", "destination": "/api/orders.js" },
     { "source": "/api/signing/(.*)", "destination": "/api/signing.js" },
+    { "source": "/api/sync/(.*)", "destination": "/api/sync.js" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
