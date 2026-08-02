@@ -398,7 +398,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
                       transition: 'all 0.15s ease'
                     }}
                   >
-                    <ChefHat size={14} /> Kitchen KDS App
+                    <ChefHat size={14} /> Kitchen App
                   </button>
                 </div>
 
@@ -463,7 +463,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
                   onClick={() => { setActiveApp('kitchen'); handleCopyUrl(kitchenUrl); }} 
                   style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(248, 113, 113, 0.3)', background: activeApp === 'kitchen' ? 'rgba(248, 113, 113, 0.2)' : 'rgba(248, 113, 113, 0.05)', color: '#f87171', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                 >
-                  <ChefHat size={12} /> Copy Kitchen KDS Link
+                  <ChefHat size={12} /> Copy Kitchen Link
                 </button>
 
                 <button onClick={() => setShowDiagnosticsModal(true)} style={{ marginLeft: 'auto', padding: '4px 10px', borderRadius: '6px', border: 'none', background: 'transparent', color: '#a5b4fc', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -477,7 +477,7 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
           <div style={{ background: 'white', padding: '14px', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)', minWidth: '158px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', color: activeApp === 'kitchen' ? '#dc2626' : '#0284c7', background: activeApp === 'kitchen' ? '#fef2f2' : '#f0f9ff', padding: '3px 8px', borderRadius: '10px' }}>
               {activeApp === 'kitchen' ? <ChefHat size={12} /> : <Smartphone size={12} />}
-              {activeApp === 'kitchen' ? 'KITCHEN KDS' : 'CAPTAIN APP'}
+              {activeApp === 'kitchen' ? 'KITCHEN APP' : 'CAPTAIN APP'}
             </div>
             <QRCodeSVG value={activeUrl} size={125} />
             <span style={{ fontSize: '10px', color: '#475569', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>

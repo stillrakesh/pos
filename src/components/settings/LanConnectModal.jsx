@@ -49,9 +49,9 @@ export const LanConnectModal = ({ isOpen, onClose }) => {
   let targetDesc = 'Scan with iPhone or Android camera to open Captain Waiter App';
 
   if (activeTab === 'kitchen') {
-    targetPath = '/kds';
-    targetTitle = 'Kitchen Display System (KDS)';
-    targetDesc = 'Scan to open Kitchen Screen on iPad, Tablet, or TV browser';
+    targetPath = '/kitchen/';
+    targetTitle = 'Kitchen Mobile App';
+    targetDesc = 'Scan with phone or tablet camera to open Mobile Kitchen App';
   } else if (activeTab === 'pos') {
     targetPath = '/';
     targetTitle = 'Main POS Terminal';
@@ -175,7 +175,7 @@ export const LanConnectModal = ({ isOpen, onClose }) => {
                 transition: 'all 0.2s'
               }}
             >
-              <ChefHat size={16} /> Kitchen KDS
+              <ChefHat size={16} /> Kitchen App
             </button>
             <button
               onClick={() => setActiveTab('pos')}
@@ -315,40 +315,69 @@ export const LanConnectModal = ({ isOpen, onClose }) => {
                 <div style={{ fontSize: '11px', color: '#64748b' }}>Grant 1-click permission to allow phones on any Wi-Fi</div>
               </div>
               <button
+                disabled={firewallStatus === 'configuring'}
                 onClick={async () => {
-                  if (window.electronAPI?.requestFirewallSetup) {
-                    setFirewallStatus('configuring');
-                    const res = await window.electronAPI.requestFirewallSetup();
-                    if (res && res.success) {
+                  setFirewallStatus('configuring');
+                  try {
+                    if (window.electronAPI?.requestFirewallSetup) {
+                      const res = await window.electronAPI.requestFirewallSetup();
+                      if (res && res.success) {
+                        setFirewallStatus('success');
+                        setTimeout(() => setFirewallStatus(null), 5000);
+                        return;
+                      }
+                    }
+                    
+                    const apiRes = await apiService.fixFirewall();
+                    if (apiRes && (apiRes.success || apiRes.ok)) {
                       setFirewallStatus('success');
-                      setTimeout(() => setFirewallStatus(null), 4000);
+                      setTimeout(() => setFirewallStatus(null), 5000);
                     } else {
                       setFirewallStatus('error');
                     }
-                  } else {
-                    alert('Automated firewall setup is active inside Desktop App or via fix-firewall-ultimate.ps1 script.');
+                  } catch (err) {
+                    console.error('Firewall fix failed:', err);
+                    setFirewallStatus('error');
                   }
                 }}
                 style={{
-                  background: firewallStatus === 'success' ? '#10b981' : '#0284c7',
+                  background: firewallStatus === 'success' ? '#10b981' : firewallStatus === 'error' ? '#ef4444' : '#0284c7',
                   color: '#ffffff',
                   border: 'none',
                   borderRadius: '10px',
                   padding: '8px 14px',
                   fontSize: '12px',
                   fontWeight: '700',
-                  cursor: 'pointer',
+                  cursor: firewallStatus === 'configuring' ? 'wait' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '6px',
+                  opacity: firewallStatus === 'configuring' ? 0.7 : 1,
+                  transition: 'all 0.2s ease'
                 }}
               >
-                {firewallStatus === 'success' ? '✅ Allowed' : 'Unlock Firewall'}
+                {firewallStatus === 'configuring' ? (
+                  <>
+                    <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                    Unlocking...
+                  </>
+                ) : firewallStatus === 'success' ? (
+                  '✅ Unlocked!'
+                ) : firewallStatus === 'error' ? (
+                  '❌ Try Again'
+                ) : (
+                  'Unlock Firewall'
+                )}
               </button>
             </div>
             {firewallStatus === 'success' && (
               <div style={{ fontSize: '11px', color: '#059669', fontWeight: '600' }}>
-                ✅ Windows Firewall successfully configured! All ports whitelisted for LAN.
+                ✅ Windows Firewall configured! Ports 3100 & 3101 are now whitelisted on LAN.
+              </div>
+            )}
+            {firewallStatus === 'error' && (
+              <div style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600' }}>
+                ⚠️ Could not unblock automatically. Run <b>fix-firewall-ultimate.ps1</b> as Administrator.
               </div>
             )}
           </div>

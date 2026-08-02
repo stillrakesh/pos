@@ -1058,6 +1058,40 @@ export const statements = {
   },
 
   getKotTickets() {
+    // Auto-clear active KOT tickets for tables that are currently vacant/available in DB
+    try {
+      const allTables = this.getAllTables();
+      const vacantTableNumbers = new Set();
+      allTables.forEach(t => {
+        const status = String(t.status || '').toUpperCase();
+        let itemsCount = 0;
+        try {
+          const parsed = typeof t.order_items === 'string' ? JSON.parse(t.order_items || '[]') : (t.order_items || []);
+          itemsCount = Array.isArray(parsed) ? parsed.length : 0;
+        } catch(e) {}
+
+        const isVacant = (status === 'AVAILABLE' || status === 'VACANT' || status === 'FREE' || status === '') || itemsCount === 0;
+        if (isVacant && t.table_number) {
+          const s = String(t.table_number).trim().toUpperCase();
+          vacantTableNumbers.add(s);
+          const norm = s.replace(/^TABLE\s+/, '').trim();
+          vacantTableNumbers.add(norm);
+          vacantTableNumbers.add(`TABLE ${norm}`);
+        }
+      });
+
+      if (vacantTableNumbers.size > 0) {
+        const arr = Array.from(vacantTableNumbers);
+        const placeholders = arr.map(() => '?').join(',');
+        db.run(
+          `UPDATE kot_tickets SET status = 'SERVED', updated_at = (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) WHERE UPPER(table_number) IN (${placeholders}) AND status != 'SERVED'`,
+          arr
+        );
+      }
+    } catch (e) {
+      console.error('Error auto-clearing vacant table KOT tickets:', e);
+    }
+
     const res = db.exec(`SELECT * FROM kot_tickets WHERE status != 'SERVED' ORDER BY created_at ASC`);
     return rowsToObjects(res).map(ticket => ({
       ...ticket,
@@ -1118,6 +1152,29 @@ export const statements = {
     db.run(
       `UPDATE kot_tickets SET status = 'SERVED', updated_at = (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) WHERE UPPER(table_number) IN (${placeholders}) AND status != 'SERVED'`,
       arr
+    );
+    persistToFile();
+    return { changes: db.getRowsModified() };
+  },
+
+  /** Update table_number on all active KOT tickets for a given old table number */
+  updateKotTableNumber(oldTableNumber, newTableNumber) {
+    const oldNorm = String(oldTableNumber).trim().toUpperCase();
+    const newNorm = String(newTableNumber).trim();
+    if (!oldNorm || !newNorm) return { changes: 0 };
+
+    // Match various forms: "A1", "Table A1", etc.
+    const oldVariants = new Set();
+    oldVariants.add(oldNorm);
+    const stripped = oldNorm.replace(/^TABLE\s+/, '').trim();
+    oldVariants.add(stripped);
+    oldVariants.add(`TABLE ${stripped}`);
+
+    const arr = Array.from(oldVariants);
+    const placeholders = arr.map(() => '?').join(',');
+    db.run(
+      `UPDATE kot_tickets SET table_number = ?, updated_at = (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) WHERE UPPER(table_number) IN (${placeholders}) AND status NOT IN ('SERVED')`,
+      [newNorm, ...arr]
     );
     persistToFile();
     return { changes: db.getRowsModified() };

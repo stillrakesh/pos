@@ -220,6 +220,21 @@ function handleTableUpdate(req, res) {
       scale: req.body.scale
     });
 
+    // ── Detect table number change (table shift) and update KDS tickets ──
+    const oldTableNum = String(table.table_number || '').trim();
+    const newTableNum = table_number !== undefined ? String(table_number).trim() : oldTableNum;
+    const tableNumberChanged = table_number !== undefined && oldTableNum.toUpperCase() !== newTableNum.toUpperCase();
+
+    if (tableNumberChanged && isAlreadyOccupied) {
+      // Update all active KOT tickets from old table number to new
+      try {
+        statements.updateKotTableNumber(oldTableNum, newTableNum);
+        console.log(`[Tables] Table shifted: "${oldTableNum}" → "${newTableNum}" — KOT tickets updated`);
+      } catch (e) {
+        console.error(`[Tables] Failed to update KOT table numbers:`, e);
+      }
+    }
+
     if (status && (status.toUpperCase() === 'AVAILABLE' || status.toUpperCase() === 'VACANT' || status.toUpperCase() === 'FREE')) {
       clearShiftForTable(table.table_number);
       statements.clearTableKotTickets(table.table_number, table.id, table.name);
@@ -240,6 +255,12 @@ function handleTableUpdate(req, res) {
     if (io) {
       const allTables = statements.getAllTables().map(normalizeTable);
       io.emit('table_updated', allTables);
+
+      // Emit table_shifted event so kitchen app can show notification
+      if (tableNumberChanged && isAlreadyOccupied) {
+        io.emit('table_shifted', { oldTable: oldTableNum, newTable: newTableNum });
+        io.emit('kds_updated'); // Refresh kitchen display with updated table numbers
+      }
 
       if (normalizedUpdated) {
         io.emit('order_updated', normalizedUpdated);

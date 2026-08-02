@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { socket } from './services/socket';
 import { SwipeCard } from './components/SwipeCard';
 import { SwipeItem } from './components/SwipeItem';
-import { playNewOrderSound, playModifiedSound, vibrateDevice } from './utils/sounds';
+import { playNewOrderSound, playModifiedSound, playTableShiftSound, vibrateDevice, unlockAudio } from './utils/sounds';
 
 // ── Types ──────────────────────────────────────────────────────
 interface KdsItem {
@@ -15,6 +15,9 @@ interface KdsItem {
   category: string;
   itemStatus?: 'NEW' | 'PREPARING' | 'READY' | 'SERVED';
   originalIndex?: number;
+  note?: string;
+  notes?: string;
+  special_note?: string;
 }
 
 interface KdsTicket {
@@ -37,6 +40,7 @@ interface GroupedKdsItem {
   name: string;
   quantity: number;
   category: string;
+  note?: string;
   sources: { ticketId: number; originalIndex: number }[];
   isNew?: boolean;
 }
@@ -112,8 +116,14 @@ const getCategoryName = (cat: any): string => {
 //  APP
 // ════════════════════════════════════════════════════════════════
 export default function App() {
-  const [view, setView] = useState<'stations' | 'queue' | 'server' | 'history'>('stations');
-  const [selectedStationId, setSelectedStationId] = useState<string | number | null>(null);
+  const [view, setView] = useState<'stations' | 'queue' | 'server' | 'history'>(() => {
+    const saved = localStorage.getItem('kitchen_view');
+    return (saved === 'queue' || saved === 'server' || saved === 'history') ? saved : 'stations';
+  });
+  const [selectedStationId, setSelectedStationId] = useState<string | number | null>(() => {
+    const saved = localStorage.getItem('kitchen_station_id');
+    return saved ? (isNaN(Number(saved)) ? saved : Number(saved)) : null;
+  });
 
   const [stations, setStations] = useState<KdsStation[]>([]);
   const [tickets, setTickets] = useState<KdsTicket[]>([]);
@@ -127,6 +137,9 @@ export default function App() {
   const prevSnapshot = useRef<TableSnapshot>({});
   const isFirstLoad = useRef(true);
 
+  // ── Table shift notification ────────────────────────────────
+  const [tableShiftMessage, setTableShiftMessage] = useState<string | null>(null);
+
   // ── Debounce ref for rapid socket events ─────────────────────
   const fetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -134,16 +147,31 @@ export default function App() {
     return stations.find(s => String(s.id) === String(selectedStationId)) || null;
   }, [stations, selectedStationId]);
 
-  // ── Build snapshot: table → { itemName → totalQty } (filtered by station) ──
+  const selectedStationRef = useRef<KdsStation | null>(null);
+  selectedStationRef.current = selectedStation;
+
+  const viewRef = useRef<string>(view);
+  viewRef.current = view;
+
+  // Reset snapshot when user switches stations so no false alerts trigger
+  useEffect(() => {
+    prevSnapshot.current = {};
+    isFirstLoad.current = true;
+  }, [selectedStationId]);
+
+  // ── Build snapshot: table → { itemName → totalQty } (filtered strictly by station) ──
   const buildSnapshot = useCallback((tix: KdsTicket[], station: KdsStation | null): TableSnapshot => {
     const snap: TableSnapshot = {};
-    const stCats = (station?.categories || []).map((c: string) => String(c).trim().toLowerCase());
+    if (!station) return snap; // If no station is active, return empty snapshot (no audio alerts)
+
+    const stCats = (station.categories || []).map((c: string) => String(c).trim().toLowerCase());
+    const isAllStation = String(station.id).toUpperCase() === 'ALL' || stCats.length === 0;
 
     tix.forEach(t => {
       const table = t.table_number || 'Takeaway';
       (t.items || []).forEach(i => {
         const cat = getCategoryName(i.category).trim().toLowerCase();
-        const matchCat = stCats.length === 0 || stCats.includes(cat);
+        const matchCat = isAllStation || stCats.includes(cat);
         const isActive = i.itemStatus !== 'READY' && i.itemStatus !== 'SERVED';
 
         if (matchCat && isActive) {
@@ -196,10 +224,15 @@ export default function App() {
       setStations(loadedStations);
 
       if (Array.isArray(tRes)) {
-        const newSnap = buildSnapshot(tRes, selectedStation);
+        const currentStation = selectedStationRef.current;
+        const currentView = viewRef.current;
+        const newSnap = buildSnapshot(tRes, currentStation);
         const prev = prevSnapshot.current;
 
-        if (!isFirstLoad.current && Object.keys(prev).length > 0) {
+        // Only trigger audio alerts if user is actively inside a station queue
+        const shouldAlert = currentView === 'queue' && currentStation !== null;
+
+        if (shouldAlert && !isFirstLoad.current && Object.keys(prev).length > 0) {
           const changedNotifs: Record<string, 'qty_updated' | 'new_item'> = {};
           const freshItems = new Set<string>();
 
@@ -260,10 +293,9 @@ export default function App() {
           }
         }
 
-        if (!isFirstLoad.current) {
-          const newSnap2 = buildSnapshot(tRes, selectedStation);
-          for (const table of Object.keys(newSnap2)) {
-            if (!prev[table] && Object.keys(newSnap2[table]).length > 0) {
+        if (shouldAlert && !isFirstLoad.current) {
+          for (const table of Object.keys(newSnap)) {
+            if (!prev[table] && Object.keys(newSnap[table]).length > 0) {
               playNewOrderSound();
               vibrateDevice([50, 80, 50]);
               break;
@@ -297,6 +329,14 @@ export default function App() {
     }
   }, []);
 
+  // ── Unlock audio on first user interaction (mobile browsers) ──
+  useEffect(() => {
+    const unlock = () => { unlockAudio(); window.removeEventListener('touchstart', unlock); window.removeEventListener('click', unlock); };
+    window.addEventListener('touchstart', unlock, { once: true });
+    window.addEventListener('click', unlock, { once: true });
+    return () => { window.removeEventListener('touchstart', unlock); window.removeEventListener('click', unlock); };
+  }, []);
+
   // ── Socket + Initial Load ────────────────────────────────────
   useEffect(() => {
     fetchData();
@@ -307,6 +347,17 @@ export default function App() {
     const onOrderUpdate = () => debouncedFetch();
     const onTableUpdate = () => debouncedFetch();
     const onConfigUpdate = () => fetchData(true);
+    const onTableShifted = (data: { oldTable: string; newTable: string }) => {
+      // Only notify if we're inside a station view (not on station selector)
+      if (view === 'queue' || view === 'server') {
+        const msg = `Table ${data.oldTable} → ${data.newTable}`;
+        setTableShiftMessage(msg);
+        playTableShiftSound();
+        vibrateDevice([60, 100, 60]);
+        setTimeout(() => setTableShiftMessage(null), 6000);
+      }
+      debouncedFetch();
+    };
 
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
@@ -314,6 +365,7 @@ export default function App() {
     socket.on('order_updated', onOrderUpdate);
     socket.on('table_updated', onTableUpdate);
     socket.on('config_updated', onConfigUpdate);
+    socket.on('table_shifted', onTableShifted);
     if (socket.connected) setConnected(true);
 
     return () => {
@@ -323,6 +375,7 @@ export default function App() {
       socket.off('order_updated', onOrderUpdate);
       socket.off('table_updated', onTableUpdate);
       socket.off('config_updated', onConfigUpdate);
+      socket.off('table_shifted', onTableShifted);
     };
   }, [view, debouncedFetch, fetchData, fetchHistory]);
 
@@ -387,17 +440,21 @@ export default function App() {
       filtered.forEach(item => {
         const cat = getCategoryName(item.category);
         const qty = item.qty || item.quantity || 1;
-        if (!groups[table].itemMap[item.name]) {
-          groups[table].itemMap[item.name] = {
+        const itemNote = item.note || item.notes || item.special_note || '';
+        const itemKey = itemNote ? `${item.name}__${itemNote}` : item.name;
+
+        if (!groups[table].itemMap[itemKey]) {
+          groups[table].itemMap[itemKey] = {
             name: item.name,
             quantity: 0,
             category: cat,
+            note: itemNote,
             sources: [],
             isNew: newItemKeys.has(`${table}::${item.name}`),
           };
         }
-        groups[table].itemMap[item.name].quantity += qty;
-        groups[table].itemMap[item.name].sources.push({
+        groups[table].itemMap[itemKey].quantity += qty;
+        groups[table].itemMap[itemKey].sources.push({
           ticketId: item.ticketId,
           originalIndex: item.originalIndex,
         });
@@ -482,7 +539,7 @@ export default function App() {
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         {view !== 'stations' && (
           <button
-            onClick={() => { setView('stations'); setSelectedStationId(null); }}
+            onClick={() => { setView('stations'); setSelectedStationId(null); localStorage.removeItem('kitchen_view'); localStorage.removeItem('kitchen_station_id'); }}
             style={{ background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', padding: '9px', borderRadius: '12px', display: 'flex', backdropFilter: 'blur(8px)' }}
           >
             <ArrowLeft size={18} />
@@ -585,7 +642,7 @@ export default function App() {
               <motion.button
                 key={station.id}
                 whileTap={{ scale: 0.97 }}
-                onClick={() => { setSelectedStationId(station.id); setView('queue'); }}
+                onClick={() => { setSelectedStationId(station.id); setView('queue'); localStorage.setItem('kitchen_station_id', String(station.id)); localStorage.setItem('kitchen_view', 'queue'); }}
                 style={{
                   width: '100%', background: '#fff',
                   border: '2px solid #e2e8f0', borderRadius: '20px',
@@ -674,6 +731,47 @@ export default function App() {
     return (
       <div style={{ position: 'fixed', inset: 0, background: '#f1f5f9', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {header}
+
+        {/* ── Table Shift Banner Notification ───────────────── */}
+        <AnimatePresence>
+          {tableShiftMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              style={{
+                background: 'linear-gradient(135deg, #d97706, #b45309)',
+                color: '#fff',
+                padding: '12px 18px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                boxShadow: '0 4px 16px rgba(217,119,6,0.3)',
+                zIndex: 100,
+                flexShrink: 0,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <AlertCircle size={20} color="#fff" />
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.85)' }}>
+                    Table Shifted / Updated
+                  </div>
+                  <div style={{ fontSize: '15px', fontWeight: 950 }}>
+                    {tableShiftMessage}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setTableShiftMessage(null)}
+                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', borderRadius: '8px', padding: '4px 10px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}
+              >
+                Dismiss
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ── Bulk Quantity Summary Bar ─────────────────────── */}
         {bulkQtySummary.length > 0 && (
@@ -831,7 +929,13 @@ export default function App() {
                                         }}>NEW ITEM</span>
                                       )}
                                     </div>
-                                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginTop: '2px' }}>{item.category}</div>
+                                    {item.note ? (
+                                      <div style={{ fontSize: '12px', color: '#2563eb', fontWeight: '700', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        📝 {item.note}
+                                      </div>
+                                    ) : (
+                                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginTop: '2px' }}>{item.category}</div>
+                                    )}
                                   </div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                                     <div style={{
@@ -848,6 +952,20 @@ export default function App() {
                                     }}>
                                       ×{item.quantity}
                                     </div>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); completeGroupedItem(item); }}
+                                      style={{
+                                        background: '#f0fdf4', border: '1.5px solid #86efac',
+                                        color: '#16a34a', width: '34px', height: '34px',
+                                        borderRadius: '10px', display: 'flex',
+                                        alignItems: 'center', justifyContent: 'center',
+                                        cursor: 'pointer', flexShrink: 0,
+                                        transition: 'all 0.15s ease',
+                                      }}
+                                      title="Mark Ready"
+                                    >
+                                      <CheckCircle2 size={16} />
+                                    </button>
                                   </div>
                                 </div>
                               </SwipeItem>
@@ -873,6 +991,47 @@ export default function App() {
     return (
       <div style={{ position: 'fixed', inset: 0, background: '#f1f5f9', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {header}
+
+        {/* ── Table Shift Banner Notification ───────────────── */}
+        <AnimatePresence>
+          {tableShiftMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              style={{
+                background: 'linear-gradient(135deg, #d97706, #b45309)',
+                color: '#fff',
+                padding: '12px 18px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                boxShadow: '0 4px 16px rgba(217,119,6,0.3)',
+                zIndex: 100,
+                flexShrink: 0,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <AlertCircle size={20} color="#fff" />
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.85)' }}>
+                    Table Shifted / Updated
+                  </div>
+                  <div style={{ fontSize: '15px', fontWeight: 950 }}>
+                    {tableShiftMessage}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setTableShiftMessage(null)}
+                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', borderRadius: '8px', padding: '4px 10px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}
+              >
+                Dismiss
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px 32px' }} className="hide-scrollbar">
           <AnimatePresence>

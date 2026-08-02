@@ -520,6 +520,10 @@ export const apiService = {
     return resilientFetch(`${BASE_URL}/api/network/diagnostics`);
   },
 
+  async fixFirewall() {
+    return resilientFetch(`${BASE_URL}/api/diagnostics/fix-firewall`, { method: 'POST' });
+  },
+
   async updateBillPaymentMethod(id, payment_method) {
     return resilientFetch(`${BASE_URL}/api/billing/history/${id}`, {
       method: 'PATCH',

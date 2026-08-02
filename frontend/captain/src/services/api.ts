@@ -5,6 +5,7 @@ export interface OrderItem {
   name: string;
   qty: number;
   price: number;
+  note?: string;
 }
 
 export interface OrderPayload {

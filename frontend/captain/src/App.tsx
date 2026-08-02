@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Search, UtensilsCrossed, Settings, ChevronLeft, LayoutGrid, RefreshCw, ShoppingBag, SendHorizontal, CheckCircle2, Wifi, WifiOff, Move, ArrowRightLeft, Clock, Zap, Lock, Trash2, CreditCard, Banknote, Smartphone, X, Printer, Save, Plus, Minus } from 'lucide-react';
+import { Search, UtensilsCrossed, Settings, ChevronLeft, LayoutGrid, RefreshCw, ShoppingBag, SendHorizontal, CheckCircle2, Wifi, WifiOff, Move, ArrowRightLeft, Clock, Zap, Lock, Trash2, CreditCard, Banknote, Smartphone, X, Printer, Save, Plus, Minus, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getBackendURL } from './config';
 import socket from './services/socket';
@@ -70,6 +70,7 @@ interface OrderItem {
   add_ons?: string[];
   course?: 'Starter' | 'Main' | 'Dessert';
   status?: 'held' | 'fired';
+  note?: string;
 }
 
 
@@ -92,6 +93,8 @@ const App = () => {
   const [sent, setSent] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showCart, setShowCart] = useState(false);
+  const [showItemNoteModal, setShowItemNoteModal] = useState<OrderItem | null>(null);
+  const [itemNoteText, setItemNoteText] = useState('');
   const [showShift, setShowShift] = useState(false);
   const [showMerge, setShowMerge] = useState(false);
   const [showSplit, setShowSplit] = useState(false);
@@ -488,7 +491,8 @@ const App = () => {
         modifiers: i.modifiers,
         add_ons: i.add_ons,
         course: i.course,
-        status: i.status || 'fired'
+        status: i.status || 'fired',
+        note: i.note || ''
       })),
       notes,
       status: 'NEW'
@@ -1163,12 +1167,17 @@ const App = () => {
                             <div style={{ fontWeight: '500', color: '#1e293b', fontSize: '15px' }}>{i.name}</div>
                             {i.course && <span style={{ fontSize: '10px', background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', fontWeight: '500' }}>{i.course}</span>}
                             <button 
-                              onClick={() => setOrder(p => p.map(item => (item.uniqueId || item.id) === (i.uniqueId || i.id) ? { ...item, status: item.status === 'held' ? 'fired' : 'held' } : item))}
-                              style={{ fontSize: '10px', background: i.status === 'held' ? '#fef3c7' : '#f1f5f9', color: i.status === 'held' ? '#b45309' : '#64748b', padding: '2px 6px', borderRadius: '4px', fontWeight: '500', border: 'none', cursor: 'pointer' }}
+                              onClick={() => { setItemNoteText(i.note || ''); setShowItemNoteModal(i); }}
+                              style={{ fontSize: '10px', background: i.note ? '#eff6ff' : '#f1f5f9', color: i.note ? '#2563eb' : '#64748b', padding: '2px 6px', borderRadius: '4px', fontWeight: '500', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}
                             >
-                              {i.status === 'held' ? 'HELD' : 'FIRE NOW'}
+                              <MessageSquare size={10} /> {i.note ? 'Note ✓' : 'Note'}
                             </button>
                           </div>
+                          {i.note && (
+                            <div style={{ fontSize: '11px', color: '#2563eb', fontStyle: 'italic', fontWeight: '500', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                              <MessageSquare size={10} /> {i.note}
+                            </div>
+                          )}
                           
                           {/* Modifiers & Add-ons */}
                           {(i.modifiers || i.add_ons) && (
@@ -1244,7 +1253,7 @@ const App = () => {
                         const payload: OrderPayload = {
                           tableId: table!.id,
                           tableNumber: table!.number,
-                          items: newItems.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+                          items: newItems.map(i => ({ name: i.name, qty: i.qty, price: i.price, note: i.note || '' })),
                           notes,
                           status: 'KOT_PENDING',
                           printKOT: false
@@ -1271,7 +1280,7 @@ const App = () => {
                         const payload: OrderPayload = {
                           tableId: table!.id,
                           tableNumber: table!.number,
-                          items: newItems.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+                          items: newItems.map(i => ({ name: i.name, qty: i.qty, price: i.price, note: i.note || '' })),
                           notes,
                           status: 'KOT_PENDING',
                           printKOT: true
@@ -1304,6 +1313,53 @@ const App = () => {
             </motion.div>
           </>
         )}
+      </AnimatePresence>
+
+      {/* Item Note Modal */}
+      <AnimatePresence>
+      {showItemNoteModal && (
+        <motion.div 
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          onClick={() => setShowItemNoteModal(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
+        >
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: '#fff', borderRadius: '20px', padding: '24px', width: '100%', maxWidth: '360px' }}
+          >
+            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>Kitchen Note</h3>
+            <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '16px' }}>Add note for {showItemNoteModal.name}</p>
+            <textarea
+              value={itemNoteText}
+              onChange={(e) => setItemNoteText(e.target.value)}
+              placeholder="E.g. No onions, extra spicy..."
+              autoFocus
+              style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '12px', fontSize: '14px', resize: 'none', minHeight: '80px', fontFamily: 'inherit', outline: 'none' }}
+            />
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+              <button
+                onClick={() => {
+                  setOrder(p => p.map(item => (item.uniqueId || item.id) === (showItemNoteModal.uniqueId || showItemNoteModal.id) ? { ...item, note: '' } : item));
+                  setShowItemNoteModal(null);
+                }}
+                style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
+              >
+                Clear
+              </button>
+              <button
+                onClick={() => {
+                  setOrder(p => p.map(item => (item.uniqueId || item.id) === (showItemNoteModal.uniqueId || showItemNoteModal.id) ? { ...item, note: itemNoteText } : item));
+                  setShowItemNoteModal(null);
+                }}
+                style={{ flex: 2, padding: '12px', borderRadius: '12px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
+              >
+                Save Note
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
       </AnimatePresence>
 
       <AnimatePresence>

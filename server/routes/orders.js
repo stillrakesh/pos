@@ -78,7 +78,8 @@ export function syncKdsTicket(tableNumber, items, io, isNewKot = false) {
         qty: targetQty,
         price: Number(item.price || dbItem?.price || 0),
         category: categoryStr,
-        itemStatus: item.itemStatus || 'NEW'
+        itemStatus: item.itemStatus || 'NEW',
+        note: item.note || ''
       };
     }).filter(i => i.name && i.quantity > 0);
 
@@ -237,7 +238,8 @@ router.post('/', (req, res) => {
         name:     name,
         quantity: Number(i.quantity || i.qty || 1),
         price:    Number(i.price || dbItem?.price || 0),
-        category: i.category || dbItem?.category || 'General'
+        category: i.category || dbItem?.category || 'General',
+        note:     i.note || ''
       };
     }).filter(i => i.name);
 
@@ -278,7 +280,12 @@ router.post('/', (req, res) => {
         if (mergedMap.has(item.name)) {
           const current = mergedMap.get(item.name);
           const newQty = current.quantity + addQty;
-          mergedMap.set(item.name, { ...current, quantity: newQty, qty: newQty });
+          mergedMap.set(item.name, { 
+            ...current, 
+            quantity: newQty, 
+            qty: newQty,
+            note: item.note || current.note || ''
+          });
         } else {
           mergedMap.set(item.name, { ...item, quantity: addQty, qty: addQty });
         }

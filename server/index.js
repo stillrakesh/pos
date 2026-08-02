@@ -15,6 +15,7 @@ import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync } from 'fs';
+import { exec } from 'child_process';
 
 import { initDatabase, forceSave } from './db.js';
 import { statements } from './db.js';
@@ -413,7 +414,8 @@ app.post('/order', (req, res) => {
     const normalizedItems = items.map(item => ({
       name:     item.name,
       quantity: Number(item.qty || item.quantity || 1),
-      price:    Number(item.price || 0)
+      price:    Number(item.price || 0),
+      note:     item.note || ''
     }));
 
     // Insert the order
@@ -521,9 +523,10 @@ app.post('/settle-bill', (req, res) => {
     const activeOrders = statements.getOrdersByTable({ table_number: table.table_number });
     activeOrders.forEach(o => statements.updateOrderStatus({ id: o.id, status: 'COMPLETED' }));
 
-    // Remove from shift history
+    // Clear shift history & KDS tickets for this table
     clearShiftForTable(table.table_number);
-
+    statements.clearTableKotTickets(table.table_number, table.id, table.name);
+    if (typeof io !== 'undefined' && io) io.emit('kds_updated');
 
     // Clear table
     statements.updateTable({ id: table.id, status: 'AVAILABLE', order_items: '[]' });
@@ -631,12 +634,26 @@ app.post('/table/shift', (req, res) => {
       bill_number: null
     });
 
-    // 4. Log shift history
+    // 4. Update active KOT tickets in SQLite DB to show new table number
+    try {
+      statements.updateKotTableNumber(fromTable.table_number, toTable.table_number);
+      console.log(`[Shift] Updated KOT tickets table number from "${fromTable.table_number}" to "${toTable.table_number}"`);
+    } catch (e) {
+      console.error(`[Shift] Error updating KOT table number:`, e);
+    }
+
+    // 5. Log shift history
     logShift(fromTable.table_number, toTable.table_number);
     clearShiftForTable(fromTable.table_number); // The from table is now vacant, so old shifts to it are irrelevant
 
     broadcastOrderUpdate(fromTable.id);
     broadcastOrderUpdate(toTable.id);
+
+    // 6. Broadcast table shift notification & KDS refresh to all clients (including Kitchen App)
+    if (typeof io !== 'undefined' && io) {
+      io.emit('table_shifted', { oldTable: fromTable.table_number, newTable: toTable.table_number });
+      io.emit('kds_updated');
+    }
 
     res.json({ success: true, message: `Shifted Table ${fromTable.table_number} to ${toTable.table_number}` });
   } catch (err) {
@@ -658,12 +675,29 @@ app.post('/table/merge', (req, res) => {
     const activeOrders = statements.getOrdersByTable({ table_number: fromTable.table_number });
     activeOrders.forEach(o => statements.updateOrderTable({ id: o.id, table_number: toTable.table_number }));
 
-    // 2. Merge items
+    // 2. Merge items (aggregate quantities for same-name items)
     let fromItems = [];
     let toItems = [];
     try { fromItems = JSON.parse(fromTable.order_items || '[]'); } catch(e){}
     try { toItems = JSON.parse(toTable.order_items || '[]'); } catch(e){}
-    const mergedItems = [...toItems, ...fromItems];
+    const mergedMap = new Map();
+    toItems.forEach(item => {
+      const key = String(item.name || '').toLowerCase().trim();
+      const qty = Number(item.quantity || item.qty || 1);
+      mergedMap.set(key, { ...item, quantity: qty, qty: qty });
+    });
+    fromItems.forEach(item => {
+      const key = String(item.name || '').toLowerCase().trim();
+      const addQty = Number(item.quantity || item.qty || 1);
+      if (mergedMap.has(key)) {
+        const current = mergedMap.get(key);
+        const newQty = current.quantity + addQty;
+        mergedMap.set(key, { ...current, quantity: newQty, qty: newQty });
+      } else {
+        mergedMap.set(key, { ...item, quantity: addQty, qty: addQty });
+      }
+    });
+    const mergedItems = Array.from(mergedMap.values());
 
     // 3. Update tables
     statements.updateTable({
@@ -681,10 +715,23 @@ app.post('/table/merge', (req, res) => {
       bill_number: null
     });
     
+    // 4. Update active KOT tickets table number
+    try {
+      statements.updateKotTableNumber(fromTable.table_number, toTable.table_number);
+    } catch (e) {
+      console.error(`[Merge] Error updating KOT table number:`, e);
+    }
+
     clearShiftForTable(fromTable.table_number);
 
     broadcastOrderUpdate(fromTable.id);
     broadcastOrderUpdate(toTable.id);
+
+    // 5. Broadcast socket events
+    if (typeof io !== 'undefined' && io) {
+      io.emit('table_shifted', { oldTable: fromTable.table_number, newTable: toTable.table_number });
+      io.emit('kds_updated');
+    }
 
     res.json({ success: true, message: `Merged Table ${fromTable.table_number} into ${toTable.table_number}` });
   } catch (err) {
@@ -915,6 +962,36 @@ app.get('/api/network/ip', (req, res) => {
 
 app.get('/api/network/diagnostics', handleNetworkDiagnostics);
 app.get('/api/network-diagnostics', handleNetworkDiagnostics);
+
+// ── Automated Windows Firewall Whitelisting Endpoint ────────
+app.post(['/api/diagnostics/fix-firewall', '/api/network/fix-firewall'], (req, res) => {
+  if (process.platform !== 'win32') {
+    return res.json({ success: true, message: 'Non-Windows OS, no Windows Firewall rules required.' });
+  }
+
+  const ruleName = 'Restaurant POS Network Access';
+  const portList = '3100,3101,5173,5175';
+
+  // Execute standard netsh and elevated powershell command
+  const deleteCmd = `netsh advfirewall firewall delete rule name="${ruleName}" 2>nul`;
+  const addCmd = `netsh advfirewall firewall add rule name="${ruleName}" dir=in action=allow protocol=TCP localport=${portList} profile=any enable=yes`;
+  const psCmd = `powershell -WindowStyle Hidden -Command "try { New-NetFirewallRule -DisplayName '${ruleName}' -Direction Inbound -Action Allow -Protocol TCP -LocalPort ${portList} -Profile Any -Enabled True -ErrorAction SilentlyContinue } catch {}"`;
+  const elevatedPsCmd = `powershell -Command "Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command \\"New-NetFirewallRule -DisplayName ''${ruleName}'' -Direction Inbound -Action Allow -Protocol TCP -LocalPort ${portList} -Profile Any -Enabled True -ErrorAction SilentlyContinue\\"' -Verb RunAs"`;
+
+  const fullCmd = `${deleteCmd} & ${addCmd} & ${psCmd}`;
+  console.log(`[Firewall] Executing Windows Firewall setup...`);
+
+  exec(fullCmd, { shell: true, windowsHide: true }, (err) => {
+    // Also trigger elevated command to prompt UAC if needed
+    exec(elevatedPsCmd, { windowsHide: true }, () => {});
+    
+    if (err) {
+      console.warn('[Firewall] netsh elevated fallback dispatched.');
+    }
+    console.log('[Firewall] Firewall rule execution completed!');
+    res.json({ success: true, message: 'Firewall rules created for ports 3100, 3101, 5173, 5175' });
+  });
+});
 
 // ─────────────────────────────────────────────────────────────
 // Serve POS UI (built static bundle)

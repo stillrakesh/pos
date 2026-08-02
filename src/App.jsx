@@ -3060,6 +3060,12 @@ const ShiftHistoryView = ({ history, onClose }) => {
 const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, settings, onQuickSettle, onQuickPrint, globalSearch, onViewChange, onOpenFloorDesigner, tableToClear, setTableToClear, shiftHistory }) => {
   const [showShiftHistory, setShowShiftHistory] = useState(false);
 
+  const getTableTotalQty = (t) => {
+    const items = t?.orders || t?.items || t?.order_items || [];
+    if (!Array.isArray(items) || items.length === 0) return 0;
+    return items.reduce((sum, i) => sum + Number(i.qty !== undefined ? i.qty : (i.quantity !== undefined ? i.quantity : 1)), 0);
+  };
+
   console.log("ServiceFloor Tables:", tables.map(t => ({ id: t.id, status: t.status, total: t.total, items: t.orders?.length })));
   const [viewMode, setViewMode] = useState(() => localStorage.getItem("serviceFloorViewMode") || 'grid');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -3321,7 +3327,7 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
                           {tableTotal > 0 ? `₹${Math.ceil(tableTotal)}` : '--'}
                         </div>
                         <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500', marginTop: '2px' }}>
-                          {isRunning ? `${(table.items?.length || table.orders?.length || 0)} items` : 'No items'}
+                          {isRunning ? `${getTableTotalQty(table)} ${getTableTotalQty(table) === 1 ? 'item' : 'items'}` : 'No items'}
                         </div>
                       </div>
 
@@ -3388,7 +3394,7 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
                         {tableTotal > 0 ? `₹${Math.ceil(tableTotal)}` : '--'}
                       </div>
                       <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500', marginTop: '2px' }}>
-                        {isRunning ? `${table.orders?.length || 0} items` : 'No items'}
+                        {isRunning ? `${getTableTotalQty(table)} ${getTableTotalQty(table) === 1 ? 'item' : 'items'}` : 'No items'}
                       </div>
                     </div>
 
@@ -3474,7 +3480,7 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
                           {isRunning ? <TimeElapsed createdAt={table.createdAt} /> : '--'}
                         </td>
                         <td style={{ padding: '14px 20px', fontSize: '13px', color: '#64748b', fontWeight: '700' }}>
-                          {isRunning ? `${table.orders?.length || 0} items` : '--'}
+                          {isRunning ? `${getTableTotalQty(table)} ${getTableTotalQty(table) === 1 ? 'item' : 'items'}` : '--'}
                         </td>
                         <td style={{ padding: '14px 20px', fontSize: '14px', fontWeight: '700', color: isRunning ? 'var(--primary)' : '#94a3b8' }}>
                           {tableTotal > 0 ? `₹${Math.ceil(tableTotal)}` : '--'}
