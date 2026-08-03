@@ -26,7 +26,7 @@ import { normalizeTable } from './utils/normalization.js';
 // Route modules
 import ordersRouter, { syncKdsTicket }   from './routes/orders.js';
 import tablesRouter   from './routes/tables.js';
-import menuRouter     from './routes/menu.js';
+import menuRouter, { getFullMenu } from './routes/menu.js';
 import billingRouter  from './routes/billing.js';
 import devicesRouter  from './routes/devices.js';
 import signingRouter  from './routes/signing.js';
