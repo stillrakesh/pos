@@ -4,7 +4,7 @@ import {
   Menu, Search, Store, Monitor, LayoutGrid, Clock, Bell, User, Users, Wifi,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Info, CreditCard, Banknote, Printer, Eye, Plus,
   Minus, X, Utensils, Smartphone, BarChart3, TrendingUp, PieChart, AlertTriangle, Truck, ShoppingBag, ChefHat, MessageSquare, CheckSquare, Sunset, Trash2, Package, XCircle,
-  Settings2, ReceiptText, RefreshCw, RotateCcw, Percent, CheckCircle, Lock, Shield, Maximize2, Move, ArrowRightLeft, Zap, Cloud
+  Settings2, ReceiptText, RefreshCw, RotateCcw, Percent, CheckCircle, Lock, Shield, Maximize2, Move, ArrowRightLeft, Zap, Cloud, Sparkles, Camera
 } from 'lucide-react';
 import './index.css';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, LineChart, Line } from 'recharts';
@@ -27,6 +27,7 @@ import logger from './services/loggerService';
 import SystemDiagnosticsModal from './components/settings/SystemDiagnosticsModal';
 import LanConnectModal from './components/settings/LanConnectModal';
 import CloudDashboardView from './components/CloudDashboardView';
+import AIMenuScannerModal from './components/menu/AIMenuScannerModal';
 
 // --- Grand Total Calculation Helper (matches backend normalization) ---
 const calculateGrandTotal = (items, tableSettings) => {
@@ -1556,6 +1557,7 @@ const RichModifierModal = ({ item, onAddToCart, onClose }) => {
 
 const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loadCategories, loadMenu }) => {
   const [newCat, setNewCat] = useState('');
+  const [showAIScannerModal, setShowAIScannerModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(categories[0] || "");
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -1771,9 +1773,24 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: '#f8fafc' }} className="animate-fade-in no-scrollbar">
       <div style={{ maxWidth: '850px', margin: '0 auto' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: '500', marginBottom: '24px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Utensils size={28} color="#10b981" /> Menu & Inventory Setup
-        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: '500', margin: 0, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Utensils size={28} color="#10b981" /> Menu & Inventory Setup
+          </h2>
+          <button 
+            type="button"
+            onClick={() => setShowAIScannerModal(true)}
+            style={{
+              padding: '10px 18px', borderRadius: '12px',
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white',
+              border: 'none', fontWeight: '600', fontSize: '13px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(16,185,129,0.3)',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Sparkles size={16} color="white" /> 📷 Import Menu from Photo
+          </button>
+        </div>
 
         {/* Categories Section */}
         <div style={{ background: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '24px' }}>
@@ -2227,6 +2244,18 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
           addOns={addOns}
           setAddOns={setAddOns}
           onClose={() => setShowModsEditor(false)}
+        />
+      )}
+
+      {showAIScannerModal && (
+        <AIMenuScannerModal 
+          isOpen={showAIScannerModal}
+          onClose={() => setShowAIScannerModal(false)}
+          existingCategories={categories.map(c => typeof c === 'object' ? c.name : c)}
+          onImportComplete={async () => {
+            if (loadCategories) await loadCategories();
+            if (loadMenu) await loadMenu();
+          }}
         />
       )}
     </div>

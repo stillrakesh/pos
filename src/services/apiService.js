@@ -227,6 +227,15 @@ export const apiService = {
     return resilientFetch(`${BASE_URL}/categories/${encodeURIComponent(name)}`, { method: 'DELETE' });
   },
 
+  async scanMenuImage(base64Image, apiKey = '') {
+    return resilientFetch(`${BASE_URL}/menu/scan-image`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ base64Image, apiKey }),
+      signal: AbortSignal.timeout(30000)
+    });
+  },
+
   // --- ORDERS ---
   async fetchOrders(status) {
     const path = status ? `/orders?status=${encodeURIComponent(status)}` : `/orders`;

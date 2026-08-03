@@ -353,4 +353,96 @@ router.delete('/:id', (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────
+// POST /api/menu/scan-image — AI Vision Menu Image Scanner
+// ─────────────────────────────────────────────────────────────
+router.post('/scan-image', async (req, res) => {
+  try {
+    const { base64Image, apiKey } = req.body;
+    if (!base64Image) {
+      return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'base64Image is required' });
+    }
+
+    const targetApiKey = apiKey || process.env.GEMINI_API_KEY || '';
+
+    if (targetApiKey) {
+      const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+      let lastErrorMessage = '';
+
+      for (const model of modelsToTry) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${targetApiKey}`;
+          const promptText = `You are a precision OCR AI for restaurant menus. Analyze this menu image carefully and extract EVERY SINGLE food item, drink, category, and price listed.
+
+Extract into a structured list. Return ONLY a valid JSON array of objects with these exact keys:
+- "category": string (e.g. "Starters", "Chinese", "Main Course", "Beverages", "Desserts")
+- "name": string (exact item name)
+- "price": number (numeric value only, e.g. 180)
+- "type": "Veg" or "Non-Veg" (based on green/red dots or item names)
+- "short_code": string (2-3 letter code, e.g. "PBM")
+
+Rules:
+1. Scan multi-column layouts from top-left to bottom-right.
+2. If price is written like "150/-" or "Rs. 150", extract 150.
+3. Return ONLY raw JSON array, without any markdown formatting or markdown code fences (\`\`\`json).`;
+
+          const geminiPayload = {
+            contents: [{
+              parts: [
+                { text: promptText },
+                { inlineData: { mimeType: 'image/jpeg', data: base64Image } }
+              ]
+            }]
+          };
+
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(geminiPayload)
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            lastErrorMessage = result.error?.message || `HTTP ${response.status} from ${model}`;
+            console.warn(`[AI Menu Scan] Model ${model} returned error:`, lastErrorMessage);
+            continue; // Try next model
+          }
+
+          const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          if (rawText) {
+            // Strip code fences and extra whitespace
+            const cleanedText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const items = JSON.parse(cleanedText);
+            if (Array.isArray(items) && items.length > 0) {
+              console.log(`[AI Menu Scan] Successfully extracted ${items.length} items using ${model}!`);
+              return res.json({ success: true, items, modelUsed: model });
+            }
+          }
+        } catch (modelErr) {
+          lastErrorMessage = modelErr.message;
+          console.warn(`[AI Menu Scan] Error trying model ${model}:`, modelErr.message);
+        }
+      }
+
+      // If AI key was provided but API returned an error, report it directly to the user
+      if (lastErrorMessage) {
+        return res.status(400).json({
+          error: 'AI_SCAN_ERROR',
+          message: `Gemini AI Scan failed: ${lastErrorMessage}. Please verify your API Key or try a clearer menu photo.`
+        });
+      }
+    }
+
+    return res.status(400).json({
+      error: 'NO_API_KEY',
+      message: 'Gemini API Key is missing or invalid. Please check your key in settings.'
+    });
+
+  } catch (err) {
+    console.error('[POST /api/menu/scan-image] Error:', err);
+    res.status(500).json({ error: 'SERVER_ERROR', message: err.message });
+  }
+});
+
 export default router;
