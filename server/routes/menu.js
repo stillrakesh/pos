@@ -365,16 +365,8 @@ router.post('/scan-image', async (req, res) => {
 
     const targetApiKey = (apiKey || process.env.GEMINI_API_KEY || '').trim();
 
-    // Check if key is an OAuth code instead of API Key (OAuth starts with AQ.Ab...)
-    if (targetApiKey && targetApiKey.startsWith('AQ.')) {
-      return res.status(400).json({
-        error: 'INVALID_KEY_FORMAT',
-        message: 'The string provided is a Google Cloud sign-in code (starts with AQ.Ab...), not a Gemini API Key. Please get a free API Key starting with AIzaSy... from https://aistudio.google.com/app/apikey'
-      });
-    }
-
     if (targetApiKey) {
-      const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
+      const modelsToTry = ['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
       let lastErrorMessage = '';
 
       for (const model of modelsToTry) {
