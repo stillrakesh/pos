@@ -212,14 +212,14 @@ export default function AIMenuScannerModal({ isOpen, onClose, onImportComplete, 
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999999,
       background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', overflowY: 'auto',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
       <div style={{
         background: '#ffffff', width: '100%', maxWidth: step === 'review' ? '920px' : '560px',
-        maxHeight: '90vh', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+        maxHeight: '88vh', margin: 'auto', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.35)',
         display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
       }}>
         

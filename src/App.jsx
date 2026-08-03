@@ -1347,7 +1347,7 @@ const ModsEditorModal = ({ modifierGroups, setModifierGroups, addOns, setAddOns,
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
       <div className="animate-fade-in" style={{ background: 'white', padding: '24px', borderRadius: '12px', width: '500px', maxHeight: '85vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h3 style={{ fontWeight: '600', fontSize: '18px', color: '#1e293b' }}>Modifiers & Add-ons</h3>
@@ -1485,7 +1485,7 @@ const RichModifierModal = ({ item, onAddToCart, onClose }) => {
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
       <div className="animate-fade-in" style={{ background: 'white', padding: '24px', borderRadius: '12px', width: '400px', maxHeight: '85vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h3 style={{ fontWeight: '600', fontSize: '18px', color: '#1e293b' }}>Customize {item.name}</h3>
