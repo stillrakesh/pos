@@ -1,7 +1,7 @@
 // ⚠️ STABLE CORE - DO NOT MODIFY WITHOUT BACKUP
 
 import initSqlJs from 'sql.js';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, renameSync, copyFileSync, appendFileSync as fsAppendFile } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -40,10 +40,44 @@ export async function initDatabase() {
     }
   });
 
-  // Load existing DB from disk if it exists
+  // Load existing DB from disk if it exists — with corruption recovery
   if (existsSync(DB_PATH)) {
-    const fileBuffer = readFileSync(DB_PATH);
-    db = new SQL.Database(fileBuffer);
+    try {
+      const fileBuffer = readFileSync(DB_PATH);
+      if (fileBuffer.length === 0) throw new Error('Database file is empty (0 bytes)');
+      db = new SQL.Database(fileBuffer);
+      // Quick integrity check
+      db.exec('SELECT count(*) FROM sqlite_master');
+    } catch (loadErr) {
+      console.error('  ⚠️ DATABASE CORRUPTION DETECTED:', loadErr.message);
+      console.error('  🔧 Attempting recovery...');
+      
+      // Rename corrupt file for forensic analysis
+      const corruptPath = DB_PATH + '.corrupt.' + Date.now();
+      try { renameSync(DB_PATH, corruptPath); } catch (e) {}
+      console.error(`  📦 Corrupt file saved as: ${corruptPath}`);
+      
+      // Try loading from backup if available
+      const backupPath = DB_PATH + '.bak';
+      if (existsSync(backupPath)) {
+        try {
+          const backupBuffer = readFileSync(backupPath);
+          if (backupBuffer.length > 0) {
+            db = new SQL.Database(backupBuffer);
+            db.exec('SELECT count(*) FROM sqlite_master');
+            console.log('  ✅ RECOVERED from backup file!');
+          } else {
+            throw new Error('Backup file is also empty');
+          }
+        } catch (backupErr) {
+          console.error('  ❌ Backup also corrupt. Starting fresh database.');
+          db = new SQL.Database();
+        }
+      } else {
+        console.error('  ❌ No backup available. Starting fresh database.');
+        db = new SQL.Database();
+      }
+    }
   } else {
     db = new SQL.Database();
   }
@@ -113,6 +147,13 @@ export async function initDatabase() {
   try { db.run(`ALTER TABLE menu ADD COLUMN short_code TEXT`); } catch(e) {}
   try { db.run(`ALTER TABLE menu ADD COLUMN modifier_groups TEXT DEFAULT '[]'`); } catch(e) {}
   try { db.run(`ALTER TABLE menu ADD COLUMN add_ons TEXT DEFAULT '[]'`); } catch(e) {}
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS categories (
+      id    INTEGER PRIMARY KEY AUTOINCREMENT,
+      name  TEXT NOT NULL UNIQUE
+    );
+  `);
 
   db.run(`CREATE INDEX IF NOT EXISTS idx_tables_status ON tables(status)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_menu_cat_avail ON menu(category, available)`);
@@ -303,7 +344,20 @@ function persistToFile() {
   saveTimer = setTimeout(() => {
     try {
       const data = db.export();
-      writeFileSync(DB_PATH, Buffer.from(data));
+      const buffer = Buffer.from(data);
+      const tmpPath = DB_PATH + '.tmp';
+      const backupPath = DB_PATH + '.bak';
+      
+      // Step 1: Write to temporary file
+      writeFileSync(tmpPath, buffer);
+      
+      // Step 2: Backup current DB (if it exists and has content)
+      if (existsSync(DB_PATH)) {
+        try { copyFileSync(DB_PATH, backupPath); } catch (e) {}
+      }
+      
+      // Step 3: Atomic rename (this is the critical moment — rename is atomic on most OS)
+      renameSync(tmpPath, DB_PATH);
     } catch (err) {
       console.error('  ❌ DB persist error:', err.message);
     }
@@ -317,10 +371,26 @@ export function forceSave() {
   if (saveTimer) clearTimeout(saveTimer);
   try {
     const data = db.export();
-    writeFileSync(DB_PATH, Buffer.from(data));
-    console.log('  💾 Database saved to disk.');
+    const buffer = Buffer.from(data);
+    const tmpPath = DB_PATH + '.tmp';
+    const backupPath = DB_PATH + '.bak';
+    
+    writeFileSync(tmpPath, buffer);
+    if (existsSync(DB_PATH)) {
+      try { copyFileSync(DB_PATH, backupPath); } catch (e) {}
+    }
+    renameSync(tmpPath, DB_PATH);
+    console.log('  💾 Database saved to disk (atomic).');
   } catch (err) {
     console.error('  ❌ DB force-save error:', err.message);
+    // Fallback: try direct write if atomic fails
+    try {
+      const data = db.export();
+      writeFileSync(DB_PATH, Buffer.from(data));
+      console.log('  💾 Database saved (fallback direct write).');
+    } catch (fallbackErr) {
+      console.error('  ❌ DB fallback save also failed:', fallbackErr.message);
+    }
   }
 }
 
@@ -826,6 +896,48 @@ export const statements = {
     db.run(`DELETE FROM menu WHERE id = ?`, [id]);
     persistToFile();
     return { changes: db.getRowsModified() };
+  },
+
+  getAllCategories() {
+    try {
+      const result = db.exec(`SELECT name FROM categories ORDER BY id ASC`);
+      if (!result || result.length === 0 || !result[0].values) return [];
+      return result[0].values.map(v => v[0]);
+    } catch(e) {
+      return [];
+    }
+  },
+
+  addCategory(name) {
+    const trimmed = String(name || '').trim();
+    if (!trimmed) return;
+    try {
+      db.run(`INSERT OR IGNORE INTO categories (name) VALUES (?)`, [trimmed]);
+      persistToFile();
+    } catch(e) {}
+  },
+
+  saveCategories(categoryList) {
+    if (!Array.isArray(categoryList)) return;
+    try {
+      db.run(`DELETE FROM categories`);
+      categoryList.forEach(c => {
+        const name = typeof c === 'object' ? c.name : String(c || '').trim();
+        if (name) {
+          db.run(`INSERT OR IGNORE INTO categories (name) VALUES (?)`, [name]);
+        }
+      });
+      persistToFile();
+    } catch(e) {}
+  },
+
+  deleteCategory(name) {
+    const trimmed = String(name || '').trim();
+    if (!trimmed) return;
+    try {
+      db.run(`DELETE FROM categories WHERE LOWER(name) = LOWER(?)`, [trimmed]);
+      persistToFile();
+    } catch(e) {}
   },
 
   replaceAllMenu(menuArray) {

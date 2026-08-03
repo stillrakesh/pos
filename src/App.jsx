@@ -1181,7 +1181,11 @@ const RetailProductSetupView = ({ categories, setCategories, menuItems, setMenuI
 
   const deleteCategory = (catName) => {
     if (window.confirm(`Are you sure you want to delete the Retail category "${catName}"?`)) {
-      setCategories(categories.filter(c => c !== catName));
+      const remaining = categories.filter(c => (typeof c === 'object' ? c.name : c) !== catName);
+      setCategories(remaining);
+      apiService.deleteCategory(catName).catch(err => {
+        console.warn("Offline category deletion saved locally.", err);
+      });
     }
   };
 
@@ -1194,7 +1198,10 @@ const RetailProductSetupView = ({ categories, setCategories, menuItems, setMenuI
         inStock: parseInt(newItem.stockQuantity, 10) > 0
       }, categories);
       if (success) {
-        setMenuItems(prev => [...prev, item]);
+        setMenuItems(prev => {
+          if (!item || !item.id) return prev;
+          return prev.some(i => String(i.id) === String(item.id)) ? prev : [...prev, item];
+        });
         setNewItem({ name: '', price: '', stockQuantity: '', cat: categories[0] || '' });
       }
     } catch (err) {
@@ -1598,11 +1605,17 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
 
   const deleteCategory = (catName) => {
     if (window.confirm(`Are you sure you want to delete the category "${catName}"? This will not delete the items in this category.`)) {
-      setCategories(categories.filter(c => (typeof c === 'object' ? c.name : c) !== catName));
+      const remaining = categories.filter(c => (typeof c === 'object' ? c.name : c) !== catName);
+      setCategories(remaining);
       if (selectedCategory === catName) {
-        const remaining = categories.filter(c => (typeof c === 'object' ? c.name : c) !== catName);
         setSelectedCategory(remaining.length > 0 ? (typeof remaining[0] === 'object' ? remaining[0].name : remaining[0]) : '');
       }
+      if (activeCategoryTab.toLowerCase() === catName.toLowerCase()) {
+        setActiveCategoryTab("All");
+      }
+      apiService.deleteCategory(catName).catch(err => {
+        console.warn("Offline category deletion saved locally.", err);
+      });
     }
   };
 
@@ -1663,7 +1676,10 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
         }, categories);
         if (success) {
           const newItemWithStock = { ...item, inStock: true, available: true };
-          setMenuItems(prev => [...prev, newItemWithStock]);
+          setMenuItems(prev => {
+            if (!item || !item.id) return prev;
+            return prev.some(i => String(i.id) === String(item.id)) ? prev : [...prev, newItemWithStock];
+          });
           setName("");
           setPrice("");
           setShortCode("");
@@ -2071,8 +2087,17 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
                   {/* Category Items */}
                   {items.map(item => {
                     const isInStock = item.inStock ?? item.available ?? true;
-                    const hasMods = (item.modifier_groups && item.modifier_groups.length > 0) || (item.add_ons && item.add_ons.length > 0);
-                    const modCount = (item.modifier_groups?.length || 0) + (item.add_ons?.length || 0);
+                    const safeParseArray = (val) => {
+                      if (Array.isArray(val)) return val;
+                      if (typeof val === 'string' && val.trim().startsWith('[')) {
+                        try { const p = JSON.parse(val); if (Array.isArray(p)) return p; } catch(e) {}
+                      }
+                      return [];
+                    };
+                    const modGroups = Array.isArray(item.modifier_groups) ? item.modifier_groups : safeParseArray(item.modifier_groups);
+                    const addOnsList = Array.isArray(item.add_ons) ? item.add_ons : safeParseArray(item.add_ons);
+                    const modCount = modGroups.length + addOnsList.length;
+                    const hasMods = modCount > 0;
 
                     return (
                       <div 
@@ -5296,10 +5321,24 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       alert(`${item.name} is currently Out of Stock.`);
       return;
     }
-    if ((item.modifiers && item.modifiers.length > 0) || 
-        (item.modifier_groups && item.modifier_groups.length > 0) || 
-        (item.add_ons && item.add_ons.length > 0)) {
-      setShowModifierModal(item);
+    const safeParseArray = (val) => {
+      if (Array.isArray(val)) return val;
+      if (typeof val === 'string' && val.trim().startsWith('[')) {
+        try { const p = JSON.parse(val); if (Array.isArray(p)) return p; } catch(e) {}
+      }
+      return [];
+    };
+    const modGroups = Array.isArray(item.modifier_groups) ? item.modifier_groups : safeParseArray(item.modifier_groups);
+    const addOnsList = Array.isArray(item.add_ons) ? item.add_ons : safeParseArray(item.add_ons);
+    const legMods = Array.isArray(item.modifiers) ? item.modifiers : safeParseArray(item.modifiers);
+
+    if (modGroups.length > 0 || addOnsList.length > 0 || legMods.length > 0) {
+      setShowModifierModal({
+        ...item,
+        modifier_groups: modGroups,
+        add_ons: addOnsList,
+        modifiers: legMods
+      });
     } else {
       addToCart(item);
     }
@@ -6463,6 +6502,9 @@ function MainApp() {
 
   // --- SYSTEM & DEVICE STATUS ---
   const [socketConnected, setSocketConnected] = useState(false);
+  const [backendHealthy, setBackendHealthy] = useState(true);
+  const [healthError, setHealthError] = useState(null);
+  const healthFailCount = useRef(0);
   const [showDiagnosticsModal, setShowDiagnosticsModal] = useState(false);
   const [showLanModal, setShowLanModal] = useState(false);
   const [isDbLoaded, setIsDbLoaded] = useState(true); 
@@ -7145,10 +7187,10 @@ function MainApp() {
     localStorage.removeItem('pos_categories'); // purge old state
     try {
       const data = await apiService.fetchCategories();
-      if (data) {
-        if (Array.isArray(data) && data.length > 0) {
-          setCategories(data);
-        }
+      if (Array.isArray(data)) {
+        setCategories(data);
+      } else if (data && Array.isArray(data.categories)) {
+        setCategories(data.categories);
       }
     } catch (err) {
       console.error("Failed to load categories:", err);
@@ -7200,6 +7242,42 @@ function MainApp() {
   useEffect(() => {
     menuRef.current = [...menuItems, ...products];
   }, [menuItems, products]);
+
+  // ── Background Health Monitor ──
+  useEffect(() => {
+    let healthInterval = null;
+    const checkHealth = async () => {
+      try {
+        const resp = await fetch(`${BASE_URL}/api/health`, { signal: AbortSignal.timeout(5000) });
+        if (resp.ok) {
+          if (healthFailCount.current > 0) {
+            console.log('✅ Backend connection restored after', healthFailCount.current, 'failures');
+          }
+          healthFailCount.current = 0;
+          setBackendHealthy(true);
+          setHealthError(null);
+        } else {
+          throw new Error(`Health check returned ${resp.status}`);
+        }
+      } catch (err) {
+        healthFailCount.current++;
+        console.warn(`⚠️ Health check failed (#${healthFailCount.current}):`, err.message);
+        if (healthFailCount.current >= 2) {
+          setBackendHealthy(false);
+          setHealthError(err.message);
+        }
+      }
+    };
+    // Initial check after 5 seconds (give server time to start)
+    const initialTimer = setTimeout(() => {
+      checkHealth();
+      healthInterval = setInterval(checkHealth, 30000); // Then every 30 seconds
+    }, 5000);
+    return () => {
+      clearTimeout(initialTimer);
+      if (healthInterval) clearInterval(healthInterval);
+    };
+  }, []);
 
   useEffect(() => {
     // Socket.io is fully optional — POS works 100% without it
@@ -7470,14 +7548,16 @@ function MainApp() {
 
       socketRef.current.on('menu_updated', (menuPayload) => {
         console.log("MENU SYNC:", menuPayload);
-        if (menuPayload && menuPayload.categories) {
+        if (menuPayload && Array.isArray(menuPayload.categories)) {
           setCategories(menuPayload.categories);
         }
-        if (menuPayload && menuPayload.menu) {
+        if (menuPayload && Array.isArray(menuPayload.items)) {
+          setMenuItems(menuPayload.items.map(i => ({ ...i, inStock: i.available ?? i.inStock ?? true })));
+        } else if (menuPayload && menuPayload.menu) {
           const flatMenu = Array.isArray(menuPayload.menu) ? menuPayload.menu : Object.values(menuPayload.menu).flat();
           setMenuItems(flatMenu.map(i => ({ ...i, inStock: i.available ?? i.inStock ?? true })));
         } else if (Array.isArray(menuPayload)) {
-           setMenuItems(menuPayload.map(i => ({ ...i, inStock: i.available ?? i.inStock ?? true })));
+          setMenuItems(menuPayload.map(i => ({ ...i, inStock: i.available ?? i.inStock ?? true })));
         }
       });
 
@@ -8101,6 +8181,20 @@ function MainApp() {
               </button>
             )}
 
+              {!backendHealthy && (
+                <div style={{ 
+                  display: 'flex', alignItems: 'center', gap: '8px', 
+                  background: '#fef3c7', padding: 'clamp(4px, 0.5vw, 8px) clamp(10px, 1vw, 16px)', 
+                  borderRadius: '12px', border: '1px solid #f59e0b',
+                  animation: 'pulse 2s infinite'
+                }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b', animation: 'pulse 1.5s infinite' }}></div>
+                  <span style={{ fontSize: '11px', fontWeight: '600', color: '#92400e' }}>
+                    Backend Offline — Reconnecting...
+                  </span>
+                </div>
+              )}
+
             {/* Connection Indicator */}
             <div 
               onClick={() => setShowDiagnosticsModal(true)}
@@ -8476,23 +8570,81 @@ function MainApp() {
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, errorInfo: null, recovering: false };
   }
   static getDerivedStateFromError(error) { return { hasError: true, error }; }
-  componentDidCatch(error, errorInfo) { console.error("POS Crash:", error, errorInfo); }
+  componentDidCatch(error, errorInfo) { 
+    console.error("🛡️ POS Error Boundary Caught:", error, errorInfo);
+    this.setState({ errorInfo });
+    // Log to localStorage for diagnostics
+    try {
+      const crashes = JSON.parse(localStorage.getItem('pos_crash_log') || '[]');
+      crashes.push({
+        type: 'react_error_boundary',
+        message: error?.message || String(error),
+        stack: error?.stack || '',
+        componentStack: errorInfo?.componentStack || '',
+        timestamp: new Date().toISOString()
+      });
+      localStorage.setItem('pos_crash_log', JSON.stringify(crashes.slice(-20)));
+    } catch (e) {}
+  }
+  handleRecover = () => {
+    this.setState({ recovering: true });
+    // Clear potentially corrupted state
+    try {
+      // Don't clear critical data like settings — only clear transient UI state
+      sessionStorage.clear();
+    } catch (e) {}
+    setTimeout(() => {
+      this.setState({ hasError: false, error: null, errorInfo: null, recovering: false });
+    }, 500);
+  }
   render() {
     if (this.state.hasError) {
+      const { error, errorInfo, recovering } = this.state;
       return (
-        <div style={{ padding: '40px', textAlign: 'center', background: '#fff1f2', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <AlertTriangle size={48} color="#e11d48" style={{ marginBottom: '16px' }} />
-          <h1 style={{ color: '#9f1239' }}>System Encountered an Error</h1>
-          <p style={{ color: '#be123c', maxWidth: '500px' }}>{this.state.error?.toString()}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            style={{ marginTop: '20px', padding: '10px 20px', background: '#e11d48', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-          >
-            Reload POS System
-          </button>
+        <div style={{ padding: '40px', background: 'linear-gradient(135deg, #1e1b2e 0%, #2d1f3d 50%, #1a1528 100%)', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+          <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)', borderRadius: '24px', padding: '48px', maxWidth: '600px', width: '90%', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 25px 50px rgba(0,0,0,0.4)' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(239,68,68,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <AlertTriangle size={32} color="#f87171" />
+            </div>
+            <h1 style={{ color: '#f1f5f9', fontSize: '22px', fontWeight: '700', margin: '0 0 8px' }}>POS System Error Detected</h1>
+            <p style={{ color: '#94a3b8', fontSize: '14px', margin: '0 0 24px' }}>The system caught an error before it could crash. Your data is safe.</p>
+            
+            <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '12px', padding: '16px', textAlign: 'left', marginBottom: '24px', maxHeight: '180px', overflow: 'auto' }}>
+              <div style={{ color: '#f87171', fontSize: '13px', fontWeight: '600', marginBottom: '8px' }}>Error Details:</div>
+              <code style={{ color: '#e2e8f0', fontSize: '12px', wordBreak: 'break-word', lineHeight: '1.5' }}>
+                {error?.message || error?.toString() || 'Unknown error'}
+              </code>
+              {errorInfo?.componentStack && (
+                <details style={{ marginTop: '12px' }}>
+                  <summary style={{ color: '#64748b', fontSize: '11px', cursor: 'pointer' }}>Component Stack Trace</summary>
+                  <pre style={{ color: '#94a3b8', fontSize: '10px', marginTop: '8px', whiteSpace: 'pre-wrap', maxHeight: '100px', overflow: 'auto' }}>{errorInfo.componentStack}</pre>
+                </details>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button 
+                onClick={this.handleRecover}
+                disabled={recovering}
+                style={{ padding: '12px 24px', background: recovering ? '#334155' : 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '12px', cursor: recovering ? 'wait' : 'pointer', fontWeight: '600', fontSize: '14px', transition: 'all 0.2s' }}
+              >
+                {recovering ? '⏳ Recovering...' : '🔧 Try Auto-Recovery'}
+              </button>
+              <button 
+                onClick={() => window.location.reload()}
+                style={{ padding: '12px 24px', background: 'rgba(255,255,255,0.1)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', cursor: 'pointer', fontWeight: '600', fontSize: '14px', transition: 'all 0.2s' }}
+              >
+                🔄 Reload POS
+              </button>
+            </div>
+            
+            <div style={{ marginTop: '20px', color: '#475569', fontSize: '11px' }}>
+              {new Date().toLocaleString()} • TYDE POS Crash Protection
+            </div>
+          </div>
         </div>
       );
     }

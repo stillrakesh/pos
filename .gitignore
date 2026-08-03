@@ -27,6 +27,10 @@ dist-ssr
 data/*.db
 data/*.db-wal
 data/*.db-shm
+data_dev/*.db*
+*.bak
+*.tmp
+*.corrupt*
 backup/
 
 # Build releases & binaries

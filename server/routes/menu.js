@@ -13,25 +13,66 @@ const formatMenuItem = (item) => {
   return { ...item, available: isAvailable, inStock: isAvailable, modifier_groups, add_ons };
 };
 
-// Helper to get full formatted menu for broadcast
-// Emits { categories: string[], items: MenuItem[] } — flat array per spec
-const getFullMenu = () => {
+export const getFullMenu = () => {
   const items = statements.getAllMenu();
   const cleaned = items.map(formatMenuItem);
-  const categories = [...new Set(cleaned.map(i => i.category).filter(Boolean))].sort();
+  let categories = statements.getAllCategories();
+  if (categories.length === 0 && cleaned.length > 0) {
+    categories = [...new Set(cleaned.map(i => i.category).filter(Boolean))].sort();
+  }
   return { categories, items: cleaned };
 };
 
 // ─────────────────────────────────────────────────────────────
-// GET /api/menu/categories — Simple string array for Captain App
+// GET /api/menu/categories — String array of categories
 // ─────────────────────────────────────────────────────────────
 router.get('/categories', (req, res) => {
   try {
+    const catsFromDb = statements.getAllCategories();
+    if (catsFromDb.length > 0) {
+      return res.json(catsFromDb);
+    }
     const items = statements.getAllMenu();
-    const cats = [...new Set(items.map(i => i.category).filter(Boolean))].sort();
-    res.json(cats.length ? cats : ['Main Course', 'Starters', 'Snacks', 'Drinks', 'Desserts']);
+    const derived = [...new Set(items.map(i => i.category).filter(Boolean))].sort();
+    res.json(derived);
   } catch (err) {
-    res.json(['Main Course', 'Starters', 'Snacks', 'Drinks', 'Desserts']);
+    res.json([]);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// POST /api/menu/categories — Save / Add categories
+// ─────────────────────────────────────────────────────────────
+router.post('/categories', (req, res) => {
+  try {
+    const { categories, name } = req.body;
+    if (Array.isArray(categories)) {
+      statements.saveCategories(categories);
+    } else if (name) {
+      statements.addCategory(name);
+    }
+    const io = req.app.get('io');
+    if (io) io.emit('menu_updated', getFullMenu());
+    const updatedCats = statements.getAllCategories();
+    res.json({ success: true, categories: updatedCats });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// DELETE /api/menu/categories/:name — Delete category
+// ─────────────────────────────────────────────────────────────
+router.delete('/categories/:name', (req, res) => {
+  try {
+    const name = decodeURIComponent(req.params.name);
+    statements.deleteCategory(name);
+    const io = req.app.get('io');
+    if (io) io.emit('menu_updated', getFullMenu());
+    const updatedCats = statements.getAllCategories();
+    res.json({ success: true, categories: updatedCats });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

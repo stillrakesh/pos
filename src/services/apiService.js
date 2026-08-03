@@ -223,6 +223,10 @@ export const apiService = {
     });
   },
 
+  async deleteCategory(name) {
+    return resilientFetch(`${BASE_URL}/categories/${encodeURIComponent(name)}`, { method: 'DELETE' });
+  },
+
   // --- ORDERS ---
   async fetchOrders(status) {
     const path = status ? `/orders?status=${encodeURIComponent(status)}` : `/orders`;

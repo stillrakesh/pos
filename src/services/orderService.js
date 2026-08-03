@@ -17,7 +17,9 @@ export async function addMenuItem(newItem, categories) {
     ...newItem,
     price: parseFloat(newItem.price),
     available: true,
-    inStock: true
+    inStock: true,
+    modifier_groups: Array.isArray(newItem.modifier_groups) ? newItem.modifier_groups : [],
+    add_ons: Array.isArray(newItem.add_ons) ? newItem.add_ons : []
   };
 
   try {

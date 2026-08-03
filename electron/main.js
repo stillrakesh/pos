@@ -12,7 +12,7 @@ const __dirname = path.dirname(__filename);
 let mainWindow;
 let backendProcess;
 let backendRestartAttempts = 0;
-const MAX_BACKEND_RESTARTS = 3;
+const MAX_BACKEND_RESTARTS = 10;
 
 function logToFile(msg) {
   try {
@@ -246,6 +246,45 @@ function createWindow() {
   });
 
   mainWindow.on('closed', () => { mainWindow = null; });
+
+  // ── Crash Recovery: Auto-reload if renderer process crashes ──
+  mainWindow.webContents.on('render-process-gone', (event, details) => {
+    logToFile(`[RENDERER CRASH] Reason: ${details.reason}, exitCode: ${details.exitCode}`);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      dialog.showMessageBox(mainWindow, {
+        type: 'error',
+        title: 'POS Display Crashed',
+        message: 'The POS display encountered an error and will now reload.',
+        detail: `Reason: ${details.reason}`,
+        buttons: ['Reload Now']
+      }).then(() => {
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.reload();
+      });
+    }
+  });
+
+  mainWindow.on('unresponsive', () => {
+    logToFile('[RENDERER UNRESPONSIVE] Window became unresponsive');
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      dialog.showMessageBox(mainWindow, {
+        type: 'warning',
+        title: 'POS Not Responding',
+        message: 'The POS interface is not responding.',
+        detail: 'This may be caused by a heavy operation. You can wait or reload.',
+        buttons: ['Wait', 'Reload POS'],
+        defaultId: 0,
+        cancelId: 0
+      }).then((result) => {
+        if (result.response === 1 && mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.reload();
+        }
+      });
+    }
+  });
+
+  mainWindow.on('responsive', () => {
+    logToFile('[RENDERER RESPONSIVE] Window recovered from unresponsive state');
+  });
 }
 
 // --- IPC Handlers for Printing ---
@@ -348,6 +387,16 @@ ipcMain.handle('print-pdf-usb', async (event, html, printerName) => {
       lp.on('error', err => { try { fs.unlinkSync(tmpPdf); fs.unlinkSync(tmpHtml); } catch {} resolve({ success: false, message: err.message }); });
     });
   } catch (err) { if (!printWindow.isDestroyed()) printWindow.close(); return { success: false, message: err.message }; }
+});
+
+// ── Global Crash Protection for Main Process ──
+process.on('uncaughtException', (err) => {
+  logToFile(`[MAIN PROCESS CRASH PREVENTED] ${err.stack || err}`);
+  // Don't exit — keep the app running
+});
+
+process.on('unhandledRejection', (reason) => {
+  logToFile(`[MAIN PROCESS UNHANDLED REJECTION] ${reason?.stack || reason}`);
 });
 
 app.whenReady().then(() => {

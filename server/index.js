@@ -14,7 +14,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { existsSync } from 'fs';
+import { existsSync, appendFileSync, mkdirSync } from 'fs';
 import { exec } from 'child_process';
 
 import { initDatabase, forceSave } from './db.js';
@@ -278,7 +278,37 @@ app.delete('/api/printers/:id', (req, res) => {
 // ─────────────────────────────────────────────────────────────
 // Compatibility Redirects
 // ─────────────────────────────────────────────────────────────
-app.get(['/categories', '/api/categories'], (req, res) => res.redirect('/api/menu/categories'));
+app.get(['/categories'], (req, res) => res.redirect('/api/menu/categories'));
+
+app.post(['/categories', '/api/categories'], (req, res) => {
+  try {
+    const { categories, name } = req.body;
+    if (Array.isArray(categories)) {
+      statements.saveCategories(categories);
+    } else if (name) {
+      statements.addCategory(name);
+    }
+    const io = req.app.get('io');
+    if (io) io.emit('menu_updated', getFullMenu());
+    const updatedCats = statements.getAllCategories();
+    res.json({ success: true, categories: updatedCats });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete(['/categories/:name', '/api/categories/:name'], (req, res) => {
+  try {
+    const name = decodeURIComponent(req.params.name);
+    statements.deleteCategory(name);
+    const io = req.app.get('io');
+    if (io) io.emit('menu_updated', getFullMenu());
+    const updatedCats = statements.getAllCategories();
+    res.json({ success: true, categories: updatedCats });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 
 // ─────────────────────────────────────────────────────────────
@@ -367,8 +397,11 @@ async function handleTableUpdate(req, res) {
 // GET /api/categories — Structured for POS
 app.get('/api/categories', (req, res) => {
   try {
-    const items = statements.getAllMenu();
-    const cats  = [...new Set(items.map(i => i.category).filter(Boolean))].sort();
+    let cats = statements.getAllCategories();
+    if (cats.length === 0) {
+      const items = statements.getAllMenu();
+      cats = [...new Set(items.map(i => i.category).filter(Boolean))].sort();
+    }
     res.json({ success: true, categories: cats });
   } catch (err) {
     res.json({ success: true, categories: [] });
@@ -836,12 +869,22 @@ app.get('/api/sync-queue', (req, res) => {
 // Health Check
 // ─────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    uptime:    Math.floor(process.uptime()),
-    timestamp: new Date().toISOString(),
-    port:      PORT
-  });
+  try {
+    const memUsage = process.memoryUsage();
+    res.json({
+      status: 'ok',
+      uptime: Math.floor(process.uptime()),
+      memory: {
+        heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024),
+        heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
+        rssMB: Math.round(memUsage.rss / 1024 / 1024)
+      },
+      uncaughtErrors: uncaughtErrorCount,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
 });
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
@@ -1148,6 +1191,39 @@ function getLocalIP() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Global Process Crash Protection
+// ─────────────────────────────────────────────────────────────
+let uncaughtErrorCount = 0;
+const MAX_UNCAUGHT_ERRORS = 50;
+
+process.on('uncaughtException', (err, origin) => {
+  uncaughtErrorCount++;
+  console.error(`\x1b[31m  🛡️ [CRASH PREVENTED] Uncaught Exception #${uncaughtErrorCount}:\x1b[0m`, err.message);
+  console.error('  Stack:', err.stack);
+  console.error('  Origin:', origin);
+  try {
+    const dataDir = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
+    if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
+    const logPath = path.join(dataDir, 'crash_log.txt');
+    appendFileSync(logPath, `[${new Date().toISOString()}] UNCAUGHT #${uncaughtErrorCount}: ${err.stack || err}\n`);
+  } catch (logErr) { /* Best-effort logging */ }
+  try { forceSave(); } catch (e) {}
+  if (uncaughtErrorCount >= MAX_UNCAUGHT_ERRORS) {
+    console.error('  ❌ Too many uncaught errors. Exiting for restart...');
+    process.exit(1);
+  }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('\x1b[33m  🛡️ [PROMISE CAUGHT] Unhandled Rejection:\x1b[0m', reason);
+  try {
+    const dataDir = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
+    const logPath = path.join(dataDir, 'crash_log.txt');
+    appendFileSync(logPath, `[${new Date().toISOString()}] UNHANDLED_REJECTION: ${reason?.stack || reason}\n`);
+  } catch (logErr) { /* Best-effort logging */ }
+});
+
+// ─────────────────────────────────────────────────────────────
 // Graceful Shutdown
 // ─────────────────────────────────────────────────────────────
 function shutdown(signal) {
@@ -1200,9 +1276,9 @@ start().catch(err => {
   console.error('  ❌ Failed to start server:', err);
   try {
     const dataDir = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
-    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+    if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
     const logPath = path.join(dataDir, 'backend_error.log');
-    fs.appendFileSync(logPath, `[${new Date().toISOString()}] CRASH: ${err.stack || err}\n`);
+    appendFileSync(logPath, `[${new Date().toISOString()}] CRASH: ${err.stack || err}\n`);
   } catch (e) {}
   process.exit(1);
 });

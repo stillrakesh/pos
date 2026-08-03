@@ -20,7 +20,10 @@
   },
   "build": {
     "appId": "com.tydepos.app",
-    "asar": false,
+    "asar": true,
+    "asarUnpack": [
+      "**/node_modules/sql.js/**/*"
+    ],
     "directories": {
       "output": "release"
     },
@@ -52,8 +55,8 @@
       "artifactName": "Restaurant-POS-v${version}-Windows-Setup.${ext}"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "deleteAppDataOnUninstall": false,
