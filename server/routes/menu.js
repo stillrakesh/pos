@@ -363,7 +363,15 @@ router.post('/scan-image', async (req, res) => {
       return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'base64Image is required' });
     }
 
-    const targetApiKey = apiKey || process.env.GEMINI_API_KEY || '';
+    const targetApiKey = (apiKey || process.env.GEMINI_API_KEY || '').trim();
+
+    // Check if key is an OAuth code instead of API Key (OAuth starts with AQ.Ab...)
+    if (targetApiKey && targetApiKey.startsWith('AQ.')) {
+      return res.status(400).json({
+        error: 'INVALID_KEY_FORMAT',
+        message: 'The string provided is a Google Cloud sign-in code (starts with AQ.Ab...), not a Gemini API Key. Please get a free API Key starting with AIzaSy... from https://aistudio.google.com/app/apikey'
+      });
+    }
 
     if (targetApiKey) {
       const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
