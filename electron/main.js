@@ -115,104 +115,34 @@ function ensureFirewallRules() {
  * Starts the Backend Server using Electron's own runtime.
  * This is the most compatible way to run a standalone backend.
  */
-function startBackend() {
+async function startBackend() {
   ensureFirewallRules();
   const isPackaged = app.isPackaged;
   
-  // Dynamic serverPath resolution with fallback for packed/unpacked ASAR
-  let serverPath;
-  if (isPackaged) {
-    const candidateUnpacked = path.join(process.resourcesPath, 'app.asar.unpacked', 'server', 'index.js');
-    const candidateAppDir   = path.join(process.resourcesPath, 'app', 'server', 'index.js');
-    const candidateAsar     = path.join(process.resourcesPath, 'app.asar', 'server', 'index.js');
-
-    if (fs.existsSync(candidateUnpacked)) {
-      serverPath = candidateUnpacked;
-    } else if (fs.existsSync(candidateAppDir)) {
-      serverPath = candidateAppDir;
-    } else {
-      serverPath = candidateAsar;
-    }
-  } else {
-    serverPath = path.join(__dirname, '..', 'server', 'index.js');
-  }
-    
   const dataPath = isPackaged
     ? path.join(app.getPath('userData'), 'data')
     : path.join(__dirname, '..', 'data_dev');
     
-  let projectDir;
-  if (isPackaged) {
-    const candidateUnpackedDir = path.join(process.resourcesPath, 'app.asar.unpacked');
-    const candidateAppDir      = path.join(process.resourcesPath, 'app');
-    if (fs.existsSync(candidateUnpackedDir)) {
-      projectDir = candidateUnpackedDir;
-    } else if (fs.existsSync(candidateAppDir)) {
-      projectDir = candidateAppDir;
-    } else {
-      projectDir = process.resourcesPath;
-    }
-  } else {
-    projectDir = path.join(__dirname, '..');
-  }
-
   if (!fs.existsSync(dataPath)) {
     fs.mkdirSync(dataPath, { recursive: true });
   }
 
-  // Use the SAME binary that is currently running (Electron)
-  // but tell it to act as a plain Node.js process.
-  const nodeExe = process.execPath;
+  process.env.DATA_DIR = dataPath;
+  process.env.PORT = process.env.PORT || '3101';
+  process.env.APP_PATH = app.getAppPath();
 
-  logToFile(`Starting Backend (Unified Mode)...`);
-  logToFile(`   ServerPath: ${serverPath}`);
-  logToFile(`   Runtime:    ${nodeExe}`);
-  logToFile(`   DataPath:   ${dataPath}`);
+  logToFile(`Starting Backend (In-Process Direct Mode)...`);
+  logToFile(`   DataPath: ${dataPath}`);
+  logToFile(`   Port:     ${process.env.PORT}`);
 
-  backendProcess = spawn(nodeExe, [serverPath], {
-    cwd: projectDir,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    env: {
-      ...process.env,
-      ELECTRON_RUN_AS_NODE: '1', // <--- THIS IS THE MAGIC KEY
-      PORT: process.env.PORT || '3101',
-      DATA_DIR: dataPath,
-      APP_PATH: app.getAppPath()
-    },
-  });
-
-  backendProcess.stdout.on('data', (data) => {
-    const msg = data.toString();
-    process.stdout.write(`[Backend] ${msg}`);
-    logToFile(`[Backend STDOUT] ${msg}`);
-  });
-
-  backendProcess.stderr.on('data', (data) => {
-    const msg = data.toString();
-    process.stderr.write(`[Backend ERR] ${msg}`);
-    logToFile(`[Backend STDERR] ${msg}`);
-  });
-
-  backendProcess.on('error', (err) => {
-    logToFile(`[Backend ERROR EVENT] ${err.message}`);
+  try {
+    await import('../server/index.js');
+    logToFile(`Backend server started successfully in-process on port ${process.env.PORT}.`);
+  } catch (err) {
+    logToFile(`[Backend In-Process ERROR] ${err.stack || err.message}`);
     dialog.showErrorBox('Backend Error', `Failed to start backend server:\n${err.message}`);
-  });
-
-  backendProcess.on('exit', (code, signal) => {
-    logToFile(`[Backend EXIT EVENT] Code: ${code}, Signal: ${signal}`);
-    if (code !== 0 && code !== null) {
-      if (backendRestartAttempts < MAX_BACKEND_RESTARTS) {
-        backendRestartAttempts++;
-        logToFile(`[Backend AUTO-RESTART] Attempt ${backendRestartAttempts}/${MAX_BACKEND_RESTARTS} in 2 seconds...`);
-        setTimeout(() => {
-          startBackend();
-        }, 2000);
-      } else {
-        logToFile(`[Backend GIVING UP] All ${MAX_BACKEND_RESTARTS} restart attempts exhausted.`);
-        dialog.showErrorBox('Backend Crashed', `Backend exited with code ${code} after ${MAX_BACKEND_RESTARTS} restart attempts.\nPlease restart the application.`);
-      }
-    }
-  });
+  }
+}
 }
 
 function waitForBackend(healthURL, callback, attempts = 0) {
