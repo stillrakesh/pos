@@ -119,18 +119,42 @@ function startBackend() {
   ensureFirewallRules();
   const isPackaged = app.isPackaged;
   
-  // Resolve paths
-  const serverPath = isPackaged 
-    ? path.join(process.resourcesPath, 'app', 'server', 'index.js')
-    : path.join(__dirname, '..', 'server', 'index.js');
+  // Dynamic serverPath resolution with fallback for packed/unpacked ASAR
+  let serverPath;
+  if (isPackaged) {
+    const candidateUnpacked = path.join(process.resourcesPath, 'app.asar.unpacked', 'server', 'index.js');
+    const candidateAppDir   = path.join(process.resourcesPath, 'app', 'server', 'index.js');
+    const candidateAsar     = path.join(process.resourcesPath, 'app.asar', 'server', 'index.js');
+
+    if (fs.existsSync(candidateUnpacked)) {
+      serverPath = candidateUnpacked;
+    } else if (fs.existsSync(candidateAppDir)) {
+      serverPath = candidateAppDir;
+    } else {
+      serverPath = candidateAsar;
+    }
+  } else {
+    serverPath = path.join(__dirname, '..', 'server', 'index.js');
+  }
     
   const dataPath = isPackaged
     ? path.join(app.getPath('userData'), 'data')
     : path.join(__dirname, '..', 'data_dev');
     
-  const projectDir = isPackaged
-    ? path.join(process.resourcesPath, 'app')
-    : path.join(__dirname, '..');
+  let projectDir;
+  if (isPackaged) {
+    const candidateUnpackedDir = path.join(process.resourcesPath, 'app.asar.unpacked');
+    const candidateAppDir      = path.join(process.resourcesPath, 'app');
+    if (fs.existsSync(candidateUnpackedDir)) {
+      projectDir = candidateUnpackedDir;
+    } else if (fs.existsSync(candidateAppDir)) {
+      projectDir = candidateAppDir;
+    } else {
+      projectDir = process.resourcesPath;
+    }
+  } else {
+    projectDir = path.join(__dirname, '..');
+  }
 
   if (!fs.existsSync(dataPath)) {
     fs.mkdirSync(dataPath, { recursive: true });

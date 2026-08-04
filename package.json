@@ -22,7 +22,8 @@
     "appId": "com.tydepos.app",
     "asar": true,
     "asarUnpack": [
-      "**/node_modules/sql.js/**/*"
+      "**/node_modules/sql.js/**/*",
+      "server/**/*"
     ],
     "directories": {
       "output": "release"
