@@ -112,54 +112,38 @@ function ensureFirewallRules() {
 }
 
 /**
- * Starts the Backend Server as a child process using Electron's own runtime
- * with ELECTRON_RUN_AS_NODE=1. Server files are unpacked from ASAR to disk
- * so Node.js can execute them as real ES modules.
+ * Starts the Backend Server using Electron's own runtime.
+ * This is the most compatible way to run a standalone backend.
  */
 function startBackend() {
   ensureFirewallRules();
   const isPackaged = app.isPackaged;
-
-  // --- Resolve paths ---
-  let serverPath, projectDir;
-
-  if (isPackaged) {
-    // electron-builder unpacks server/**/* to app.asar.unpacked/
-    // We also unpack package.json so Node sees "type":"module"
-    const unpacked = path.join(process.resourcesPath, 'app.asar.unpacked');
-    serverPath = path.join(unpacked, 'server', 'index.js');
-    projectDir = unpacked;
-  } else {
-    serverPath = path.join(__dirname, '..', 'server', 'index.js');
-    projectDir = path.join(__dirname, '..');
-  }
-
+  
+  // Resolve paths
+  const serverPath = isPackaged 
+    ? path.join(process.resourcesPath, 'app', 'server', 'index.js')
+    : path.join(__dirname, '..', 'server', 'index.js');
+    
   const dataPath = isPackaged
     ? path.join(app.getPath('userData'), 'data')
     : path.join(__dirname, '..', 'data_dev');
+    
+  const projectDir = isPackaged
+    ? path.join(process.resourcesPath, 'app')
+    : path.join(__dirname, '..');
 
   if (!fs.existsSync(dataPath)) {
     fs.mkdirSync(dataPath, { recursive: true });
   }
 
-  // Electron's own binary acts as Node.js when ELECTRON_RUN_AS_NODE=1
+  // Use the SAME binary that is currently running (Electron)
+  // but tell it to act as a plain Node.js process.
   const nodeExe = process.execPath;
 
-  logToFile(`Starting Backend (Child Process Mode)...`);
-  logToFile(`   isPackaged:  ${isPackaged}`);
-  logToFile(`   serverPath:  ${serverPath}`);
-  logToFile(`   projectDir:  ${projectDir}`);
-  logToFile(`   nodeExe:     ${nodeExe}`);
-  logToFile(`   dataPath:    ${dataPath}`);
-  logToFile(`   serverExists: ${fs.existsSync(serverPath)}`);
-
-  // For packaged builds, NODE_PATH must point to the unpacked node_modules
-  // so that require/import can resolve packages like express, socket.io, etc.
-  const nodeModulesPath = isPackaged
-    ? path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules') +
-      path.delimiter +
-      path.join(process.resourcesPath, 'app.asar', 'node_modules')
-    : '';
+  logToFile(`Starting Backend (Unified Mode)...`);
+  logToFile(`   ServerPath: ${serverPath}`);
+  logToFile(`   Runtime:    ${nodeExe}`);
+  logToFile(`   DataPath:   ${dataPath}`);
 
   backendProcess = spawn(nodeExe, [serverPath], {
     cwd: projectDir,
@@ -169,8 +153,7 @@ function startBackend() {
       ELECTRON_RUN_AS_NODE: '1',
       PORT: process.env.PORT || '3101',
       DATA_DIR: dataPath,
-      APP_PATH: app.getAppPath(),
-      ...(nodeModulesPath ? { NODE_PATH: nodeModulesPath } : {})
+      APP_PATH: app.getAppPath()
     },
   });
 
@@ -188,7 +171,7 @@ function startBackend() {
 
   backendProcess.on('error', (err) => {
     logToFile(`[Backend ERROR EVENT] ${err.message}`);
-    dialog.showErrorBox('Backend Error', `Failed to start backend server:\n${err.message}\n\nServer path: ${serverPath}\nExists: ${fs.existsSync(serverPath)}`);
+    dialog.showErrorBox('Backend Error', `Failed to start backend server:\n${err.message}`);
   });
 
   backendProcess.on('exit', (code, signal) => {
@@ -202,7 +185,7 @@ function startBackend() {
         }, 2000);
       } else {
         logToFile(`[Backend GIVING UP] All ${MAX_BACKEND_RESTARTS} restart attempts exhausted.`);
-        dialog.showErrorBox('Backend Crashed', `Backend exited with code ${code} after ${MAX_BACKEND_RESTARTS} restart attempts.\nPlease restart the application.\n\nCheck log at: ${path.join(dataPath, 'electron_debug.log')}`);
+        dialog.showErrorBox('Backend Crashed', `Backend exited with code ${code} after ${MAX_BACKEND_RESTARTS} restart attempts.\nPlease restart the application.`);
       }
     }
   });
