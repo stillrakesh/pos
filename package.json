@@ -38,11 +38,11 @@
     ],
     "mac": {
       "target": [
-        "zip"
+        "dmg"
       ],
       "category": "public.app-category.business",
       "type": "distribution",
-      "artifactName": "Restaurant-POS-v${version}-Installer.${ext}"
+      "artifactName": "Restaurant-POS-v${version}-Mac-Setup.${ext}"
     },
     "win": {
       "target": [
@@ -52,12 +52,16 @@
       "artifactName": "Restaurant-POS-v${version}-Windows-Setup.${ext}"
     },
     "nsis": {
-      "oneClick": true,
+      "oneClick": false,
       "allowToChangeInstallationDirectory": false,
+      "perMachine": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "deleteAppDataOnUninstall": false,
-      "shortcutName": "Restaurant POS"
+      "shortcutName": "Restaurant POS",
+      "include": "build/installer.nsh",
+      "installerSidebar": null,
+      "license": null
     },
     "dmg": {
       "format": "UDZO",

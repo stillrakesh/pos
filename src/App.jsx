@@ -16,6 +16,7 @@ import { QuickPrintModal, QuickSettleModal } from './components/billing/Settleme
 import DayCloseWizard from './components/billing/DayCloseWizard';
 import BillDesigner from './components/settings/BillDesigner';
 import PrinterSetup from './components/settings/PrinterSetup';
+import KeyboardShortcuts, { DEFAULT_SHORTCUTS } from './components/settings/KeyboardShortcuts';
 import ReportsHub from './components/dashboard/ReportsHub';
 import InventoryManager from './components/settings/InventoryManager';
 import FloorDesigner from './components/FloorDesigner';
@@ -2363,6 +2364,7 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
           { id: 'billing', label: 'Bill', icon: <ReceiptText size={16} /> },
           { id: 'connection', label: 'Server', icon: <Wifi size={16} /> },
           { id: 'printer', label: 'Printer', icon: <Printer size={16} /> },
+          { id: 'shortcuts', label: 'Shortcuts', icon: <Zap size={16} /> },
           { id: 'taxes', label: 'Taxes', icon: <Percent size={16} /> },
           { id: 'devices', label: 'Devices', icon: <Smartphone size={16} /> },
           { id: 'security', label: 'Security', icon: <Shield size={16} /> },
@@ -2938,6 +2940,16 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
               </div>
             </div>
           </div>
+        )}
+
+        {activeTab === 'shortcuts' && (
+          <KeyboardShortcuts
+            settings={localSettings}
+            onUpdate={(updated) => {
+              setLocalSettings(updated);
+              onSaveSettings(updated);
+            }}
+          />
         )}
       </div>
     </div>
@@ -4868,6 +4880,23 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingType, setProcessingType] = useState(null); // 'KOT', 'Bill', or 'Save'
   const isPickup = table?.type === 'Takeaway' || table?.type === 'Delivery';
+  const searchInputRef = useRef(null);
+
+  // --- AUTO-FOCUS SEARCH BAR ---
+  useEffect(() => {
+    // Focus search bar when entering the ordering view
+    const timer = setTimeout(() => {
+      if (searchInputRef.current) searchInputRef.current.focus();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // --- KEYBOARD SHORTCUTS (refs for stable handler access) ---
+  const handleSaveRef = useRef(null);
+  const handlePrintBillRef = useRef(null);
+  const handleKOTRef = useRef(null);
+  const handleKOTPrintRef = useRef(null);
+
 
   // --- CRM & ORDER INFO ---
   const [customerPhone, setCustomerPhone] = useState(table?.phone || table?.customerPhone || '');
@@ -5539,6 +5568,98 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
     }
   };
 
+  // --- KEYBOARD SHORTCUTS: keep refs updated ---
+  handleSaveRef.current = handleSave;
+  handlePrintBillRef.current = handlePrintBill;
+  handleKOTRef.current = handleKOT;
+  handleKOTPrintRef.current = handleKOTPrint;
+
+  // --- GLOBAL KEYBOARD SHORTCUT LISTENER ---
+  useEffect(() => {
+    // Merge saved shortcuts with defaults (existing users won't have this key in localStorage)
+    const shortcuts = { ...DEFAULT_SHORTCUTS, ...(settings?.keyboardShortcuts || {}) };
+
+    const handleKeyDown = (e) => {
+      // Skip if any modal is open
+      if (showModifierModal || showNoteModal || showSettleModal || showTipEntry || showMergeModal || showSplitModal || showReprintModal) return;
+      // Skip if already processing
+      if (isProcessing) return;
+      // Skip if not local
+      if (!IS_LOCAL) return;
+
+      // Build the combo string to match against settings
+      let combo = '';
+      if (e.ctrlKey) combo += 'Ctrl+';
+      if (e.altKey) combo += 'Alt+';
+      if (e.shiftKey) combo += 'Shift+';
+      combo += e.key;
+
+      const isFunctionKey = /^F\d{1,2}$/.test(e.key);
+      const isSearchFocused = document.activeElement === searchInputRef.current;
+
+      // For non-function keys, don't trigger if search bar is focused (let user type)
+      if (!isFunctionKey && isSearchFocused) {
+        // Special case: Escape clears search and stays in search
+        if (combo === shortcuts.clearSearch && combo === 'Escape') {
+          e.preventDefault();
+          setSearchQuery('');
+          return;
+        }
+        return;
+      }
+
+      // Match combo against configured shortcuts
+      let matched = false;
+      if (combo === shortcuts.save) {
+        e.preventDefault();
+        handleSaveRef.current?.();
+        matched = true;
+      } else if (combo === shortcuts.printBill) {
+        e.preventDefault();
+        handlePrintBillRef.current?.();
+        matched = true;
+      } else if (combo === shortcuts.kot) {
+        e.preventDefault();
+        handleKOTRef.current?.();
+        matched = true;
+      } else if (combo === shortcuts.kotPrint) {
+        e.preventDefault();
+        handleKOTPrintRef.current?.();
+        matched = true;
+      } else if (combo === shortcuts.togglePayment) {
+        e.preventDefault();
+        setPaymentMethod(prev => {
+          const methods = ['Cash', 'Card', 'UPI'];
+          const idx = methods.indexOf(prev);
+          return methods[(idx + 1) % methods.length];
+        });
+        matched = true;
+      } else if (combo === shortcuts.clearSearch) {
+        e.preventDefault();
+        setSearchQuery('');
+        setActiveCat('All');
+        if (searchInputRef.current) searchInputRef.current.focus();
+        matched = true;
+      } else if (combo === shortcuts.backToFloor) {
+        e.preventDefault();
+        onBack?.();
+        matched = true;
+      } else if (combo === shortcuts.newPickup) {
+        e.preventDefault();
+        onBack?.();
+        matched = true;
+      }
+
+      // Prevent default browser behavior for function keys (like F1 help)
+      if (isFunctionKey && matched) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [settings?.keyboardShortcuts, showModifierModal, showNoteModal, showSettleModal, showTipEntry, showMergeModal, showSplitModal, showReprintModal, isProcessing]);
+
   const availableCategories = ['All', ...CATEGORIES.map(c => typeof c === 'object' ? c.name : c).filter((cat, index, self) => self.indexOf(cat) === index)];
   const filteredItems = MENU_ITEMS
     .filter(item => {
@@ -5618,6 +5739,7 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
           <div style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', padding: 'clamp(6px, 0.8vw, 10px) clamp(10px, 1vw, 16px)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '8px', flex: 1, maxWidth: '340px', minWidth: '120px' }}>
             <Search size={16} color="#64748b" />
             <input
+              ref={searchInputRef}
               type="text"
               placeholder="Search anything..."
               value={searchQuery}
@@ -6104,12 +6226,18 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
           </div>
 
           {/* Action Buttons */}
-          <div className="footer-btn-grid" style={{ padding: '10px', gap: '8px' }}>
-            <button disabled={!IS_LOCAL || isProcessing} className="btn-maroon" onClick={handleSave} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed' }}>{isProcessing ? 'Saving...' : 'SAVE'}</button>
-            <button disabled={!IS_LOCAL || isProcessing} className="btn-maroon" onClick={handlePrintBill} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed' }}>PRINT BILL</button>
-            <button disabled={!IS_LOCAL || isProcessing} className="btn-grey" onClick={handleKOT} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed' }}>KOT</button>
-            <button disabled={!IS_LOCAL || isProcessing} className="btn-grey" style={{ background: '#334155', opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed' }} onClick={handleKOTPrint}>KOT & PRINT</button>
-          </div>
+          {(() => {
+            const sc = { ...DEFAULT_SHORTCUTS, ...(settings?.keyboardShortcuts || {}) };
+            const badgeStyle = { fontSize: '9px', fontWeight: '700', background: 'rgba(255,255,255,0.25)', padding: '1px 5px', borderRadius: '3px', marginLeft: '6px', letterSpacing: '0.5px', fontFamily: 'monospace' };
+            return (
+              <div className="footer-btn-grid" style={{ padding: '10px', gap: '8px' }}>
+                <button disabled={!IS_LOCAL || isProcessing} className="btn-maroon" onClick={handleSave} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{isProcessing ? 'Saving...' : 'SAVE'}{sc.save && <span style={badgeStyle}>{sc.save}</span>}</button>
+                <button disabled={!IS_LOCAL || isProcessing} className="btn-maroon" onClick={handlePrintBill} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>PRINT BILL{sc.printBill && <span style={badgeStyle}>{sc.printBill}</span>}</button>
+                <button disabled={!IS_LOCAL || isProcessing} className="btn-grey" onClick={handleKOT} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>KOT{sc.kot && <span style={badgeStyle}>{sc.kot}</span>}</button>
+                <button disabled={!IS_LOCAL || isProcessing} className="btn-grey" style={{ background: '#334155', opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={handleKOTPrint}>KOT & PRINT{sc.kotPrint && <span style={badgeStyle}>{sc.kotPrint}</span>}</button>
+              </div>
+            );
+          })()}
           
 
         </div>
@@ -6588,7 +6716,8 @@ function MainApp() {
     resFont: 14,
     kotFontSize: 13,
     separateKotStations: false,
-    printerStations: []
+    printerStations: [],
+    keyboardShortcuts: DEFAULT_SHORTCUTS
   }));
 
   useEffect(() => { selectedTableRef.current = selectedTable; }, [selectedTable]);
