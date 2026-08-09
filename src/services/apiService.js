@@ -379,6 +379,22 @@ export const apiService = {
     return resilientFetch(`${BASE_URL}/devices/${deviceId}`, { method: 'DELETE' });
   },
 
+  async renameDevice(deviceId, name) {
+    return resilientFetch(`${BASE_URL}/devices/${deviceId}/rename`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ name })
+    });
+  },
+
+  async getDeviceActivity(deviceId) {
+    return resilientFetch(`${BASE_URL}/devices/${deviceId}/activity`);
+  },
+
+  async getRecentDeviceActivity() {
+    return resilientFetch(`${BASE_URL}/devices/activity/recent`);
+  },
+
   // --- CONFIG & SYSTEM ---
   async fetchConfig(key) {
     return resilientFetch(`${BASE_URL}/api/config/${key}`);

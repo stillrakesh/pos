@@ -67,9 +67,53 @@ app.set('io', io);
 // In-memory cache of the latest pickup orders so new connections get current state
 let cachedPickupOrders = [];
 
+// Track online devices: Map<deviceId, { socketId, connectedAt }>
+const onlineDevices = new Map();
+
+function getDevicesWithOnlineStatus() {
+  const devices = statements.getAllDevices() || [];
+  return devices.map(d => ({
+    ...d,
+    is_online: onlineDevices.has(d.id)
+  }));
+}
+
+app.set('onlineDevices', onlineDevices);
+app.set('getDevicesWithOnlineStatus', getDevicesWithOnlineStatus);
+
 io.on('connection', (socket) => {
   const clientIp = socket.handshake.address || socket.conn.remoteAddress;
   console.log(`📱 DEVICE CONNECTED: ${socket.id} from IP: ${clientIp}`);
+
+  const query = socket.handshake.query || {};
+  const deviceId = query.deviceId;
+  const deviceName = query.deviceName || `Device ${socket.id.substring(0,4)}`;
+  const deviceType = query.deviceType || 'Unknown';
+  
+  const userAgent = socket.handshake.headers['user-agent'] || '';
+  let osInfo = 'Unknown';
+  if (/windows/i.test(userAgent)) osInfo = 'Windows';
+  else if (/mac/i.test(userAgent)) osInfo = 'macOS';
+  else if (/android/i.test(userAgent)) osInfo = 'Android';
+  else if (/iphone|ipad|ipod/i.test(userAgent)) osInfo = 'iOS';
+  else if (/linux/i.test(userAgent)) osInfo = 'Linux';
+
+  if (deviceId) {
+    try {
+      statements.registerDevice({ 
+        id: deviceId, 
+        name: deviceName, 
+        device_type: deviceType, 
+        ip_address: clientIp, 
+        os_info: osInfo 
+      });
+      onlineDevices.set(deviceId, { socketId: socket.id, connectedAt: new Date().toISOString() });
+      statements.logDeviceActivity({ device_id: deviceId, action: 'CONNECTED', details: `IP: ${clientIp}` });
+      io.emit('device_list_updated', getDevicesWithOnlineStatus());
+    } catch(e) {
+      console.warn('Error auto-registering device:', e.message);
+    }
+  }
   
   // Broadcast updated active connected sockets count
   try {
@@ -78,6 +122,14 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`❌ DEVICE DISCONNECTED: ${socket.id} (IP: ${clientIp})`);
+    if (deviceId) {
+      try {
+        onlineDevices.delete(deviceId);
+        statements.updateDeviceLastSeen({ id: deviceId });
+        statements.logDeviceActivity({ device_id: deviceId, action: 'DISCONNECTED', details: '' });
+        io.emit('device_list_updated', getDevicesWithOnlineStatus());
+      } catch(e) {}
+    }
     try {
       io.emit('device_count_updated', { count: io.sockets.sockets.size });
     } catch (e) {}
@@ -121,10 +173,6 @@ io.on('connection', (socket) => {
     } catch (err) {
       console.warn('Error in sync_pickup_orders:', err.message);
     }
-  });
-
-  socket.on('disconnect', () => {
-    console.log('DEVICE DISCONNECTED:', socket.id);
   });
 });
 

@@ -2267,7 +2267,7 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
 
 /* --- SYSTEM SETTINGS VIEW --- */
 /* --- ADVANCED GLOBAL SETTINGS VIEW --- */
-const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullReset, devices = [], onUpdateDeviceStatus, onDeleteDevice, isConnected, onRestoreData, appVersion, categories, onOpenDiagnostics }) => {
+const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullReset, devices = [], onUpdateDeviceStatus, onDeleteDevice, onRenameDevice, isConnected, onRestoreData, appVersion, categories, onOpenDiagnostics }) => {
   const [activeTab, setActiveTab] = useState('design');
   const [localSettings, setLocalSettings] = useState(settings);
   const [notification, setNotification] = useState(null);
@@ -2650,61 +2650,247 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
           </div>
         )}
 
-        {activeTab === 'devices' && (
-          <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px', color: '#1e293b' }}>
-                  <Smartphone size={20} color="var(--primary)" /> Linked Captain Terminals
+        {activeTab === 'devices' && (() => {
+          const [selectedDeviceId, setSelectedDeviceId] = useState(null);
+          const [deviceActivity, setDeviceActivity] = useState([]);
+          const [loadingActivity, setLoadingActivity] = useState(false);
+          const [editingName, setEditingName] = useState(null);
+          const [editNameValue, setEditNameValue] = useState('');
+
+          const onlineCount = devices.filter(d => d.is_online).length;
+          const offlineCount = devices.length - onlineCount;
+
+          const loadActivity = async (deviceId) => {
+            setLoadingActivity(true);
+            try {
+              const res = await apiService.getDeviceActivity(deviceId);
+              setDeviceActivity(res.activity || []);
+            } catch { setDeviceActivity([]); }
+            setLoadingActivity(false);
+          };
+
+          const handleSelectDevice = (id) => {
+            if (selectedDeviceId === id) { setSelectedDeviceId(null); setDeviceActivity([]); return; }
+            setSelectedDeviceId(id);
+            loadActivity(id);
+          };
+
+          const startRename = (device) => {
+            setEditingName(device.id);
+            setEditNameValue(device.name);
+          };
+
+          const saveRename = (id) => {
+            if (editNameValue.trim()) onRenameDevice(id, editNameValue.trim());
+            setEditingName(null);
+          };
+
+          const getDeviceIcon = (type) => {
+            switch(type) {
+              case 'Captain': return '📱';
+              case 'Kitchen': return '🖥️';
+              case 'POS': return '💻';
+              default: return '📟';
+            }
+          };
+
+          const getActionLabel = (action) => {
+            switch(action) {
+              case 'CONNECTED': return { label: 'Connected', color: '#10b981', icon: '🟢' };
+              case 'DISCONNECTED': return { label: 'Disconnected', color: '#ef4444', icon: '🔴' };
+              case 'ORDER_PLACED': return { label: 'Order Placed', color: '#3b82f6', icon: '📝' };
+              case 'KOT_SENT': return { label: 'KOT Sent', color: '#8b5cf6', icon: '🎫' };
+              case 'BILL_PRINTED': return { label: 'Bill Printed', color: '#f59e0b', icon: '🧾' };
+              case 'REGISTERED': return { label: 'First Connection', color: '#6366f1', icon: '✨' };
+              default: return { label: action, color: '#64748b', icon: '📌' };
+            }
+          };
+
+          const formatTime = (ts) => {
+            if (!ts) return 'Never';
+            const d = new Date(ts);
+            const now = new Date();
+            const diffMs = now - d;
+            const diffMin = Math.floor(diffMs / 60000);
+            if (diffMin < 1) return 'Just now';
+            if (diffMin < 60) return `${diffMin}m ago`;
+            const diffHr = Math.floor(diffMin / 60);
+            if (diffHr < 24) return `${diffHr}h ago`;
+            return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          };
+
+          return (
+          <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Summary Bar */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+              {[
+                { label: 'Total Devices', value: devices.length, color: '#3b82f6', bg: '#eff6ff' },
+                { label: 'Online Now', value: onlineCount, color: '#10b981', bg: '#ecfdf5' },
+                { label: 'Offline', value: offlineCount, color: '#94a3b8', bg: '#f8fafc' }
+              ].map((stat, i) => (
+                <div key={i} style={{ background: stat.bg, padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: stat.color }}>{stat.value}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', marginTop: '4px' }}>{stat.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Device List */}
+            <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+              <div style={{ padding: '20px 24px', borderBottom: '2px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px', color: '#1e293b' }}>
+                  <Smartphone size={18} color="var(--primary)" /> Connected Devices
                 </h3>
-                <span style={{ fontSize: '11px', background: '#f1f5f9', padding: '4px 10px', borderRadius: '12px', color: '#64748b', fontWeight: '500' }}>{devices.length} Total</span>
+                <span style={{ fontSize: '10px', color: '#94a3b8' }}>Click a device to view activity</span>
               </div>
-              
+
               {devices.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '48px 0', color: '#94a3b8' }}>
-                  <Smartphone size={48} style={{ opacity: 0.2, marginBottom: '16px' }} />
-                  <p style={{ fontSize: '14px' }}>No Captain devices have requested to connect yet.</p>
+                <div style={{ textAlign: 'center', padding: '56px 24px', color: '#94a3b8' }}>
+                  <Smartphone size={48} style={{ opacity: 0.15, marginBottom: '16px' }} />
+                  <p style={{ fontSize: '14px', fontWeight: '500' }}>No devices have connected yet</p>
+                  <p style={{ fontSize: '12px', marginTop: '6px' }}>Devices will appear here when they connect to this POS</p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {devices.map(device => (
-                    <div key={device.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'white', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Smartphone size={20} color={device.status === 'APPROVED' ? '#10b981' : '#64748b'} />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {devices.map((device, idx) => (
+                    <div key={device.id}>
+                      {/* Device Card */}
+                      <div 
+                        onClick={() => handleSelectDevice(device.id)}
+                        style={{ 
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+                          padding: '14px 24px', cursor: 'pointer',
+                          background: selectedDeviceId === device.id ? '#f0f9ff' : (idx % 2 === 0 ? '#ffffff' : '#fafbfc'),
+                          borderLeft: selectedDeviceId === device.id ? '3px solid var(--primary)' : '3px solid transparent',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
+                          {/* Online indicator + device icon */}
+                          <div style={{ position: 'relative' }}>
+                            <div style={{ 
+                              width: '42px', height: '42px', borderRadius: '10px', 
+                              background: device.is_online ? '#ecfdf5' : '#f8fafc', 
+                              border: `1px solid ${device.is_online ? '#a7f3d0' : '#e2e8f0'}`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px'
+                            }}>
+                              {getDeviceIcon(device.device_type)}
+                            </div>
+                            <div style={{ 
+                              position: 'absolute', bottom: '-2px', right: '-2px', 
+                              width: '12px', height: '12px', borderRadius: '50%',
+                              background: device.is_online ? '#10b981' : '#cbd5e1',
+                              border: '2px solid white'
+                            }} />
+                          </div>
+
+                          {/* Device info */}
+                          <div style={{ flex: 1 }}>
+                            {editingName === device.id ? (
+                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+                                <input 
+                                  value={editNameValue} 
+                                  onChange={e => setEditNameValue(e.target.value)}
+                                  onKeyDown={e => { if (e.key === 'Enter') saveRename(device.id); if (e.key === 'Escape') setEditingName(null); }}
+                                  autoFocus
+                                  style={{ fontSize: '13px', padding: '4px 8px', border: '1px solid var(--primary)', borderRadius: '6px', outline: 'none', width: '180px' }}
+                                />
+                                <button onClick={() => saveRename(device.id)} style={{ padding: '4px 10px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px', cursor: 'pointer' }}>Save</button>
+                                <button onClick={() => setEditingName(null)} style={{ padding: '4px 8px', background: 'none', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', color: '#64748b' }}>✕</button>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>{device.name}</span>
+                                <button 
+                                  onClick={e => { e.stopPropagation(); startRename(device); }} 
+                                  style={{ padding: '2px 6px', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '12px' }}
+                                  title="Rename device"
+                                >✏️</button>
+                              </div>
+                            )}
+                            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                              <span>{device.device_type || 'Unknown'}</span>
+                              {device.ip_address && <span>• {device.ip_address}</span>}
+                              {device.os_info && <span>• {device.os_info}</span>}
+                              <span>• {device.is_online ? '🟢 Online' : `Last seen: ${formatTime(device.last_seen)}`}</span>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <div style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b' }}>{device.name}</div>
-                          <div style={{ fontSize: '11px', color: '#94a3b8' }}>ID: {device.id} • Seen: {new Date(device.created_at).toLocaleTimeString()}</div>
+
+                        {/* Status + Actions */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} onClick={e => e.stopPropagation()}>
+                          <span style={{ 
+                            fontSize: '10px', fontWeight: '700', padding: '3px 8px', borderRadius: '6px', letterSpacing: '0.5px',
+                            background: device.status === 'APPROVED' ? '#dcfce7' : device.status === 'BLOCKED' ? '#fee2e2' : '#fef9c3',
+                            color: device.status === 'APPROVED' ? '#166534' : device.status === 'BLOCKED' ? '#991b1b' : '#854d0e'
+                          }}>
+                            {device.status}
+                          </span>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            {device.status !== 'APPROVED' && (
+                              <button onClick={() => onUpdateDeviceStatus(device.id, 'APPROVED')} style={{ height: '28px', padding: '0 10px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontSize: '10px', fontWeight: '600', cursor: 'pointer' }}>Approve</button>
+                            )}
+                            {device.status !== 'BLOCKED' && (
+                              <button onClick={() => onUpdateDeviceStatus(device.id, 'BLOCKED')} style={{ height: '28px', padding: '0 10px', background: 'white', color: '#ef4444', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '10px', fontWeight: '600', cursor: 'pointer' }}>Block</button>
+                            )}
+                            <button onClick={() => onDeleteDevice(device.id)} style={{ padding: '6px', background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                          </div>
                         </div>
                       </div>
-                      
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ 
-                          fontSize: '11px', fontWeight: '600', padding: '4px 8px', borderRadius: '6px',
-                          background: device.status === 'APPROVED' ? '#dcfce7' : device.status === 'BLOCKED' ? '#fee2e2' : '#fef9c3',
-                          color: device.status === 'APPROVED' ? '#166534' : device.status === 'BLOCKED' ? '#991b1b' : '#854d0e'
-                        }}>
-                          {device.status}
-                        </span>
-                        
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          {device.status !== 'APPROVED' && (
-                             <button onClick={() => onUpdateDeviceStatus(device.id, 'APPROVED')} style={{ height: '32px', padding: '0 12px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>Approve</button>
-                          )}
-                          {device.status !== 'BLOCKED' && (
-                             <button onClick={() => onUpdateDeviceStatus(device.id, 'BLOCKED')} style={{ height: '32px', padding: '0 12px', background: 'white', color: '#ef4444', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>Block</button>
-                          )}
-                          <button onClick={() => onDeleteDevice(device.id)} style={{ padding: '8px', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><Trash2 size={16} /></button>
+
+                      {/* Activity Panel (expanded) */}
+                      {selectedDeviceId === device.id && (
+                        <div style={{ padding: '0 24px 16px 24px', background: '#f0f9ff', borderBottom: '1px solid #e2e8f0' }}>
+                          <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                            <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <Clock size={14} color="#64748b" />
+                              <span style={{ fontSize: '12px', fontWeight: '600', color: '#475569' }}>Recent Activity</span>
+                            </div>
+                            {loadingActivity ? (
+                              <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '12px' }}>Loading activity...</div>
+                            ) : deviceActivity.length === 0 ? (
+                              <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '12px' }}>No activity recorded yet</div>
+                            ) : (
+                              <div style={{ maxHeight: '260px', overflowY: 'auto' }}>
+                                {deviceActivity.map((act, i) => {
+                                  const info = getActionLabel(act.action);
+                                  return (
+                                    <div key={act.id || i} style={{ 
+                                      display: 'flex', alignItems: 'center', gap: '12px', 
+                                      padding: '10px 16px', borderBottom: i < deviceActivity.length - 1 ? '1px solid #f8fafc' : 'none'
+                                    }}>
+                                      <span style={{ fontSize: '14px' }}>{info.icon}</span>
+                                      <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: '12px', fontWeight: '500', color: info.color }}>{info.label}</div>
+                                        {act.details && <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '1px' }}>{act.details}</div>}
+                                      </div>
+                                      <span style={{ fontSize: '10px', color: '#94a3b8', whiteSpace: 'nowrap' }}>{formatTime(act.timestamp)}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
             </div>
+
+            {/* Info box */}
+            <div style={{ background: '#f0f9ff', padding: '14px 20px', borderRadius: '10px', border: '1px solid #bae6fd', fontSize: '12px', color: '#0369a1', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <Info size={16} style={{ flexShrink: 0, marginTop: '1px' }} />
+              <div>
+                <strong>How device pairing works:</strong> When a Captain or Kitchen Display connects to this POS, it automatically appears here as "Pending". 
+                Approve it to allow full access, or Block to deny. Devices are remembered even after disconnecting — just like WiFi or Bluetooth pairing.
+                Click on any device to view its activity history.
+              </div>
+            </div>
           </div>
-        )}
+          );
+        })()}
 
         {activeTab === 'security' && (
           <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -7112,6 +7298,17 @@ function MainApp() {
     }
   };
 
+  const handleRenameDevice = async (id, name) => {
+    try {
+      const res = await apiService.renameDevice(id, name);
+      if (res.success) {
+        setDevices(prev => prev.map(d => d.id === id ? { ...d, name } : d));
+      }
+    } catch (err) {
+      alert('Failed to rename device');
+    }
+  };
+
 
 
   // --- DAILY RESET & MIGRATION LOGIC ---
@@ -7447,7 +7644,12 @@ function MainApp() {
         reconnectionDelay: 1000,
         reconnectionDelayMax: 10000,
         timeout: 10000,
-        transports: ['websocket', 'polling']
+        transports: ['websocket', 'polling'],
+        query: {
+          deviceId: 'LOCAL-DEVICE',
+          deviceType: 'POS',
+          deviceName: 'Main POS Terminal'
+        }
       });
 
       socketRef.current.on('connect', () => {
@@ -7716,6 +7918,15 @@ function MainApp() {
           setMenuItems(flatMenu.map(i => ({ ...i, inStock: i.available ?? i.inStock ?? true })));
         } else if (Array.isArray(menuPayload)) {
           setMenuItems(menuPayload.map(i => ({ ...i, inStock: i.available ?? i.inStock ?? true })));
+        }
+      });
+
+      // Device manager: listen for real-time device list updates
+      socketRef.current.on('device_list_updated', (payload) => {
+        if (Array.isArray(payload)) {
+          setDevices(payload);
+        } else if (payload && Array.isArray(payload.devices)) {
+          setDevices(payload.devices);
         }
       });
 
@@ -8535,6 +8746,7 @@ function MainApp() {
               devices={devices}
               onUpdateDeviceStatus={handleUpdateDeviceStatus}
               onDeleteDevice={handleDeleteDevice}
+              onRenameDevice={handleRenameDevice}
               isConnected={socketConnected}
               onRestoreData={restoreFromCloud}
               appVersion={appVersion}

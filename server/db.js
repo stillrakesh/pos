@@ -126,6 +126,24 @@ export async function initDatabase() {
     );
   `);
 
+  try { db.run(`ALTER TABLE devices ADD COLUMN device_type TEXT DEFAULT 'Unknown'`); } catch(e) {}
+  try { db.run(`ALTER TABLE devices ADD COLUMN ip_address TEXT DEFAULT ''`); } catch(e) {}
+  try { db.run(`ALTER TABLE devices ADD COLUMN os_info TEXT DEFAULT ''`); } catch(e) {}
+  try { db.run(`ALTER TABLE devices ADD COLUMN last_seen TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`); } catch(e) {}
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS device_activity (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      device_id TEXT NOT NULL,
+      action TEXT NOT NULL,
+      details TEXT DEFAULT '',
+      timestamp TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    );
+  `);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_device_activity_device ON device_activity(device_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_device_activity_timestamp ON device_activity(timestamp)`);
+
+
   // Indexes for fast lookups
   db.run(`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at)`);
@@ -821,8 +839,41 @@ export const statements = {
     return rowsToObjects(result)[0] || null;
   },
 
-  registerDevice({ id, name }) {
-    db.run(`INSERT OR IGNORE INTO devices (id, name, status) VALUES (?, ?, 'PENDING')`, [id, name]);
+  registerDevice({ id, name, device_type, ip_address, os_info }) {
+    db.run(`INSERT INTO devices (id, name, status, device_type, ip_address, os_info) VALUES (?, ?, 'PENDING', ?, ?, ?) ON CONFLICT(id) DO UPDATE SET device_type = excluded.device_type, ip_address = excluded.ip_address, os_info = excluded.os_info, last_seen = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`, [id, name, device_type || 'Unknown', ip_address || '', os_info || '']);
+    persistToFile();
+  },
+
+  updateDeviceInfo({ id, device_type, ip_address, os_info }) {
+    db.run(`UPDATE devices SET device_type = ?, ip_address = ?, os_info = ?, last_seen = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`, [device_type, ip_address, os_info, id]);
+    persistToFile();
+  },
+
+  updateDeviceLastSeen({ id }) {
+    db.run(`UPDATE devices SET last_seen = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`, [id]);
+    persistToFile();
+  },
+
+  renameDevice({ id, name }) {
+    db.run(`UPDATE devices SET name = ? WHERE id = ?`, [name, id]);
+    persistToFile();
+  },
+
+  logDeviceActivity({ device_id, action, details }) {
+    db.run(`INSERT INTO device_activity (device_id, action, details) VALUES (?, ?, ?)`, [device_id, action, details || '']);
+    persistToFile();
+  },
+
+  getDeviceActivity({ device_id }) {
+    return rowsToObjects(db.exec(`SELECT * FROM device_activity WHERE device_id = ? ORDER BY timestamp DESC LIMIT 50`, [device_id]));
+  },
+
+  getRecentActivity() {
+    return rowsToObjects(db.exec(`SELECT * FROM device_activity ORDER BY timestamp DESC LIMIT 100`));
+  },
+
+  purgeOldActivity() {
+    db.run(`DELETE FROM device_activity WHERE timestamp < strftime('%Y-%m-%dT%H:%M:%fZ', datetime('now', '-30 days'))`);
     persistToFile();
   },
 

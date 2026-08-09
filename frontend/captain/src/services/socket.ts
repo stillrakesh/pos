@@ -1,6 +1,19 @@
 import { io, Socket } from 'socket.io-client';
 import { getBackendURL } from '../config';
 
+const getDeviceId = (): string => {
+  let id = localStorage.getItem('pos_device_id');
+  if (!id) {
+    id = 'CAP-' + Math.random().toString(36).substring(2, 10) + '-' + Date.now().toString(36);
+    localStorage.setItem('pos_device_id', id);
+  }
+  return id;
+};
+
+const getDeviceName = (): string => {
+  return localStorage.getItem('pos_device_name') || 'Captain Device';
+};
+
 let socket: Socket | null = null;
 
 export const getSocket = (): Socket => {
@@ -14,7 +27,12 @@ export const getSocket = (): Socket => {
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 10000,
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
+      query: {
+        deviceId: getDeviceId(),
+        deviceType: 'Captain',
+        deviceName: getDeviceName()
+      }
     });
 
     document.addEventListener('visibilitychange', () => {

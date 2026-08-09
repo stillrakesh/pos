@@ -1,5 +1,18 @@
 import { io, Socket } from 'socket.io-client';
 
+const getDeviceId = (): string => {
+  let id = localStorage.getItem('pos_device_id');
+  if (!id) {
+    id = 'KDS-' + Math.random().toString(36).substring(2, 10) + '-' + Date.now().toString(36);
+    localStorage.setItem('pos_device_id', id);
+  }
+  return id;
+};
+
+const getDeviceName = (): string => {
+  return localStorage.getItem('pos_device_name') || 'Kitchen Display';
+};
+
 const getServerUrl = (): string => {
   if (typeof window !== 'undefined') {
     // Dynamically use current origin (protocol + host + port)
@@ -19,6 +32,11 @@ export const socket: Socket = io(getServerUrl(), {
   reconnectionDelayMax: 5000,
   reconnectionAttempts: Infinity,
   timeout: 20000,
+  query: {
+    deviceId: getDeviceId(),
+    deviceType: 'Kitchen',
+    deviceName: getDeviceName()
+  }
 });
 
 export const getSocket = () => socket;
