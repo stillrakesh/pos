@@ -2272,6 +2272,13 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
   const [localSettings, setLocalSettings] = useState(settings);
   const [notification, setNotification] = useState(null);
 
+  // Device manager state (must be at top level for React hooks rules)
+  const [selectedDeviceId, setSelectedDeviceId] = useState(null);
+  const [deviceActivity, setDeviceActivity] = useState([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+  const [editingName, setEditingName] = useState(null);
+  const [editNameValue, setEditNameValue] = useState('');
+
   const [cloudDashboardUrl, setCloudDashboardUrl] = useState('https://tyde-dashboard-tan.vercel.app');
   const [cloudApiKey, setCloudApiKey] = useState('');
   const [cloudSyncStatus, setCloudSyncStatus] = useState(null);
@@ -2651,11 +2658,6 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
         )}
 
         {activeTab === 'devices' && (() => {
-          const [selectedDeviceId, setSelectedDeviceId] = useState(null);
-          const [deviceActivity, setDeviceActivity] = useState([]);
-          const [loadingActivity, setLoadingActivity] = useState(false);
-          const [editingName, setEditingName] = useState(null);
-          const [editNameValue, setEditNameValue] = useState('');
 
           const onlineCount = devices.filter(d => d.is_online).length;
           const offlineCount = devices.length - onlineCount;
