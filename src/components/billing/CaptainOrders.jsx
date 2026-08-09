@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Wifi, WifiOff, Printer, CheckSquare, Clock, Zap, Volume2, VolumeX, RefreshCw, AlertTriangle, Smartphone, Link, Copy, Check, Info, Shield, ShieldAlert, Monitor, Globe, ChevronRight, HelpCircle, Activity, QrCode, X, ChefHat } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Wifi, WifiOff, Printer, CheckSquare, Clock, Zap, Volume2, VolumeX, RefreshCw, AlertTriangle, Smartphone, Link, Copy, Check, Info, Shield, ShieldAlert, Monitor, Globe, ChevronRight, HelpCircle, Activity, QrCode, X, ChefHat, Filter, ChevronDown } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { BASE_URL } from '../../constants';
 import apiService from '../../services/apiService';
-import { printPosToSerial } from '../../utils/printerUtils';
+import { printPosToSerial, filterItemsForAutoPrint } from '../../utils/printerUtils';
 import { formatCurrency } from '../../utils/formatters';
 
 /**
  * CaptainOrders — Live feed of orders from the captain app / external API,
  * plus Network & Connectivity Diagnostics for LAN Mobile Captain & Kitchen KDS connections.
  */
-const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrder, settings, isOnline, backendUrl, menuItems = [] }) => {
+const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrder, settings, isOnline, backendUrl, menuItems = [], categories = [] }) => {
   const [printedOrders, setPrintedOrders] = useState([]);      // Recently printed (for display)
   const [autoPrint, setAutoPrint] = useState(() => {
     const saved = localStorage.getItem('captain_auto_print_kot');
@@ -18,9 +18,40 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
   });           // Auto-print toggle
   const [soundEnabled, setSoundEnabled] = useState(true);      // Sound notification toggle
 
+  const [disabledStations, setDisabledStations] = useState(() => {
+    const saved = localStorage.getItem('captain_auto_print_disabled_stations');
+    try { return saved ? JSON.parse(saved) : []; } catch { return []; }
+  });
+  const [showCategoryFilterDropdown, setShowCategoryFilterDropdown] = useState(false);
+
   useEffect(() => {
     localStorage.setItem('captain_auto_print_kot', autoPrint ? 'true' : 'false');
   }, [autoPrint]);
+
+  useEffect(() => {
+    localStorage.setItem('captain_auto_print_disabled_stations', JSON.stringify(disabledStations));
+  }, [disabledStations]);
+
+  const stations = useMemo(() => {
+    return settings?.printerStations || [];
+  }, [settings]);
+
+  const toggleStation = (stationName) => {
+    setDisabledStations(prev => {
+      const updated = prev.includes(stationName)
+        ? prev.filter(s => s !== stationName)
+        : [...prev, stationName];
+      return updated;
+    });
+  };
+
+  const enableAllStations = () => {
+    setDisabledStations([]);
+  };
+
+  const disableAllStations = () => {
+    setDisabledStations(stations.map(s => s.name));
+  };
   const [isPrinting, setIsPrinting] = useState(null);          // Currently printing order ID
   const [printError, setPrintError] = useState(null);          // Last print error message
   const [printMethod, setPrintMethod] = useState('detecting'); // 'electron' | 'web-serial' | 'none'
@@ -164,20 +195,30 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
     setPrintError(null);
 
     try {
+      const rawItems = order.items.map(item => {
+        const menuItem = (menuItems || []).find(m => m.name === item.name || m.id === item.id || m.item_id === item.item_id);
+        return {
+          name: item.name,
+          qty: item.quantity,
+          price: item.price,
+          category: item.category || menuItem?.category || 'General',
+          note: ''
+        };
+      });
+
+      const filteredItems = filterItemsForAutoPrint(rawItems, menuItems, settings);
+      if (filteredItems.length === 0) {
+        console.log(`[CaptainOrders] Skipping auto-print for order #${order.id} — no items match enabled auto-print stations.`);
+        setNewOrders(prev => prev.filter(o => o.id !== order.id));
+        if (onInjectOrder) onInjectOrder(order);
+        return;
+      }
+
       const kotData = {
         tableName: `T${order.table_number}`,
         orderType: 'Captain App',
         orderId: `API-${order.id}`,
-        items: order.items.map(item => {
-          const menuItem = (menuItems || []).find(m => m.name === item.name || m.id === item.id || m.item_id === item.item_id);
-          return {
-            name: item.name,
-            qty: item.quantity,
-            price: item.price,
-            category: item.category || menuItem?.category || 'General',
-            note: ''
-          };
-        }),
+        items: filteredItems,
         notes: order.notes || ''
       };
 
@@ -304,20 +345,127 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
             {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
           </button>
 
-          {/* Auto-print toggle */}
-          <button
-            onClick={() => setAutoPrint(!autoPrint)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '10px 16px', borderRadius: '12px', fontSize: '12px', fontWeight: '600',
-              border: `1px solid ${autoPrint ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.1)'}`,
-              background: autoPrint ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.05)',
-              color: autoPrint ? '#34d399' : '#64748b', cursor: 'pointer',
-              textTransform: 'uppercase', letterSpacing: '0.5px'
-            }}
-          >
-            <Zap size={14} /> Auto-Print KOT: {autoPrint ? 'ON' : 'OFF'}
-          </button>
+          {/* Auto-print toggle & Category Filter button */}
+          <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+            <button
+              onClick={() => setAutoPrint(!autoPrint)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '10px 16px', borderRadius: autoPrint ? '12px 0 0 12px' : '12px', fontSize: '12px', fontWeight: '600',
+                border: `1px solid ${autoPrint ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.1)'}`,
+                background: autoPrint ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.05)',
+                color: autoPrint ? '#34d399' : '#64748b', cursor: 'pointer',
+                textTransform: 'uppercase', letterSpacing: '0.5px'
+              }}
+            >
+              <Zap size={14} /> Auto-Print KOT: {autoPrint ? 'ON' : 'OFF'}
+            </button>
+
+            {autoPrint && (
+              <button
+                onClick={() => setShowCategoryFilterDropdown(!showCategoryFilterDropdown)}
+                title="Select which stations to auto-print"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '10px 12px', borderRadius: '0 12px 12px 0', fontSize: '12px', fontWeight: '600',
+                  border: '1px solid rgba(16, 185, 129, 0.3)', borderLeft: 'none',
+                  background: showCategoryFilterDropdown ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.25)',
+                  color: '#6ee7b7', cursor: 'pointer'
+                }}
+              >
+                <Filter size={13} />
+                <span>
+                  {disabledStations.length === 0
+                    ? 'All Stations'
+                    : disabledStations.length === stations.length
+                      ? 'None'
+                      : `${stations.length - disabledStations.length}/${stations.length} Stns`}
+                </span>
+                <ChevronDown size={13} style={{ transform: showCategoryFilterDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+              </button>
+            )}
+
+            {/* Dropdown Popover */}
+            {autoPrint && showCategoryFilterDropdown && (
+              <div style={{
+                position: 'absolute', top: '100%', right: 0, marginTop: '8px',
+                width: '300px', background: '#0f172a', border: '1px solid #334155',
+                borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)',
+                zIndex: 9999, padding: '16px', color: '#f8fafc'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #1e293b' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#f1f5f9', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Filter size={14} color="#34d399" /> Auto-Print Stations
+                  </div>
+                  <button onClick={() => setShowCategoryFilterDropdown(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '2px' }}>
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <p style={{ fontSize: '11px', color: '#94a3b8', margin: '0 0 12px 0', lineHeight: '1.4' }}>
+                  Toggle ON stations to auto-print physical KOT slips. Toggled OFF stations will be skipped.
+                </p>
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                  <button
+                    onClick={enableAllStations}
+                    style={{ flex: 1, padding: '6px 10px', borderRadius: '8px', border: '1px solid #334155', background: '#1e293b', color: '#38bdf8', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}
+                  >
+                    Enable All
+                  </button>
+                  <button
+                    onClick={disableAllStations}
+                    style={{ flex: 1, padding: '6px 10px', borderRadius: '8px', border: '1px solid #334155', background: '#1e293b', color: '#f43f5e', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}
+                  >
+                    Disable All
+                  </button>
+                </div>
+
+                {/* Checklist */}
+                <div style={{ maxHeight: '220px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '4px' }}>
+                  {stations.length === 0 ? (
+                    <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', textAlign: 'center', padding: '12px 0' }}>
+                      No printer stations defined.<br />Set up stations in Printer Settings first.
+                    </div>
+                  ) : (
+                    stations.map(stn => {
+                      const isEnabled = !disabledStations.includes(stn.name);
+
+                      return (
+                        <div
+                          key={stn.id || stn.name}
+                          onClick={() => toggleStation(stn.name)}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '8px 12px', borderRadius: '10px',
+                            background: isEnabled ? 'rgba(52, 211, 153, 0.12)' : '#1e293b',
+                            border: `1px solid ${isEnabled ? 'rgba(52, 211, 153, 0.35)' : '#334155'}`,
+                            cursor: 'pointer', userSelect: 'none', transition: 'all 0.15s'
+                          }}
+                        >
+                          <div>
+                            <span style={{ fontSize: '12px', fontWeight: '700', color: isEnabled ? '#34d399' : '#94a3b8' }}>
+                              {stn.name}
+                            </span>
+                            <span style={{ fontSize: '10px', color: '#64748b', marginLeft: '6px' }}>
+                              ({(stn.categories || []).length} cats)
+                            </span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={isEnabled}
+                            readOnly
+                            style={{ accentColor: '#10b981', cursor: 'pointer', pointerEvents: 'none' }}
+                          />
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Force refresh */}
           <button

@@ -130,6 +130,7 @@ export async function initDatabase() {
   try { db.run(`ALTER TABLE devices ADD COLUMN ip_address TEXT DEFAULT ''`); } catch(e) {}
   try { db.run(`ALTER TABLE devices ADD COLUMN os_info TEXT DEFAULT ''`); } catch(e) {}
   try { db.run(`ALTER TABLE devices ADD COLUMN last_seen TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`); } catch(e) {}
+  try { db.run(`UPDATE devices SET status = 'APPROVED' WHERE status = 'PENDING'`); } catch(e) {}
 
   db.run(`
     CREATE TABLE IF NOT EXISTS device_activity (
@@ -831,7 +832,8 @@ export const statements = {
   // ─── Device Statements ──────────────────────────────────────
   
   getAllDevices() {
-    return rowsToObjects(db.exec(`SELECT * FROM devices ORDER BY created_at DESC`));
+    this.deduplicateDevices();
+    return rowsToObjects(db.exec(`SELECT * FROM devices ORDER BY last_seen DESC, created_at DESC`));
   },
 
   getDeviceById({ id }) {
@@ -840,8 +842,74 @@ export const statements = {
   },
 
   registerDevice({ id, name, device_type, ip_address, os_info }) {
-    db.run(`INSERT INTO devices (id, name, status, device_type, ip_address, os_info) VALUES (?, ?, 'PENDING', ?, ?, ?) ON CONFLICT(id) DO UPDATE SET device_type = excluded.device_type, ip_address = excluded.ip_address, os_info = excluded.os_info, last_seen = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`, [id, name, device_type || 'Unknown', ip_address || '', os_info || '']);
+    const targetId = id || `DEV-${Date.now()}`;
+    const typeStr = device_type || 'Unknown';
+    const ipStr = ip_address || '';
+    const osStr = os_info || '';
+    const cleanName = (name || `${typeStr} Device`).trim();
+
+    // 1. Check if device with exact ID already exists (primary match via client localStorage token)
+    const existingById = rowsToObjects(db.exec(`SELECT * FROM devices WHERE id = ?`, [targetId]))[0];
+    if (existingById) {
+      db.run(
+        `UPDATE devices SET name = ?, device_type = ?, ip_address = ?, os_info = ?, last_seen = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`,
+        [cleanName, typeStr, ipStr, osStr, targetId]
+      );
+      persistToFile();
+      return targetId;
+    }
+
+    // 2. Check if device with same IP, Device Type and OS Info already exists (handles IP reconnects without ID)
+    if (ipStr) {
+      const existingByNetwork = rowsToObjects(
+        db.exec(`SELECT * FROM devices WHERE ip_address = ? AND LOWER(device_type) = LOWER(?) AND LOWER(os_info) = LOWER(?)`, [ipStr, typeStr, osStr])
+      )[0];
+      if (existingByNetwork) {
+        db.run(
+          `UPDATE devices SET name = ?, last_seen = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`,
+          [cleanName, existingByNetwork.id]
+        );
+        persistToFile();
+        return existingByNetwork.id;
+      }
+    }
+
+    // 3. Insert new device if no match found
+    db.run(
+      `INSERT INTO devices (id, name, status, device_type, ip_address, os_info) VALUES (?, ?, 'APPROVED', ?, ?, ?)`,
+      [targetId, cleanName, typeStr, ipStr, osStr]
+    );
     persistToFile();
+    return targetId;
+  },
+
+  deduplicateDevices() {
+    try {
+      const devices = rowsToObjects(db.exec(`SELECT * FROM devices ORDER BY last_seen DESC, created_at DESC`));
+      const seen = new Set();
+      const idsToDelete = [];
+
+      for (const dev of devices) {
+        if (dev.id === 'LOCAL-DEVICE') continue;
+        // Deduplicate only exact ID or exact (IP, device_type, os_info) matches
+        const key = `${dev.id}_${(dev.ip_address || '').trim()}_${(dev.device_type || '').toLowerCase().trim()}`;
+        if (seen.has(key)) {
+          idsToDelete.push(dev.id);
+        } else {
+          seen.add(key);
+        }
+      }
+
+      if (idsToDelete.length > 0) {
+        console.log(`🧹 Auto-deduplicating ${idsToDelete.length} duplicate device entries...`);
+        for (const delId of idsToDelete) {
+          db.run(`DELETE FROM devices WHERE id = ?`, [delId]);
+        }
+        persistToFile();
+      }
+    } catch (e) {
+      console.warn('Device deduplication note:', e.message);
+    }
   },
 
   updateDeviceInfo({ id, device_type, ip_address, os_info }) {

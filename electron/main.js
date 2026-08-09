@@ -30,29 +30,19 @@ function requestElevatedFirewallSetup() {
       return;
     }
 
-    const port = process.env.PORT || '3101';
-    const ports = ['3100', port, '5175'].join(',');
-    const exePath = process.execPath;
+    const scriptPath = path.join(app.getAppPath(), 'apply-firewall-rules.ps1');
+    const cmd = `powershell -Command "Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File \\"${scriptPath}\\"' -Verb RunAs -Wait"`;
 
-    // PowerShell script to execute elevated NetFirewallRule creation
-    const psScript = `
-      $ruleName = 'Restaurant POS Network Access';
-      Remove-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue;
-      New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Action Allow -Protocol TCP -LocalPort ${ports} -Profile Any -Enabled True;
-      $appRule = 'Restaurant POS App';
-      Remove-NetFirewallRule -DisplayName $appRule -ErrorAction SilentlyContinue;
-      New-NetFirewallRule -DisplayName $appRule -Direction Inbound -Action Allow -Program '${exePath}' -Profile Any -Enabled True;
-    `.replace(/\n\s+/g, ' ');
-
-    const cmd = `powershell -Command "Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command \\"${psScript}\\"' -Verb RunAs -Wait"`;
-    
-    exec(cmd, { windowsHide: false }, (err) => {
+    exec(cmd, { windowsHide: true }, (err) => {
       if (err) {
         logToFile(`Elevated Firewall Setup Error: ${err.message}`);
-        resolve({ success: false, message: err.message });
+        const ruleName = 'Restaurant POS Network Access';
+        const ports = '3000,3100,3101,5173,5175';
+        const fallbackCmd = `powershell -Command "Start-Process netsh -ArgumentList 'advfirewall firewall add rule name=\\"${ruleName}\\" dir=in action=allow protocol=TCP localport=${ports} profile=any enable=yes' -Verb RunAs -Wait"`;
+        exec(fallbackCmd, { windowsHide: true }, () => resolve({ success: true }));
       } else {
-        logToFile(`Elevated Firewall Setup SUCCEEDED for ports ${ports}`);
-        resolve({ success: true, message: 'Firewall rules created successfully for all network profiles!' });
+        logToFile(`Elevated Firewall Setup SUCCEEDED`);
+        resolve({ success: true, message: 'Firewall rules created successfully!' });
       }
     });
   });

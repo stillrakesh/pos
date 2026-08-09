@@ -1225,7 +1225,28 @@ const FloorDesigner = ({ tables, setTables, sections, setSections, loadTables })
           }}
         >
           {/* Zoom-scaled canvas */}
-          <div style={{ width: '1900px', height: '1300px', position: 'relative', transform: `scale(${zoom / 100})`, transformOrigin: 'top left', transition: draggedTableId ? 'none' : 'transform 0.1s ease-out' }}>
+          <div style={{
+            width: `${(() => {
+              let mx = 1200;
+              tables.filter(t => t.type === activeZone).forEach(t => {
+                const right = (t.pos?.x || 0) + (t.width || 200);
+                if (right > mx) mx = right;
+              });
+              return Math.min(1900, Math.max(1200, mx + 80));
+            })()}px`,
+            height: `${(() => {
+              let my = 300;
+              tables.filter(t => t.type === activeZone).forEach(t => {
+                const bottom = (t.pos?.y || 0) + (t.height || 220);
+                if (bottom > my) my = bottom;
+              });
+              return Math.min(1300, Math.max(360, my + 80));
+            })()}px`,
+            position: 'relative',
+            transform: `scale(${zoom / 100})`,
+            transformOrigin: 'top left',
+            transition: draggedTableId ? 'none' : 'transform 0.1s ease-out'
+          }}>
 
             {/* Smart Guidelines */}
             {guideLines.x.map((gx, i) => (

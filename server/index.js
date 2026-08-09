@@ -82,15 +82,13 @@ app.set('onlineDevices', onlineDevices);
 app.set('getDevicesWithOnlineStatus', getDevicesWithOnlineStatus);
 
 io.on('connection', (socket) => {
-  const clientIp = socket.handshake.address || socket.conn.remoteAddress;
+  const rawIp = socket.handshake.address || socket.conn.remoteAddress || '';
+  const clientIp = rawIp.replace(/^.*:/, '') || '127.0.0.1';
   console.log(`📱 DEVICE CONNECTED: ${socket.id} from IP: ${clientIp}`);
 
   const query = socket.handshake.query || {};
-  const deviceId = query.deviceId;
-  const deviceName = query.deviceName || `Device ${socket.id.substring(0,4)}`;
-  const deviceType = query.deviceType || 'Unknown';
-  
   const userAgent = socket.handshake.headers['user-agent'] || '';
+  
   let osInfo = 'Unknown';
   if (/windows/i.test(userAgent)) osInfo = 'Windows';
   else if (/mac/i.test(userAgent)) osInfo = 'macOS';
@@ -98,23 +96,67 @@ io.on('connection', (socket) => {
   else if (/iphone|ipad|ipod/i.test(userAgent)) osInfo = 'iOS';
   else if (/linux/i.test(userAgent)) osInfo = 'Linux';
 
-  if (deviceId) {
-    try {
-      statements.registerDevice({ 
-        id: deviceId, 
-        name: deviceName, 
-        device_type: deviceType, 
-        ip_address: clientIp, 
-        os_info: osInfo 
-      });
-      onlineDevices.set(deviceId, { socketId: socket.id, connectedAt: new Date().toISOString() });
-      statements.logDeviceActivity({ device_id: deviceId, action: 'CONNECTED', details: `IP: ${clientIp}` });
-      io.emit('device_list_updated', getDevicesWithOnlineStatus());
-    } catch(e) {
-      console.warn('Error auto-registering device:', e.message);
+  const isMobile = /android|iphone|ipad|ipod|mobile/i.test(userAgent);
+
+  // Determine device type
+  let deviceType = query.deviceType;
+  if (!deviceType) {
+    if (isMobile) deviceType = 'Captain';
+    else deviceType = 'Browser';
+  }
+
+  // Determine device ID - use query or fallback to stable type-based ID
+  const initialDeviceId = query.deviceId || `${deviceType.toUpperCase()}-${osInfo.toUpperCase()}`;
+
+  // Determine device Name (clean name without dynamic IP embedding)
+  let deviceName = query.deviceName;
+  if (!deviceName) {
+    if (osInfo !== 'Unknown') {
+      deviceName = `${osInfo} ${deviceType}`;
+    } else {
+      deviceName = `${deviceType} Terminal`;
     }
   }
+
+  let deviceId = initialDeviceId;
+  try {
+    deviceId = statements.registerDevice({ 
+      id: initialDeviceId, 
+      name: deviceName, 
+      device_type: deviceType, 
+      ip_address: clientIp, 
+      os_info: osInfo 
+    }) || initialDeviceId;
+
+    onlineDevices.set(deviceId, { socketId: socket.id, connectedAt: new Date().toISOString() });
+    statements.logDeviceActivity({ device_id: deviceId, action: 'CONNECTED', details: `IP: ${clientIp}` });
+    io.emit('device_list_updated', getDevicesWithOnlineStatus());
+  } catch(e) {
+    console.warn('Error auto-registering device:', e.message);
+  }
   
+  // Check current device approval status
+  const getDeviceStatus = (id) => {
+    if (id === 'LOCAL-DEVICE') return 'APPROVED';
+    try {
+      const dev = statements.getDeviceById({ id });
+      return dev && dev.status === 'BLOCKED' ? 'BLOCKED' : 'APPROVED';
+    } catch (e) {
+      return 'APPROVED';
+    }
+  };
+
+  const currentStatus = getDeviceStatus(deviceId);
+  socket.emit('device_status', { status: currentStatus });
+
+  if (currentStatus === 'BLOCKED') {
+    console.warn(`🛑 REJECTING BLOCKED DEVICE: ${deviceId} (${clientIp})`);
+    statements.logDeviceActivity({ device_id: deviceId, action: 'BLOCKED_ATTEMPT', details: `Attempted connection from ${clientIp}` });
+    socket.emit('device_status', { status: 'BLOCKED', message: 'This device has been blocked by the administrator.' });
+    socket.disconnect(true);
+    return;
+  }
+
   // Broadcast updated active connected sockets count
   try {
     io.emit('device_count_updated', { count: io.sockets.sockets.size, lastConnectedIp: clientIp });
@@ -158,8 +200,14 @@ io.on('connection', (socket) => {
   }
 
   socket.on('captain_new_pickup_order', (payload) => {
+    if (getDeviceStatus(deviceId) !== 'APPROVED') {
+      console.warn(`🛑 Blocked/Pending device ${deviceId} attempted to place order!`);
+      socket.emit('device_status', { status: getDeviceStatus(deviceId) });
+      return;
+    }
     try {
       io.emit('captain_new_pickup_order', payload);
+      statements.logDeviceActivity({ device_id: deviceId, action: 'ORDER_PLACED', details: `Order from ${payload?.customerName || 'Captain'}` });
     } catch (err) {
       console.warn('Error in captain_new_pickup_order:', err.message);
     }
@@ -181,9 +229,9 @@ io.on('connection', (socket) => {
 // ─────────────────────────────────────────────────────────────
 app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] }));
 app.use((req, res, next) => {
-  // Fix for Chrome Mobile "Private Network Access" policy
-  if (req.headers['access-control-request-private-network']) {
-    res.header('Access-Control-Allow-Private-Network', 'true');
+  res.header('Access-Control-Allow-Private-Network', 'true');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
   }
   next();
 });
@@ -1063,23 +1111,21 @@ app.post(['/api/diagnostics/fix-firewall', '/api/network/fix-firewall'], (req, r
   const ruleName = 'Restaurant POS Network Access';
   const portList = '3100,3101,5173,5175';
 
-  // Execute standard netsh and elevated powershell command
-  const deleteCmd = `netsh advfirewall firewall delete rule name="${ruleName}" 2>nul`;
-  const addCmd = `netsh advfirewall firewall add rule name="${ruleName}" dir=in action=allow protocol=TCP localport=${portList} profile=any enable=yes`;
-  const psCmd = `powershell -WindowStyle Hidden -Command "try { New-NetFirewallRule -DisplayName '${ruleName}' -Direction Inbound -Action Allow -Protocol TCP -LocalPort ${portList} -Profile Any -Enabled True -ErrorAction SilentlyContinue } catch {}"`;
-  const elevatedPsCmd = `powershell -Command "Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command \\"New-NetFirewallRule -DisplayName ''${ruleName}'' -Direction Inbound -Action Allow -Protocol TCP -LocalPort ${portList} -Profile Any -Enabled True -ErrorAction SilentlyContinue\\"' -Verb RunAs"`;
+  // 1. Try standard netsh first
+  const netshAdd = `netsh advfirewall firewall delete rule name="${ruleName}" 2>nul & netsh advfirewall firewall add rule name="${ruleName}" dir=in action=allow protocol=TCP localport=${portList} profile=any enable=yes`;
+  
+  // 2. PowerShell UAC elevation command (invokes netsh with Administrator privileges via UAC popup)
+  const psElevated = `powershell -Command "Start-Process netsh -ArgumentList 'advfirewall firewall add rule name=\\"${ruleName}\\" dir=in action=allow protocol=TCP localport=${portList} profile=any enable=yes' -Verb RunAs"`;
 
-  const fullCmd = `${deleteCmd} & ${addCmd} & ${psCmd}`;
   console.log(`[Firewall] Executing Windows Firewall setup...`);
 
-  exec(fullCmd, { shell: true, windowsHide: true }, (err) => {
-    // Also trigger elevated command to prompt UAC if needed
-    exec(elevatedPsCmd, { windowsHide: true }, () => {});
-    
+  exec(netshAdd, { shell: true, windowsHide: true }, (err) => {
     if (err) {
-      console.warn('[Firewall] netsh elevated fallback dispatched.');
+      console.warn('[Firewall] Standard netsh required elevation, popping UAC prompt...');
+      exec(psElevated, { windowsHide: false }, () => {});
+    } else {
+      console.log('[Firewall] Firewall rule applied via netsh successfully!');
     }
-    console.log('[Firewall] Firewall rule execution completed!');
     res.json({ success: true, message: 'Firewall rules created for ports 3100, 3101, 5173, 5175' });
   });
 });

@@ -44,7 +44,7 @@ export const LanConnectModal = ({ isOpen, onClose }) => {
   const currentIp = selectedIp || networkInfo.primaryIp || '127.0.0.1';
   const port = networkInfo.port || 3101;
 
-  let targetPath = '/captain';
+  let targetPath = '/captain/';
   let targetTitle = 'Captain Mobile App';
   let targetDesc = 'Scan with iPhone or Android camera to open Captain Waiter App';
 

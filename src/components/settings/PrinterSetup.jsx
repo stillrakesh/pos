@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Wifi, WifiOff, RefreshCw, Check, AlertTriangle, Zap, TestTube, LayoutGrid, Save, Trash2, Plus, Network } from 'lucide-react';
+import { Printer, Wifi, WifiOff, RefreshCw, Check, X, AlertTriangle, Zap, TestTube, LayoutGrid, Save, Trash2, Plus, Network } from 'lucide-react';
 import { get as idbGet, set as idbSet } from 'idb-keyval';
 import { 
   findPrinters, 
@@ -417,6 +417,11 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
         categories={categories}
       />
 
+      {/* ── Auto-Print KOT Station Filters ── */}
+      <AutoPrintStationSettings 
+        settings={settings}
+      />
+
       {/* ── Test & Tools ── */}
       {connected && selectedName && (
         <div style={{ ...cardStyle, border: '1px dashed #e2e8f0', background: 'rgba(255,255,255,0.4)' }}>
@@ -622,6 +627,101 @@ const KOTExclusionSettings = ({ settings, setSettings, categories = [] }) => {
       {categories.length === 0 && (
         <div style={{ textAlign: 'center', padding: '24px', color: '#64748b', fontSize: '13px', fontWeight: '500' }}>
           No categories found. Add categories to your menu first.
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AutoPrintStationSettings = ({ settings = {} }) => {
+  const stations = settings.printerStations || [];
+  const [disabledStations, setDisabledStations] = useState(() => {
+    const saved = localStorage.getItem('captain_auto_print_disabled_stations');
+    try { return saved ? JSON.parse(saved) : []; } catch { return []; }
+  });
+
+  const toggleStation = (stationName) => {
+    setDisabledStations(prev => {
+      const updated = prev.includes(stationName)
+        ? prev.filter(s => s !== stationName)
+        : [...prev, stationName];
+      localStorage.setItem('captain_auto_print_disabled_stations', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const enableAll = () => {
+    setDisabledStations([]);
+    localStorage.setItem('captain_auto_print_disabled_stations', JSON.stringify([]));
+  };
+
+  const disableAll = () => {
+    const allNames = stations.map(s => s.name);
+    setDisabledStations(allNames);
+    localStorage.setItem('captain_auto_print_disabled_stations', JSON.stringify(allNames));
+  };
+
+  return (
+    <div style={{ background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)', padding: '32px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ padding: '10px', background: '#ecfdf5', borderRadius: '12px' }}>
+            <Zap size={20} color="#10b981" />
+          </div>
+          <div>
+            <span style={{ fontSize: '18px', fontWeight: '500', color: '#0f172a' }}>Auto-Print KOT — Station Filters</span>
+            <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginTop: '2px' }}>
+              Enable or disable auto-printing per station. Disabled stations will NOT print physical KOTs when orders arrive from Captain App.
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={enableAll}
+            style={{ padding: '8px 14px', borderRadius: '10px', fontSize: '12px', fontWeight: '600', background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', cursor: 'pointer' }}
+          >
+            Enable All
+          </button>
+          <button
+            onClick={disableAll}
+            style={{ padding: '8px 14px', borderRadius: '10px', fontSize: '12px', fontWeight: '600', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', cursor: 'pointer' }}
+          >
+            Disable All
+          </button>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+        {stations.map(station => {
+          const isEnabled = !disabledStations.includes(station.name);
+          return (
+            <button 
+              key={station.id} 
+              onClick={() => toggleStation(station.name)} 
+              style={{ 
+                padding: '10px 18px', borderRadius: '12px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', 
+                background: isEnabled ? '#ecfdf5' : '#fef2f2', 
+                color: isEnabled ? '#047857' : '#dc2626', 
+                border: isEnabled ? '1.5px solid #a7f3d0' : '1.5px solid #fecaca', 
+                boxShadow: isEnabled ? '0 2px 8px rgba(16, 185, 129, 0.15)' : '0 2px 8px rgba(220, 38, 38, 0.1)',
+                transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '8px' 
+              }}
+            >
+              {isEnabled ? <Check size={15} color="#047857" /> : <X size={15} color="#dc2626" />} 
+              {station.name}
+              <span style={{ fontSize: '10px', background: isEnabled ? '#a7f3d0' : '#fecaca', color: isEnabled ? '#047857' : '#dc2626', padding: '2px 6px', borderRadius: '6px', fontWeight: '600' }}>
+                {isEnabled ? 'AUTO-PRINT ON' : 'OFF'}
+              </span>
+              <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '500' }}>({(station.categories || []).length} cats)</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {stations.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '24px', color: '#64748b', fontSize: '13px', fontWeight: '500' }}>
+          No stations defined. Add stations in the KOT Station Routing section above first.
         </div>
       )}
     </div>

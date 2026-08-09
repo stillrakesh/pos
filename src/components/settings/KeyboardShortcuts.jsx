@@ -148,6 +148,36 @@ const KeyboardShortcuts = ({ settings, onUpdate }) => {
           Function keys (F1–F12) work even while typing in the search bar.
         </p>
 
+        {/* Toggle Badges on Action Buttons */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '12px 16px', background: '#f8fafc', border: '1px solid #e2e8f0',
+          borderRadius: '10px'
+        }}>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>Show Key Badges on Action Buttons</div>
+            <div style={{ fontSize: '11px', color: '#64748b' }}>Display [F1], [F2], etc. badges next to button labels (SAVE, PRINT BILL, KOT)</div>
+          </div>
+          <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={settings?.showShortcutBadges === true}
+              onChange={(e) => onUpdate({ ...settings, showShortcutBadges: e.target.checked })}
+              style={{ opacity: 0, width: 0, height: 0 }}
+            />
+            <span style={{
+              position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: settings?.showShortcutBadges === true ? 'var(--primary)' : '#cbd5e1',
+              transition: '0.3s', borderRadius: '24px'
+            }} />
+            <span style={{
+              position: 'absolute', content: '""', height: '18px', width: '18px', left: '3px', bottom: '3px',
+              backgroundColor: 'white', transition: '0.3s', borderRadius: '50%',
+              transform: settings?.showShortcutBadges === true ? 'translateX(20px)' : 'translateX(0)'
+            }} />
+          </label>
+        </div>
+
         {/* Duplicate warning */}
         {duplicateWarning && (
           <div style={{

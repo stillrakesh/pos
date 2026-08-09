@@ -162,6 +162,7 @@ const App = () => {
     setAppMode(mode);
   };
   const [pickupOrders, setPickupOrders] = useState<any[]>([]);
+  const [deviceStatus, setDeviceStatus] = useState<'APPROVED' | 'BLOCKED' | 'PENDING'>('APPROVED');
   const [connectionState, setConnectionState] = useState<'connected' | 'reconnecting' | 'offline'>('offline');
   const [tempUrl, setTempUrl] = useState(() => {
     const raw = localStorage.getItem('backend_url') || window.location.origin;
@@ -304,6 +305,9 @@ const App = () => {
     socket.on('disconnect', onDisconnect);
     socket.io.on('reconnect_attempt', () => setConnectionState('reconnecting'));
     socket.io.on('reconnect_failed', () => setConnectionState('offline'));
+    socket.on('device_status', (data: any) => {
+      if (data?.status) setDeviceStatus(data.status);
+    });
     socket.on('shift_history_updated', (history: any[]) => {
       setShiftHistory(history || []);
     });
@@ -647,6 +651,26 @@ const App = () => {
     import('./services/socket').then(m => m.reconnectSocket());
     fetchData();
   };
+
+  if (deviceStatus === 'BLOCKED') {
+    return (
+      <div style={{ minHeight: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white', padding: '24px', textAlign: 'center' }}>
+        <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+          <X size={40} />
+        </div>
+        <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#f8fafc', marginBottom: '12px' }}>Access Restricted</h1>
+        <p style={{ fontSize: '14px', color: '#94a3b8', maxWidth: '340px', lineHeight: '1.6', marginBottom: '24px' }}>
+          This device has been blocked by the POS Administrator. Please ask the manager to unblock this device in POS Settings &gt; Connected Devices.
+        </p>
+        <button 
+          onClick={() => window.location.reload()} 
+          style={{ padding: '10px 20px', background: '#1e293b', color: '#cbd5e1', border: '1px solid #334155', borderRadius: '12px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
+        >
+          Retry Connection
+        </button>
+      </div>
+    );
+  }
 
   if (showSettings) {
     return (

@@ -11,7 +11,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 import * as XLSX from 'xlsx';
 import { get as idbGet } from 'idb-keyval';
 import { BASE_URL } from './constants';
-import { printPosToSerial } from './utils/printerUtils';
+import { printPosToSerial, filterItemsForAutoPrint } from './utils/printerUtils';
 import { QuickPrintModal, QuickSettleModal } from './components/billing/SettlementModals';
 import DayCloseWizard from './components/billing/DayCloseWizard';
 import BillDesigner from './components/settings/BillDesigner';
@@ -2265,6 +2265,233 @@ const MenuSetupView = ({ categories, setCategories, menuItems, setMenuItems, loa
 
 /* --- FLOOR PLAN SETUP VIEW (Extracted to src/components/FloorDesigner.jsx) --- */
 
+/* --- GEMINI AI SELF-HEALING SETTINGS CARD --- */
+const GeminiAISettingsCard = () => {
+  const [apiKey, setApiKey] = useState(() => {
+    try { return localStorage.getItem('pos_gemini_api_key') || ''; } catch { return ''; }
+  });
+  const [showKey, setShowKey] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState(null); // { success, message }
+  const [diagRunning, setDiagRunning] = useState(false);
+  const [diagResult, setDiagResult] = useState(null);  // { success, analysis, error }
+  const [saved, setSaved] = useState(false);
+
+  const handleSaveKey = () => {
+    try {
+      localStorage.setItem('pos_gemini_api_key', apiKey.trim());
+      setSaved(true);
+      setTestResult(null);
+      setTimeout(() => setSaved(false), 2500);
+    } catch {}
+  };
+
+  const handleTestKey = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const { testGeminiApiKey } = await import('./services/aiDiagnosticService.js');
+      const result = await testGeminiApiKey(apiKey.trim());
+      setTestResult(result);
+    } catch (err) {
+      setTestResult({ success: false, message: err.message });
+    }
+    setTesting(false);
+  };
+
+  const handleRunDiagnostics = async () => {
+    setDiagRunning(true);
+    setDiagResult(null);
+    try {
+      const { runFullDiagnostics } = await import('./services/aiDiagnosticService.js');
+      const result = await runFullDiagnostics();
+      setDiagResult(result);
+    } catch (err) {
+      setDiagResult({ success: false, error: err.message });
+    }
+    setDiagRunning(false);
+  };
+
+  const handleClearKey = () => {
+    setApiKey('');
+    try { localStorage.removeItem('pos_gemini_api_key'); } catch {}
+    setTestResult(null);
+    setDiagResult(null);
+  };
+
+  const severityColors = { low: '#22c55e', medium: '#f59e0b', high: '#f97316', critical: '#ef4444' };
+
+  return (
+    <div style={{ background: 'linear-gradient(135deg, #f5f3ff, #ede9fe)', padding: '32px', borderRadius: '16px', border: '1px solid #ddd6fe', boxShadow: '0 4px 20px rgba(139, 92, 246, 0.08)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+        <div style={{ padding: '10px', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Sparkles size={20} color="white" />
+        </div>
+        <div>
+          <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1e1b4b', margin: 0 }}>Gemini AI Self-Healing & Diagnostics</h3>
+          <p style={{ fontSize: '12px', color: '#6d28d9', margin: '2px 0 0', fontWeight: '500' }}>
+            Connect Google Gemini to automatically diagnose errors, analyze crash logs, and heal your POS system.
+          </p>
+        </div>
+      </div>
+
+      {/* API Key Input */}
+      <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #e9e5f5', marginBottom: '16px' }}>
+        <label style={{ fontSize: '12px', fontWeight: '700', color: '#4c1d95', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', display: 'block' }}>
+          Google Gemini API Key
+        </label>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ flex: 1, position: 'relative' }}>
+            <input
+              type={showKey ? 'text' : 'password'}
+              value={apiKey}
+              onChange={e => setApiKey(e.target.value)}
+              placeholder="Paste your Gemini API key here..."
+              style={{
+                width: '100%', padding: '12px 44px 12px 14px', borderRadius: '10px', border: '1.5px solid #ddd6fe',
+                fontSize: '13px', fontFamily: 'monospace', outline: 'none', background: '#faf5ff',
+                transition: 'border-color 0.2s'
+              }}
+              onFocus={e => { e.target.style.borderColor = '#8b5cf6'; e.target.style.boxShadow = '0 0 0 3px rgba(139,92,246,0.1)'; }}
+              onBlur={e => { e.target.style.borderColor = '#ddd6fe'; e.target.style.boxShadow = 'none'; }}
+            />
+            <button
+              onClick={() => setShowKey(!showKey)}
+              style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#8b5cf6', fontSize: '12px', fontWeight: '600' }}
+            >
+              {showKey ? <Eye size={16} /> : '👁️'}
+            </button>
+          </div>
+          <button
+            onClick={handleSaveKey}
+            disabled={!apiKey.trim()}
+            style={{
+              padding: '12px 18px', borderRadius: '10px', fontSize: '12px', fontWeight: '700',
+              background: saved ? '#22c55e' : (apiKey.trim() ? 'linear-gradient(135deg, #8b5cf6, #6366f1)' : '#e5e7eb'),
+              color: 'white', border: 'none', cursor: apiKey.trim() ? 'pointer' : 'default',
+              transition: 'all 0.3s', minWidth: '80px'
+            }}
+          >
+            {saved ? '✅ Saved!' : 'Save'}
+          </button>
+          {apiKey && (
+            <button onClick={handleClearKey} style={{ padding: '12px', borderRadius: '10px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', cursor: 'pointer', fontSize: '11px', fontWeight: '600' }}>
+              Clear
+            </button>
+          )}
+        </div>
+        <p style={{ fontSize: '11px', color: '#7c3aed', margin: '8px 0 0', opacity: 0.8 }}>
+          Get your free API key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style={{ color: '#4f46e5', fontWeight: '600', textDecoration: 'underline' }}>Google AI Studio</a>. 
+          Your key is stored locally and never sent to any server except Google's API.
+        </p>
+      </div>
+
+      {/* Action Buttons */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        <button
+          onClick={handleTestKey}
+          disabled={!apiKey.trim() || testing}
+          style={{
+            flex: 1, minWidth: '140px', padding: '12px 16px', borderRadius: '10px', fontSize: '12px', fontWeight: '700',
+            background: testing ? '#e5e7eb' : 'white', color: testing ? '#9ca3af' : '#6d28d9',
+            border: '1.5px solid #ddd6fe', cursor: apiKey.trim() && !testing ? 'pointer' : 'default',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s'
+          }}
+        >
+          {testing ? (
+            <><div style={{ width: '14px', height: '14px', borderRadius: '50%', border: '2px solid #8b5cf6', borderTopColor: 'transparent', animation: 'spin 1s linear infinite' }} /> Testing...</>
+          ) : (
+            <><Zap size={15} /> Test API Key</>
+          )}
+        </button>
+        <button
+          onClick={handleRunDiagnostics}
+          disabled={!apiKey.trim() || diagRunning}
+          style={{
+            flex: 1, minWidth: '160px', padding: '12px 16px', borderRadius: '10px', fontSize: '12px', fontWeight: '700',
+            background: diagRunning ? '#e5e7eb' : 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+            color: diagRunning ? '#9ca3af' : 'white',
+            border: 'none', cursor: apiKey.trim() && !diagRunning ? 'pointer' : 'default',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s',
+            boxShadow: diagRunning ? 'none' : '0 4px 12px rgba(139,92,246,0.25)'
+          }}
+        >
+          {diagRunning ? (
+            <><div style={{ width: '14px', height: '14px', borderRadius: '50%', border: '2px solid white', borderTopColor: 'transparent', animation: 'spin 1s linear infinite' }} /> Analyzing...</>
+          ) : (
+            <><Sparkles size={15} /> Run Full System Diagnostics</>
+          )}
+        </button>
+      </div>
+
+      {/* CSS for spinner animation */}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+      {/* Test Result */}
+      {testResult && (
+        <div style={{
+          background: testResult.success ? '#f0fdf4' : '#fef2f2',
+          borderRadius: '10px', padding: '12px 16px', marginBottom: '12px',
+          border: `1px solid ${testResult.success ? '#bbf7d0' : '#fecaca'}`,
+          display: 'flex', alignItems: 'center', gap: '10px'
+        }}>
+          <span style={{ fontSize: '16px' }}>{testResult.success ? '✅' : '❌'}</span>
+          <span style={{ fontSize: '12px', fontWeight: '600', color: testResult.success ? '#16a34a' : '#dc2626' }}>
+            {testResult.message}
+          </span>
+        </div>
+      )}
+
+      {/* Diagnostics Result */}
+      {diagResult && (
+        <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #e9e5f5' }}>
+          {diagResult.success && diagResult.analysis ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <Sparkles size={16} color="#8b5cf6" />
+                <span style={{ fontSize: '14px', fontWeight: '700', color: '#1e1b4b' }}>System Health Report</span>
+                <span style={{
+                  marginLeft: 'auto', fontSize: '10px', fontWeight: '700', padding: '3px 10px', borderRadius: '20px',
+                  background: `${severityColors[diagResult.analysis.severity] || '#94a3b8'}15`,
+                  color: severityColors[diagResult.analysis.severity] || '#94a3b8',
+                  textTransform: 'uppercase'
+                }}>
+                  {diagResult.analysis.severity}
+                </span>
+              </div>
+
+              <div style={{ background: '#f5f3ff', borderRadius: '8px', padding: '12px', marginBottom: '10px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '700', color: '#7c3aed', textTransform: 'uppercase', marginBottom: '4px' }}>Analysis</div>
+                <div style={{ fontSize: '13px', color: '#1e1b4b', lineHeight: '1.5' }}>{diagResult.analysis.rootCause}</div>
+              </div>
+
+              {diagResult.analysis.userAdvice && (
+                <div style={{ background: '#f0fdf4', borderRadius: '8px', padding: '12px', border: '1px solid #bbf7d0' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#16a34a', textTransform: 'uppercase', marginBottom: '4px' }}>💡 Recommendation</div>
+                  <div style={{ fontSize: '12px', color: '#166534', lineHeight: '1.5' }}>{diagResult.analysis.userAdvice}</div>
+                </div>
+              )}
+
+              {diagResult.analysis.confidence != null && (
+                <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ flex: 1, height: '4px', borderRadius: '4px', background: '#ede9fe' }}>
+                    <div style={{ width: `${Math.round(diagResult.analysis.confidence * 100)}%`, height: '100%', borderRadius: '4px', background: 'linear-gradient(90deg, #8b5cf6, #3b82f6)', transition: 'width 0.5s ease' }} />
+                  </div>
+                  <span style={{ fontSize: '10px', color: '#7c3aed', fontWeight: '600' }}>{Math.round(diagResult.analysis.confidence * 100)}% confidence</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ color: '#dc2626', fontSize: '12px', fontWeight: '500' }}>
+              ❌ Diagnostics failed: {diagResult.error}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* --- SYSTEM SETTINGS VIEW --- */
 /* --- ADVANCED GLOBAL SETTINGS VIEW --- */
 const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullReset, devices = [], onUpdateDeviceStatus, onDeleteDevice, onRenameDevice, isConnected, onRestoreData, appVersion, categories, onOpenDiagnostics }) => {
@@ -3075,6 +3302,10 @@ const GlobalSettingsView = ({ settings, onSaveSettings, onClearHistory, onFullRe
 
         {activeTab === 'system' && (
           <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+            {/* ── Gemini AI Self-Healing & Diagnostics ── */}
+            <GeminiAISettingsCard />
+
             <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: '600', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <AlertTriangle size={20} /> Danger Zone: Data Management
@@ -3494,39 +3725,56 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
         </div>
       </div>
 
-      {activeSections.map(section => (
-        <div key={section} style={{ marginBottom: '48px' }}>
-          <h2 style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
-            {section} SECTION
-          </h2>
+      {activeSections.map(section => {
+        const sectionTables = filteredTables.filter(t => t.type === section);
+        
+        let maxTableY = 300;
+        let maxTableX = 1200;
+        sectionTables.forEach(t => {
+          const bottom = (t.pos?.y || 0) + 240;
+          const right = (t.pos?.x || 0) + 220;
+          if (bottom > maxTableY) maxTableY = bottom;
+          if (right > maxTableX) maxTableX = right;
+        });
 
-          {viewMode === 'map' ? (
-            <div style={{
-              position: 'relative', 
-              height: `${Math.min(750, 1300 * (zoom / 100) + 48)}px`, 
-              background: '#ffffff', 
-              borderRadius: '20px', 
-              border: '1px solid #e2e8f0', 
-              overflow: 'auto',
-              backgroundImage: 'radial-gradient(#e2e8f0 1.5px, transparent 1.5px)', 
-              backgroundSize: '24px 24px', 
-              padding: '24px'
-            }}>
+        const contentHeight = Math.min(1300, Math.max(320, maxTableY + 60));
+        const contentWidth = Math.min(1900, Math.max(1200, maxTableX + 60));
+        const scaledHeight = contentHeight * (zoom / 100);
+        const scaledWidth = contentWidth * (zoom / 100);
+
+        return (
+          <div key={section} style={{ marginBottom: '48px' }}>
+            <h2 style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+              {section} SECTION
+            </h2>
+
+            {viewMode === 'map' ? (
               <div style={{
-                width: `${1900 * (zoom / 100)}px`,
-                height: `${1300 * (zoom / 100)}px`,
-                overflow: 'hidden',
-                position: 'relative'
+                position: 'relative', 
+                height: `${Math.min(750, scaledHeight + 48)}px`, 
+                background: '#ffffff', 
+                borderRadius: '20px', 
+                border: '1px solid #e2e8f0', 
+                overflow: 'auto',
+                backgroundImage: 'radial-gradient(#e2e8f0 1.5px, transparent 1.5px)', 
+                backgroundSize: '24px 24px', 
+                padding: '24px'
               }}>
-                <div style={{ 
-                  transform: `scale(${zoom / 100})`, 
-                  transformOrigin: "top left",
-                  width: '1900px',
-                  height: '1300px',
-                  position: 'absolute',
-                  left: 0,
-                  top: 0
+                <div style={{
+                  width: `${scaledWidth}px`,
+                  height: `${scaledHeight}px`,
+                  overflow: 'hidden',
+                  position: 'relative'
                 }}>
+                  <div style={{ 
+                    transform: `scale(${zoom / 100})`, 
+                    transformOrigin: "top left",
+                    width: `${contentWidth}px`,
+                    height: `${contentHeight}px`,
+                    position: 'absolute',
+                    left: 0,
+                    top: 0
+                  }}>
 
                 {filteredTables.filter(t => t.type === section).map(table => {
                   const tableTotal = table.total || 0;
@@ -3770,7 +4018,8 @@ const ServiceFloor = ({ tables, floorPlanSections, onSelectTable, onClearTable, 
           )}
 
         </div>
-      ))}
+      );
+      })}
       {showShiftHistory && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
           <div style={{ width: '400px' }}>
@@ -6416,13 +6665,14 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
           {/* Action Buttons */}
           {(() => {
             const sc = { ...DEFAULT_SHORTCUTS, ...(settings?.keyboardShortcuts || {}) };
+            const showBadges = settings?.showShortcutBadges === true;
             const badgeStyle = { fontSize: '9px', fontWeight: '700', background: 'rgba(255,255,255,0.25)', padding: '1px 5px', borderRadius: '3px', marginLeft: '6px', letterSpacing: '0.5px', fontFamily: 'monospace' };
             return (
               <div className="footer-btn-grid" style={{ padding: '10px', gap: '8px' }}>
-                <button disabled={!IS_LOCAL || isProcessing} className="btn-maroon" onClick={handleSave} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{isProcessing ? 'Saving...' : 'SAVE'}{sc.save && <span style={badgeStyle}>{sc.save}</span>}</button>
-                <button disabled={!IS_LOCAL || isProcessing} className="btn-maroon" onClick={handlePrintBill} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>PRINT BILL{sc.printBill && <span style={badgeStyle}>{sc.printBill}</span>}</button>
-                <button disabled={!IS_LOCAL || isProcessing} className="btn-grey" onClick={handleKOT} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>KOT{sc.kot && <span style={badgeStyle}>{sc.kot}</span>}</button>
-                <button disabled={!IS_LOCAL || isProcessing} className="btn-grey" style={{ background: '#334155', opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={handleKOTPrint}>KOT & PRINT{sc.kotPrint && <span style={badgeStyle}>{sc.kotPrint}</span>}</button>
+                <button disabled={!IS_LOCAL || isProcessing} className="btn-maroon" onClick={handleSave} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{isProcessing ? 'Saving...' : 'SAVE'}{showBadges && sc.save && <span style={badgeStyle}>{sc.save}</span>}</button>
+                <button disabled={!IS_LOCAL || isProcessing} className="btn-maroon" onClick={handlePrintBill} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>PRINT BILL{showBadges && sc.printBill && <span style={badgeStyle}>{sc.printBill}</span>}</button>
+                <button disabled={!IS_LOCAL || isProcessing} className="btn-grey" onClick={handleKOT} style={{ opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>KOT{showBadges && sc.kot && <span style={badgeStyle}>{sc.kot}</span>}</button>
+                <button disabled={!IS_LOCAL || isProcessing} className="btn-grey" style={{ background: '#334155', opacity: (IS_LOCAL && !isProcessing) ? 1 : 0.5, cursor: (IS_LOCAL && !isProcessing) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={handleKOTPrint}>KOT & PRINT{showBadges && sc.kotPrint && <span style={badgeStyle}>{sc.kotPrint}</span>}</button>
               </div>
             );
           })()}
@@ -7860,25 +8110,32 @@ function MainApp() {
           const isAutoPrintEnabled = localStorage.getItem('captain_auto_print_kot') !== 'false';
           console.log(`[Socket order_updated] is_new_kot=${payload.is_new_kot}, suppressLocalKotPrint.current=${suppressLocalKotPrint.current}, isAutoPrintEnabled=${isAutoPrintEnabled}`);
           if (!suppressLocalKotPrint.current && isAutoPrintEnabled) {
-            console.log("🖨️ Auto-printing incoming KOT from remote device for Table", payload.table_number);
-            printPosToSerial({
-              orderId: payload.table_id || payload.id,
-              tableName: `Table ${payload.table_number || payload.table_id || payload.id}`,
-              items: payload.new_items.map(i => {
-                const name = String(i.name || '').trim().toLowerCase();
-                const info = menuRef.current.find(m =>
-                  String(m.name || '').trim().toLowerCase() === name ||
-                  String(m.id) === String(i.id || i.item_id)
-                );
-                return {
-                  ...i,
-                  qty: i.quantity || i.qty || 1,
-                  note: i.note || i.notes || i.special_note || '',
-                  category: i.category || info?.category || 'General'
-                };
-              }),
-              orderType: 'Dine In'
-            }, 'KOT', settingsRef.current);
+            const rawItems = payload.new_items.map(i => {
+              const name = String(i.name || '').trim().toLowerCase();
+              const info = menuRef.current.find(m =>
+                String(m.name || '').trim().toLowerCase() === name ||
+                String(m.id) === String(i.id || i.item_id)
+              );
+              return {
+                ...i,
+                qty: i.quantity || i.qty || 1,
+                note: i.note || i.notes || i.special_note || '',
+                category: i.category || info?.category || 'General'
+              };
+            });
+
+            const itemsToPrint = filterItemsForAutoPrint(rawItems, menuRef.current, settingsRef.current);
+            if (itemsToPrint.length > 0) {
+              console.log("🖨️ Auto-printing filtered KOT items for Table", payload.table_number);
+              printPosToSerial({
+                orderId: payload.table_id || payload.id,
+                tableName: `Table ${payload.table_number || payload.table_id || payload.id}`,
+                items: itemsToPrint,
+                orderType: 'Dine In'
+              }, 'KOT', settingsRef.current);
+            } else {
+              console.log("⏭️ Skipping KOT auto-print — no items match enabled auto-print stations");
+            }
           } else {
             console.log("⏭️ Skipping auto-print — KOT was sent from this terminal");
           }
@@ -7990,15 +8247,20 @@ function MainApp() {
 
         const isAutoPrintEnabled = localStorage.getItem('captain_auto_print_kot') !== 'false';
         if (normalizedItems.length > 0 && isAutoPrintEnabled) {
-          console.log("🖨️ Auto-printing incoming Pickup KOT from Captain App");
-          printPosToSerial({
-            orderId: id,
-            tableName: newOrder.name,
-            items: normalizedItems,
-            orderType: 'Takeaway',
-            customerName: payload.customerName || '',
-            phone: payload.phone || ''
-          }, 'KOT', settingsRef.current);
+          const itemsToPrint = filterItemsForAutoPrint(normalizedItems, menuRef.current, settingsRef.current);
+          if (itemsToPrint.length > 0) {
+            console.log("🖨️ Auto-printing incoming Pickup KOT from Captain App");
+            printPosToSerial({
+              orderId: id,
+              tableName: newOrder.name,
+              items: itemsToPrint,
+              orderType: 'Takeaway',
+              customerName: payload.customerName || '',
+              phone: payload.phone || ''
+            }, 'KOT', settingsRef.current);
+          } else {
+            console.log("⏭️ Skipping Pickup KOT auto-print — no items match enabled auto-print stations");
+          }
         }
       });
 
@@ -8942,7 +9204,18 @@ function MainApp() {
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null, recovering: false };
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null,
+      recovering: false,
+      // Gemini AI diagnostic state
+      aiAnalyzing: false,
+      aiResult: null,        // { success, analysis, error }
+      aiFixApplied: false,
+      aiFixResults: null,    // array of { action, success, label }
+      showTechDetails: false
+    };
   }
   static getDerivedStateFromError(error) { return { hasError: true, error }; }
   componentDidCatch(error, errorInfo) { 
@@ -8960,61 +9233,246 @@ class ErrorBoundary extends React.Component {
       });
       localStorage.setItem('pos_crash_log', JSON.stringify(crashes.slice(-20)));
     } catch (e) {}
+
+    // Auto-trigger Gemini analysis if API key is configured
+    this._autoAnalyze(error, errorInfo);
   }
+
+  _autoAnalyze = async (error, errorInfo) => {
+    try {
+      const { isGeminiConfigured, analyzeErrorWithGemini } = await import('./services/aiDiagnosticService.js');
+      if (isGeminiConfigured()) {
+        this.setState({ aiAnalyzing: true });
+        const result = await analyzeErrorWithGemini({ error, errorInfo });
+        this.setState({ aiAnalyzing: false, aiResult: result });
+      }
+    } catch (e) {
+      console.error('Auto-analyze failed:', e);
+      this.setState({ aiAnalyzing: false });
+    }
+  }
+
   handleRecover = () => {
     this.setState({ recovering: true });
-    // Clear potentially corrupted state
     try {
-      // Don't clear critical data like settings — only clear transient UI state
       sessionStorage.clear();
     } catch (e) {}
     setTimeout(() => {
-      this.setState({ hasError: false, error: null, errorInfo: null, recovering: false });
+      this.setState({ hasError: false, error: null, errorInfo: null, recovering: false, aiResult: null, aiFixApplied: false, aiFixResults: null, aiAnalyzing: false, showTechDetails: false });
     }, 500);
   }
+
+  handleAskGemini = async () => {
+    const { error, errorInfo } = this.state;
+    this.setState({ aiAnalyzing: true, aiResult: null });
+    try {
+      const { analyzeErrorWithGemini } = await import('./services/aiDiagnosticService.js');
+      const result = await analyzeErrorWithGemini({ error, errorInfo });
+      this.setState({ aiAnalyzing: false, aiResult: result });
+    } catch (err) {
+      this.setState({ aiAnalyzing: false, aiResult: { success: false, error: err.message } });
+    }
+  }
+
+  handleApplyAiFix = async () => {
+    const { aiResult } = this.state;
+    if (!aiResult?.success || !aiResult?.analysis?.actionPlan) return;
+    try {
+      const { executeRecoveryPlan } = await import('./services/aiDiagnosticService.js');
+      const { results, needsReload } = executeRecoveryPlan(aiResult.analysis.actionPlan);
+      this.setState({ aiFixApplied: true, aiFixResults: results });
+
+      if (needsReload) return; // FULL_PAGE_RELOAD handles itself
+
+      // If RESET_TRANSIENT_STATE or FLUSH_RENDER_QUEUE was in the plan, re-render
+      const needsReRender = aiResult.analysis.actionPlan.some(a => 
+        ['RESET_TRANSIENT_STATE', 'FLUSH_RENDER_QUEUE', 'CLEAR_SESSION_CACHE'].includes(a)
+      );
+      if (needsReRender) {
+        setTimeout(() => {
+          this.setState({ hasError: false, error: null, errorInfo: null, recovering: false, aiResult: null, aiFixApplied: false, aiFixResults: null, aiAnalyzing: false, showTechDetails: false });
+        }, 1500);
+      }
+    } catch (err) {
+      this.setState({ aiFixResults: [{ action: 'EXECUTE_ERROR', success: false, label: err.message }] });
+    }
+  }
+
   render() {
     if (this.state.hasError) {
-      const { error, errorInfo, recovering } = this.state;
+      const { error, errorInfo, recovering, aiAnalyzing, aiResult, aiFixApplied, aiFixResults, showTechDetails } = this.state;
+      const analysis = aiResult?.analysis;
+      const severityColors = { low: '#22c55e', medium: '#f59e0b', high: '#f97316', critical: '#ef4444' };
+      const severityColor = severityColors[analysis?.severity] || '#94a3b8';
+
       return (
-        <div style={{ padding: '40px', background: 'linear-gradient(135deg, #1e1b2e 0%, #2d1f3d 50%, #1a1528 100%)', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
-          <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)', borderRadius: '24px', padding: '48px', maxWidth: '600px', width: '90%', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 25px 50px rgba(0,0,0,0.4)' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(239,68,68,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-              <AlertTriangle size={32} color="#f87171" />
-            </div>
-            <h1 style={{ color: '#f1f5f9', fontSize: '22px', fontWeight: '700', margin: '0 0 8px' }}>POS System Error Detected</h1>
-            <p style={{ color: '#94a3b8', fontSize: '14px', margin: '0 0 24px' }}>The system caught an error before it could crash. Your data is safe.</p>
+        <div style={{ padding: '40px', background: 'linear-gradient(135deg, #1e1b2e 0%, #2d1f3d 50%, #1a1528 100%)', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+          <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)', borderRadius: '24px', padding: '40px', maxWidth: '720px', width: '95%', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 25px 50px rgba(0,0,0,0.4)' }}>
             
-            <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '12px', padding: '16px', textAlign: 'left', marginBottom: '24px', maxHeight: '180px', overflow: 'auto' }}>
-              <div style={{ color: '#f87171', fontSize: '13px', fontWeight: '600', marginBottom: '8px' }}>Error Details:</div>
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(239,68,68,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <AlertTriangle size={32} color="#f87171" />
+              </div>
+              <h1 style={{ color: '#f1f5f9', fontSize: '22px', fontWeight: '700', margin: '0 0 6px' }}>POS System Error Detected</h1>
+              <p style={{ color: '#94a3b8', fontSize: '13px', margin: 0 }}>The system caught an error before it could crash. Your data is safe.</p>
+            </div>
+
+            {/* Error Details (collapsible) */}
+            <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '12px', padding: '14px', textAlign: 'left', marginBottom: '20px' }}>
+              <div style={{ color: '#f87171', fontSize: '12px', fontWeight: '700', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Error Message</div>
               <code style={{ color: '#e2e8f0', fontSize: '12px', wordBreak: 'break-word', lineHeight: '1.5' }}>
                 {error?.message || error?.toString() || 'Unknown error'}
               </code>
               {errorInfo?.componentStack && (
-                <details style={{ marginTop: '12px' }}>
+                <details style={{ marginTop: '10px' }}>
                   <summary style={{ color: '#64748b', fontSize: '11px', cursor: 'pointer' }}>Component Stack Trace</summary>
-                  <pre style={{ color: '#94a3b8', fontSize: '10px', marginTop: '8px', whiteSpace: 'pre-wrap', maxHeight: '100px', overflow: 'auto' }}>{errorInfo.componentStack}</pre>
+                  <pre style={{ color: '#94a3b8', fontSize: '10px', marginTop: '6px', whiteSpace: 'pre-wrap', maxHeight: '80px', overflow: 'auto' }}>{errorInfo.componentStack}</pre>
                 </details>
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+            {/* ── Gemini AI Diagnostic Panel ── */}
+            {aiAnalyzing && (
+              <div style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(59,130,246,0.12))', borderRadius: '16px', padding: '20px', marginBottom: '20px', border: '1px solid rgba(139,92,246,0.25)', textAlign: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '2px solid #a78bfa', borderTopColor: 'transparent', animation: 'spin 1s linear infinite' }} />
+                  <span style={{ color: '#c4b5fd', fontSize: '14px', fontWeight: '600' }}>Gemini AI is analyzing this error...</span>
+                </div>
+                <p style={{ color: '#8b5cf6', fontSize: '11px', margin: 0, opacity: 0.8 }}>Examining stack trace, system telemetry, and recent crash history</p>
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              </div>
+            )}
+
+            {aiResult?.success && analysis && (
+              <div style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.08))', borderRadius: '16px', padding: '20px', marginBottom: '20px', border: '1px solid rgba(139,92,246,0.2)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                  <Sparkles size={18} color="#a78bfa" />
+                  <span style={{ color: '#e0d4fd', fontSize: '14px', fontWeight: '700' }}>Gemini AI Diagnosis</span>
+                  <span style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: '700', padding: '3px 10px', borderRadius: '20px', background: `${severityColor}22`, color: severityColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    {analysis.severity} severity
+                  </span>
+                </div>
+
+                {/* Root Cause */}
+                <div style={{ background: 'rgba(0,0,0,0.25)', borderRadius: '10px', padding: '12px', marginBottom: '12px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>Root Cause</div>
+                  <div style={{ fontSize: '13px', color: '#e2e8f0', lineHeight: '1.5' }}>{analysis.rootCause}</div>
+                </div>
+
+                {/* User Advice */}
+                {analysis.userAdvice && (
+                  <div style={{ background: 'rgba(16,185,129,0.08)', borderRadius: '10px', padding: '12px', marginBottom: '12px', border: '1px solid rgba(16,185,129,0.15)' }}>
+                    <div style={{ fontSize: '10px', fontWeight: '700', color: '#34d399', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>💡 Advice</div>
+                    <div style={{ fontSize: '12px', color: '#a7f3d0', lineHeight: '1.5' }}>{analysis.userAdvice}</div>
+                  </div>
+                )}
+
+                {/* Action Plan */}
+                {analysis.actionPlan?.length > 0 && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>Automated Recovery Plan</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {analysis.actionPlan.map((action, i) => (
+                        <span key={i} style={{ padding: '4px 10px', borderRadius: '8px', background: 'rgba(139,92,246,0.15)', color: '#c4b5fd', fontSize: '11px', fontWeight: '600', border: '1px solid rgba(139,92,246,0.25)' }}>
+                          {action.replace(/_/g, ' ')}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Technical Detail (toggle) */}
+                {analysis.technicalDetail && (
+                  <div>
+                    <button onClick={() => this.setState({ showTechDetails: !showTechDetails })} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '11px', cursor: 'pointer', padding: '4px 0', fontWeight: '500' }}>
+                      {showTechDetails ? '▼' : '▶'} Technical Details
+                    </button>
+                    {showTechDetails && (
+                      <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '8px', padding: '10px', marginTop: '4px' }}>
+                        <code style={{ fontSize: '11px', color: '#94a3b8', lineHeight: '1.5', wordBreak: 'break-word' }}>{analysis.technicalDetail}</code>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Confidence */}
+                {analysis.confidence != null && (
+                  <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ flex: 1, height: '4px', borderRadius: '4px', background: 'rgba(255,255,255,0.08)' }}>
+                      <div style={{ width: `${Math.round(analysis.confidence * 100)}%`, height: '100%', borderRadius: '4px', background: 'linear-gradient(90deg, #8b5cf6, #3b82f6)', transition: 'width 0.5s ease' }} />
+                    </div>
+                    <span style={{ fontSize: '10px', color: '#8b5cf6', fontWeight: '600' }}>{Math.round(analysis.confidence * 100)}% confidence</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* AI Error Message */}
+            {aiResult && !aiResult.success && (
+              <div style={{ background: 'rgba(239,68,68,0.1)', borderRadius: '12px', padding: '12px', marginBottom: '20px', border: '1px solid rgba(239,68,68,0.2)' }}>
+                <div style={{ color: '#fca5a5', fontSize: '12px' }}>
+                  <span style={{ fontWeight: '600' }}>AI Analysis Failed: </span>{aiResult.error}
+                </div>
+              </div>
+            )}
+
+            {/* Fix Applied Results */}
+            {aiFixApplied && aiFixResults && (
+              <div style={{ background: 'rgba(16,185,129,0.1)', borderRadius: '12px', padding: '14px', marginBottom: '20px', border: '1px solid rgba(16,185,129,0.2)' }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#34d399', marginBottom: '8px' }}>✅ Recovery Actions Executed</div>
+                {aiFixResults.map((r, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
+                    <span style={{ fontSize: '12px' }}>{r.success ? '✅' : '❌'}</span>
+                    <span style={{ fontSize: '12px', color: r.success ? '#a7f3d0' : '#fca5a5', fontWeight: '500' }}>{r.label}</span>
+                  </div>
+                ))}
+                <p style={{ color: '#6ee7b7', fontSize: '11px', margin: '8px 0 0', fontStyle: 'italic' }}>Restoring POS automatically...</p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {/* Gemini AI Fix Button */}
+              {aiResult?.success && analysis?.actionPlan?.length > 0 && !aiFixApplied && (
+                <button 
+                  onClick={this.handleApplyAiFix}
+                  style={{ padding: '12px 20px', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', transition: 'all 0.2s', boxShadow: '0 4px 15px rgba(139,92,246,0.35)', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <Sparkles size={16} /> Apply AI Fix & Restore
+                </button>
+              )}
+
+              {/* Ask Gemini (only if not already analyzed) */}
+              {!aiResult && !aiAnalyzing && (
+                <button 
+                  onClick={this.handleAskGemini}
+                  style={{ padding: '12px 20px', background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: '600', fontSize: '13px', transition: 'all 0.2s', boxShadow: '0 4px 15px rgba(124,58,237,0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <Sparkles size={16} /> Ask Gemini AI & Heal
+                </button>
+              )}
+
+              {/* Local Recovery */}
               <button 
                 onClick={this.handleRecover}
                 disabled={recovering}
-                style={{ padding: '12px 24px', background: recovering ? '#334155' : 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '12px', cursor: recovering ? 'wait' : 'pointer', fontWeight: '600', fontSize: '14px', transition: 'all 0.2s' }}
+                style={{ padding: '12px 20px', background: recovering ? '#334155' : 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '12px', cursor: recovering ? 'wait' : 'pointer', fontWeight: '600', fontSize: '13px', transition: 'all 0.2s' }}
               >
-                {recovering ? '⏳ Recovering...' : '🔧 Try Auto-Recovery'}
+                {recovering ? '⏳ Recovering...' : '🔧 Local Recovery'}
               </button>
+
+              {/* Reload */}
               <button 
                 onClick={() => window.location.reload()}
-                style={{ padding: '12px 24px', background: 'rgba(255,255,255,0.1)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', cursor: 'pointer', fontWeight: '600', fontSize: '14px', transition: 'all 0.2s' }}
+                style={{ padding: '12px 20px', background: 'rgba(255,255,255,0.08)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', cursor: 'pointer', fontWeight: '600', fontSize: '13px', transition: 'all 0.2s' }}
               >
                 🔄 Reload POS
               </button>
             </div>
             
-            <div style={{ marginTop: '20px', color: '#475569', fontSize: '11px' }}>
-              {new Date().toLocaleString()} • TYDE POS Crash Protection
+            <div style={{ marginTop: '16px', color: '#475569', fontSize: '10px', textAlign: 'center' }}>
+              {new Date().toLocaleString()} • TYDE POS Crash Protection {aiResult?.success ? '• Gemini AI Active' : ''}
             </div>
           </div>
         </div>

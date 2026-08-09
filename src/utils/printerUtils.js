@@ -5,6 +5,61 @@ import apiService from '../services/apiService';
 
 const SETTINGS_KEY = 'pos_printer_settings';
 
+/**
+ * Filter items for Auto-Print KOT based on disabled printer stations in localStorage.
+ * 
+ * Uses 'captain_auto_print_disabled_stations' — an array of station NAMES that are disabled.
+ * Looks up which categories belong to disabled stations via settings.printerStations.
+ * Items whose category belongs to a disabled station are excluded from auto-print.
+ * 
+ * @param {Array} items - order items (each should have a .category)
+ * @param {Array} menuItems - full menu for category lookup fallback
+ * @param {Object} settings - POS settings containing printerStations
+ */
+export const filterItemsForAutoPrint = (items = [], menuItems = [], settings = null) => {
+  const disabledStr = localStorage.getItem('captain_auto_print_disabled_stations');
+  if (!disabledStr) return items; // No disabled stations = print everything
+
+  try {
+    const disabledStations = JSON.parse(disabledStr);
+    if (!Array.isArray(disabledStations) || disabledStations.length === 0) {
+      return items; // Nothing disabled
+    }
+
+    // Get the station list from settings
+    const stations = settings?.printerStations || [];
+    if (stations.length === 0) return items; // No stations configured
+
+    // Build a Set of all categories that belong to disabled stations
+    const disabledCategories = new Set();
+    for (const station of stations) {
+      if (disabledStations.includes(station.name)) {
+        for (const cat of (station.categories || [])) {
+          disabledCategories.add(cat);
+        }
+      }
+    }
+
+    if (disabledCategories.size === 0) return items; // No categories to exclude
+
+    return items.filter(item => {
+      let itemCategory = item.category;
+      if (!itemCategory && menuItems?.length) {
+        const menuItem = menuItems.find(m => 
+          String(m.name || '').trim().toLowerCase() === String(item.name || '').trim().toLowerCase() ||
+          String(m.id) === String(item.id || item.item_id)
+        );
+        if (menuItem) itemCategory = menuItem.category;
+      }
+      itemCategory = itemCategory || 'General';
+
+      return !disabledCategories.has(itemCategory);
+    });
+  } catch (e) {
+    return items;
+  }
+};
+
 export async function findPrinters() {
   if (window.electronAPI) {
     try {
