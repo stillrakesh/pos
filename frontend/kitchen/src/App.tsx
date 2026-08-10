@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { acquireWakeLock, releaseWakeLock } from './utils/wakeLock';
 import { ChefHat, Clock, ArrowLeft, RefreshCw, ChevronLeft, Flame, History, UtensilsCrossed, ConciergeBell, AlertCircle, Plus, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { socket } from './services/socket';
 import { SwipeCard } from './components/SwipeCard';
 import { SwipeItem } from './components/SwipeItem';
-import { playNewOrderSound, playModifiedSound, playTableShiftSound, vibrateDevice, unlockAudio } from './utils/sounds';
+import { playNewOrderSound, playModifiedSound, playTableShiftSound, playDisconnectWarning, vibrateDevice, unlockAudio } from './utils/sounds';
 
 // ── Types ──────────────────────────────────────────────────────
 interface KdsItem {
@@ -130,6 +131,11 @@ export default function App() {
   const [allTickets, setAllTickets] = useState<KdsTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [connected, setConnected] = useState(socket.connected);
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  const [disconnectedSince, setDisconnectedSince] = useState<number | null>(null);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const missedPingsRef = useRef(0);
+  const disconnectSoundPlayed = useRef(false);
 
   // ── Change Detection State ───────────────────────────────────
   const [notifications, setNotifications] = useState<Record<string, 'qty_updated' | 'new_item'>>({});
@@ -337,18 +343,41 @@ export default function App() {
     return () => { window.removeEventListener('touchstart', unlock); window.removeEventListener('click', unlock); };
   }, []);
 
+  // ── Screen Wake Lock — keep display always ON ───────────────
+  useEffect(() => {
+    acquireWakeLock();
+    return () => { releaseWakeLock(); };
+  }, []);
+
   // ── Socket + Initial Load ────────────────────────────────────
   useEffect(() => {
     fetchData();
 
-    const onConnect = () => { setConnected(true); fetchData(true); };
-    const onDisconnect = () => setConnected(false);
+    const onConnect = () => {
+      setConnected(true);
+      setReconnectAttempt(0);
+      setDisconnectedSince(null);
+      missedPingsRef.current = 0;
+      disconnectSoundPlayed.current = false;
+      fetchData(true);
+    };
+    const onDisconnect = () => {
+      setConnected(false);
+      setDisconnectedSince(Date.now());
+      if (!disconnectSoundPlayed.current) {
+        playDisconnectWarning();
+        vibrateDevice([100, 80, 100, 80, 100]);
+        disconnectSoundPlayed.current = true;
+      }
+    };
+    const onReconnectAttempt = (attempt: number) => {
+      setReconnectAttempt(attempt);
+    };
     const onKds = () => { debouncedFetch(); if (view === 'history') fetchHistory(); };
     const onOrderUpdate = () => debouncedFetch();
     const onTableUpdate = () => debouncedFetch();
     const onConfigUpdate = () => fetchData(true);
     const onTableShifted = (data: { oldTable: string; newTable: string }) => {
-      // Only notify if we're inside a station view (not on station selector)
       if (view === 'queue' || view === 'server') {
         const msg = `Table ${data.oldTable} → ${data.newTable}`;
         setTableShiftMessage(msg);
@@ -359,8 +388,34 @@ export default function App() {
       debouncedFetch();
     };
 
+    // Client-side heartbeat: ping server every 5 seconds
+    heartbeatRef.current = setInterval(() => {
+      if (socket.connected) {
+        const start = Date.now();
+        socket.volatile.emit('heartbeat_ping', {}, () => {
+          missedPingsRef.current = 0;
+        });
+        // If no pong within 4 seconds, count as missed
+        setTimeout(() => {
+          if (Date.now() - start >= 4000) {
+            missedPingsRef.current += 1;
+            if (missedPingsRef.current >= 3) {
+              setConnected(false);
+              setDisconnectedSince(prev => prev || Date.now());
+              if (!disconnectSoundPlayed.current) {
+                playDisconnectWarning();
+                vibrateDevice([100, 80, 100, 80, 100]);
+                disconnectSoundPlayed.current = true;
+              }
+            }
+          }
+        }, 4000);
+      }
+    }, 5000);
+
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
+    socket.io.on('reconnect_attempt', onReconnectAttempt);
     socket.on('kds_updated', onKds);
     socket.on('order_updated', onOrderUpdate);
     socket.on('table_updated', onTableUpdate);
@@ -369,8 +424,10 @@ export default function App() {
     if (socket.connected) setConnected(true);
 
     return () => {
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
+      socket.io.off('reconnect_attempt', onReconnectAttempt);
       socket.off('kds_updated', onKds);
       socket.off('order_updated', onOrderUpdate);
       socket.off('table_updated', onTableUpdate);
@@ -573,6 +630,39 @@ export default function App() {
     </header>
   );
 
+  // ── Full-Screen Disconnection Overlay ────────────────────────
+  const disconnectOverlay = !connected ? (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(127, 29, 29, 0.92)',
+      backdropFilter: 'blur(8px)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      gap: '16px', color: 'white', textAlign: 'center',
+      animation: 'pulse-overlay 2s ease-in-out infinite'
+    }}>
+      <style>{`@keyframes pulse-overlay { 0%, 100% { opacity: 1; } 50% { opacity: 0.85; } } @keyframes spin-loader { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ fontSize: '64px', marginBottom: '8px' }}>⚠️</div>
+      <div style={{ fontSize: '28px', fontWeight: '900', letterSpacing: '2px', textTransform: 'uppercase' }}>
+        CONNECTION LOST
+      </div>
+      <div style={{ fontSize: '14px', opacity: 0.8, maxWidth: '300px', lineHeight: '1.5' }}>
+        Kitchen Display is disconnected from the POS server. Orders will NOT appear until the connection is restored.
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+        <div style={{ width: '18px', height: '18px', border: '2.5px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin-loader 0.8s linear infinite' }} />
+        <span style={{ fontSize: '13px', fontWeight: '600' }}>
+          Reconnecting{reconnectAttempt > 0 ? `... Attempt ${reconnectAttempt}` : '...'}
+        </span>
+      </div>
+      {disconnectedSince && (
+        <div style={{ fontSize: '11px', opacity: 0.6, marginTop: '4px' }}>
+          Disconnected {Math.floor((Date.now() - disconnectedSince) / 1000)}s ago
+        </div>
+      )}
+    </div>
+  ) : null;
+
   // ════════════════════════════════════════════════════════════
   //  1. STATION SELECTION VIEW
   // ════════════════════════════════════════════════════════════
@@ -587,6 +677,7 @@ export default function App() {
     return (
       <div style={{ position: 'fixed', inset: 0, background: '#f1f5f9', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {header}
+        {disconnectOverlay}
 
         {/* Date & time banner */}
         <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -731,6 +822,7 @@ export default function App() {
     return (
       <div style={{ position: 'fixed', inset: 0, background: '#f1f5f9', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {header}
+        {disconnectOverlay}
 
         {/* ── Table Shift Banner Notification ───────────────── */}
         <AnimatePresence>
@@ -991,6 +1083,7 @@ export default function App() {
     return (
       <div style={{ position: 'fixed', inset: 0, background: '#f1f5f9', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {header}
+        {disconnectOverlay}
 
         {/* ── Table Shift Banner Notification ───────────────── */}
         <AnimatePresence>
@@ -1133,6 +1226,7 @@ export default function App() {
     return (
       <div style={{ position: 'fixed', inset: 0, background: '#f1f5f9', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {header}
+        {disconnectOverlay}
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px 32px' }} className="hide-scrollbar">
           {allTickets.length === 0 ? (

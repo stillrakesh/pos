@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { acquireWakeLock, releaseWakeLock } from './utils/wakeLock';
 import { Search, UtensilsCrossed, Settings, ChevronLeft, LayoutGrid, RefreshCw, ShoppingBag, SendHorizontal, CheckCircle2, Wifi, WifiOff, Move, ArrowRightLeft, Clock, Zap, Lock, Trash2, CreditCard, Banknote, Smartphone, X, Printer, Save, Plus, Minus, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getBackendURL } from './config';
@@ -271,6 +272,12 @@ const App = () => {
     }
   }, []);
 
+
+  // ── Screen Wake Lock — keep display ON while Captain app is active ──
+  useEffect(() => {
+    acquireWakeLock();
+    return () => { releaseWakeLock(); };
+  }, []);
 
   useEffect(() => {
     const baseUrl = getBackendURL();

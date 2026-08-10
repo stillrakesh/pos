@@ -128,6 +128,35 @@ export function vibrateDevice(pattern: number | number[] = 50) {
   } catch { /* silent fail */ }
 }
 
+/** Urgent warning alarm for connection loss — distinct descending tones */
+export function playDisconnectWarning() {
+  try {
+    const ctx = getAudioContext();
+    const now = ctx.currentTime;
+    // Descending urgent alarm: three descending notes repeated twice
+    const tones = [
+      { freq: 880, delay: 0 },
+      { freq: 660, delay: 0.15 },
+      { freq: 440, delay: 0.30 },
+      { freq: 880, delay: 0.55 },
+      { freq: 660, delay: 0.70 },
+      { freq: 440, delay: 0.85 },
+    ];
+    tones.forEach(({ freq, delay }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth'; // Harsh, attention-grabbing
+      osc.frequency.setValueAtTime(freq, now + delay);
+      gain.gain.setValueAtTime(0.3, now + delay);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + delay);
+      osc.stop(now + delay + 0.15);
+    });
+  } catch { /* silent fail */ }
+}
+
 /**
  * Unlock AudioContext on first user interaction.
  * Mobile browsers (iOS/Android) require a user gesture before audio can play.

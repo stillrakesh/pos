@@ -53,8 +53,8 @@ const io = new Server(httpServer, {
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
   },
-  pingInterval: 25000,
-  pingTimeout: 20000,
+  pingInterval: 10000,
+  pingTimeout: 8000,
   connectionStateRecovery: {
     maxDisconnectionDuration: 2 * 60 * 1000,
     skipMiddlewares: true
@@ -211,6 +211,11 @@ io.on('connection', (socket) => {
     } catch (err) {
       console.warn('Error in captain_new_pickup_order:', err.message);
     }
+  });
+
+  // Heartbeat response for client-side liveness check
+  socket.on('heartbeat_ping', (data, callback) => {
+    if (typeof callback === 'function') callback({ ts: Date.now() });
   });
 
   socket.on('sync_pickup_orders', (payload) => {
