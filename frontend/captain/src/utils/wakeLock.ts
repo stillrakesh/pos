@@ -1,68 +1,99 @@
-// Screen Wake Lock utility — keeps mobile screen ON while Captain app is active
-// Uses navigator.wakeLock API with silent video fallback for older devices
+// Screen Wake Lock utility — keeps screen ON while Kitchen/Captain Display is active.
+// Uses native Screen Wake Lock API without video elements to prevent Web Audio muting on mobile.
 
-let wakeLockSentinel: WakeLockSentinel | null = null;
-let noSleepVideo: HTMLVideoElement | null = null;
+let wakeLockSentinel: any = null;
 let isActive = false;
+let userGestureBound = false;
 
-const SILENT_MP4 = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAAhtZGF0AAAA1m1vb3YAAABsbXZoZAAAAAAAAAAAAAAAAAAAA+gAAAAAAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAABidWR0YQAAAFptZXRhAAAAIWhkbHIAAAAAAAAAAG1kaXIAAAAAAAAAAAAAAAAAAAAAAC1pbHN0AAAAJal0b28AAAAdZGF0YQAAAAEAAAAATGF2ZjU4Ljc2LjEwMA==';
-
+/**
+ * Enable Screen Wake Lock.
+ */
 export async function acquireWakeLock(): Promise<void> {
-  if (isActive) return;
   isActive = true;
-  if ('wakeLock' in navigator) {
-    try {
-      wakeLockSentinel = await navigator.wakeLock.request('screen');
-      console.log('[WakeLock] Screen wake lock acquired via API');
-      wakeLockSentinel.addEventListener('release', () => { wakeLockSentinel = null; });
-    } catch (err) {
-      console.warn('[WakeLock] API failed, using video fallback:', err);
-      startVideoFallback();
-    }
-  } else {
-    console.log('[WakeLock] API not available, using video fallback');
-    startVideoFallback();
+
+  // Request native Screen Wake Lock
+  tryNativeWakeLock();
+
+  // Bind gesture listener in case browser required user action for permission
+  if (!userGestureBound) {
+    bindUserGestures();
   }
+
+  // Re-acquire on tab visibility change
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
   document.addEventListener('visibilitychange', handleVisibilityChange);
 }
 
+/**
+ * Disable Screen Wake Lock.
+ */
 export async function releaseWakeLock(): Promise<void> {
   isActive = false;
   document.removeEventListener('visibilitychange', handleVisibilityChange);
+  unbindUserGestures();
+
   if (wakeLockSentinel) {
-    try { await wakeLockSentinel.release(); wakeLockSentinel = null; } catch { /* ignore */ }
+    try {
+      await wakeLockSentinel.release();
+      wakeLockSentinel = null;
+      console.log('[WakeLock] Native Sentinel Released');
+    } catch {}
   }
-  stopVideoFallback();
 }
 
-function startVideoFallback() {
-  if (noSleepVideo) return;
-  try {
-    noSleepVideo = document.createElement('video');
-    noSleepVideo.setAttribute('playsinline', '');
-    noSleepVideo.setAttribute('muted', '');
-    noSleepVideo.setAttribute('loop', '');
-    noSleepVideo.muted = true;
-    noSleepVideo.style.cssText = 'position:fixed;top:-1px;left:-1px;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1;';
-    noSleepVideo.src = SILENT_MP4;
-    document.body.appendChild(noSleepVideo);
-    noSleepVideo.play().catch(() => {});
-  } catch { /* ignore */ }
+/**
+ * Returns true if wake lock is currently active.
+ */
+export function isWakeLockActive(): boolean {
+  return isActive && wakeLockSentinel !== null;
 }
 
-function stopVideoFallback() {
-  if (noSleepVideo) { noSleepVideo.pause(); noSleepVideo.remove(); noSleepVideo = null; }
+// ── Private Helpers ──────────────────────────────────────────
+
+async function tryNativeWakeLock() {
+  if (!isActive) return;
+  if ('wakeLock' in navigator && (navigator as any).wakeLock) {
+    try {
+      wakeLockSentinel = await (navigator as any).wakeLock.request('screen');
+      console.log('[WakeLock] ✅ Native Screen Wake Lock Acquired');
+      wakeLockSentinel.addEventListener('release', () => {
+        wakeLockSentinel = null;
+        if (isActive) {
+          setTimeout(tryNativeWakeLock, 1000);
+        }
+      });
+    } catch (err: any) {
+      console.warn('[WakeLock] Native request failed (HTTP/Browser constraint):', err?.message || err);
+    }
+  }
 }
 
-async function handleVisibilityChange() {
+function handleUserGesture() {
+  if (!isActive) return;
+  if (!wakeLockSentinel) {
+    tryNativeWakeLock();
+  }
+}
+
+function bindUserGestures() {
+  userGestureBound = true;
+  const events = ['touchstart', 'touchend', 'click', 'pointerdown'];
+  events.forEach(evt => {
+    window.addEventListener(evt, handleUserGesture, { passive: true });
+  });
+}
+
+function unbindUserGestures() {
+  userGestureBound = false;
+  const events = ['touchstart', 'touchend', 'click', 'pointerdown'];
+  events.forEach(evt => {
+    window.removeEventListener(evt, handleUserGesture);
+  });
+}
+
+function handleVisibilityChange() {
   if (!isActive) return;
   if (document.visibilityState === 'visible') {
-    if ('wakeLock' in navigator && !wakeLockSentinel) {
-      try {
-        wakeLockSentinel = await navigator.wakeLock.request('screen');
-        wakeLockSentinel.addEventListener('release', () => { wakeLockSentinel = null; });
-      } catch { /* ignore */ }
-    }
-    if (noSleepVideo && noSleepVideo.paused) { noSleepVideo.play().catch(() => {}); }
+    tryNativeWakeLock();
   }
 }

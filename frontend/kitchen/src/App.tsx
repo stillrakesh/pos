@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { acquireWakeLock, releaseWakeLock } from './utils/wakeLock';
-import { ChefHat, Clock, ArrowLeft, RefreshCw, ChevronLeft, Flame, History, UtensilsCrossed, ConciergeBell, AlertCircle, Plus, CheckCircle2 } from 'lucide-react';
+import { ChefHat, Clock, ArrowLeft, RefreshCw, ChevronLeft, Flame, History, UtensilsCrossed, ConciergeBell, AlertCircle, Plus, CheckCircle2, Maximize, Minimize } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { socket } from './services/socket';
 import { SwipeCard } from './components/SwipeCard';
@@ -57,13 +57,18 @@ interface TableGroup {
 type TableSnapshot = Record<string, Record<string, number>>;
 
 // ── Live Timer ─────────────────────────────────────────────────
+// Compensates for server-client clock skew using a measured offset.
+// offset = clientNow - serverNow. Elapsed = clientNow - serverCreatedAt - offset
+let serverClockOffset = 0; // ms, positive means client is ahead
+
 const LiveTimer = ({ createdAt }: { createdAt: string }) => {
   const [elapsed, setElapsed] = useState({ mins: 0, secs: 0 });
 
   useEffect(() => {
     if (!createdAt) return;
     const tick = () => {
-      const diff = Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000));
+      // Compensate: if client clock is 15s ahead, subtract that 15s
+      const diff = Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime() - serverClockOffset) / 1000));
       setElapsed({ mins: Math.floor(diff / 60), secs: diff % 60 });
     };
     tick();
@@ -125,6 +130,36 @@ export default function App() {
     const saved = localStorage.getItem('kitchen_station_id');
     return saved ? (isNaN(Number(saved)) ? saved : Number(saved)) : null;
   });
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement || !!(document as any).webkitFullscreenElement);
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
+      const docEl = document.documentElement as any;
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().catch(() => {});
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+      }
+    } else {
+      const doc = document as any;
+      if (doc.exitFullscreen) {
+        doc.exitFullscreen().catch(() => {});
+      } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
+      }
+    }
+  };
 
   const [stations, setStations] = useState<KdsStation[]>([]);
   const [tickets, setTickets] = useState<KdsTicket[]>([]);
@@ -194,10 +229,28 @@ export default function App() {
     const base = getServerUrl();
     try {
       if (!silent) setLoading(true);
-      const [settings, tRes] = await Promise.all([
+
+      // Fetch KDS with raw response to read Date header for clock offset
+      const fetchBefore = Date.now();
+      const [settings, kdsResponse] = await Promise.all([
         fetch(`${base}/api/config/pos_settings`).then(r => r.json()).catch(() => null),
-        fetch(`${base}/api/kds`).then(r => r.json()).catch(() => []),
+        fetch(`${base}/api/kds`).catch(() => null),
       ]);
+      const fetchAfter = Date.now();
+
+      // Calculate server-client clock offset from HTTP X-Server-Time or Date header
+      if (kdsResponse) {
+        const serverDateStr = kdsResponse.headers.get('X-Server-Time') || kdsResponse.headers.get('Date');
+        if (serverDateStr) {
+          const serverTime = new Date(serverDateStr).getTime();
+          // Account for network latency (use midpoint of request)
+          const clientMidpoint = (fetchBefore + fetchAfter) / 2;
+          serverClockOffset = Math.round(clientMidpoint - serverTime);
+          console.log(`[Timer] Clock offset: ${serverClockOffset}ms (client ${serverClockOffset > 0 ? 'ahead' : 'behind'})`);
+        }
+      }
+
+      const tRes = kdsResponse ? await kdsResponse.json().catch(() => []) : [];
 
       const colors = ['#821a1d', '#0284c7', '#0ea5e9', '#059669', '#d97706', '#7c3aed', '#db2777'];
       let loadedStations: KdsStation[] = [];
@@ -335,12 +388,16 @@ export default function App() {
     }
   }, []);
 
-  // ── Unlock audio on first user interaction (mobile browsers) ──
+  // ── Unlock audio on user interaction (mobile browsers) ──
   useEffect(() => {
-    const unlock = () => { unlockAudio(); window.removeEventListener('touchstart', unlock); window.removeEventListener('click', unlock); };
-    window.addEventListener('touchstart', unlock, { once: true });
-    window.addEventListener('click', unlock, { once: true });
-    return () => { window.removeEventListener('touchstart', unlock); window.removeEventListener('click', unlock); };
+    const unlock = () => {
+      unlockAudio();
+    };
+    const events = ['touchstart', 'touchend', 'click', 'pointerdown'];
+    events.forEach(evt => window.addEventListener(evt, unlock, { passive: true }));
+    return () => {
+      events.forEach(evt => window.removeEventListener(evt, unlock));
+    };
   }, []);
 
   // ── Screen Wake Lock — keep display always ON ───────────────
@@ -517,7 +574,8 @@ export default function App() {
         });
       });
 
-      if (new Date(t.created_at).getTime() < new Date(groups[table].created_at).getTime()) {
+      // Use the LATEST created_at so new orders show timer near 0
+      if (new Date(t.created_at).getTime() > new Date(groups[table].created_at).getTime()) {
         groups[table].created_at = t.created_at;
       }
     });
@@ -624,9 +682,18 @@ export default function App() {
           </div>
         </div>
       </div>
-      <button onClick={() => fetchData()} style={{ background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', padding: '9px', borderRadius: '12px', display: 'flex', backdropFilter: 'blur(8px)' }}>
-        <RefreshCw size={18} />
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button
+          onClick={toggleFullscreen}
+          title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+          style={{ background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', padding: '9px', borderRadius: '12px', display: 'flex', backdropFilter: 'blur(8px)' }}
+        >
+          {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+        </button>
+        <button onClick={() => fetchData()} title="Refresh Data" style={{ background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', padding: '9px', borderRadius: '12px', display: 'flex', backdropFilter: 'blur(8px)' }}>
+          <RefreshCw size={18} />
+        </button>
+      </div>
     </header>
   );
 

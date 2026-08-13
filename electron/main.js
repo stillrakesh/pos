@@ -286,6 +286,44 @@ ipcMain.handle('get-printers', async (event) => {
   return await event.sender.getPrintersAsync();
 });
 
+// ─── Cross-Platform Silent Print (webContents.print) ──────────────────────────
+// This is the PRIMARY silent print method. Works on Windows AND macOS.
+// Uses Electron's native print API — no lp, no PowerShell needed.
+ipcMain.handle('print-silent', async (event, html, printerName) => {
+  const tmpHtml = path.join(app.getPath('temp'), `receipt_silent_${Date.now()}.html`);
+  const printWindow = new BrowserWindow({
+    show: false, width: 302, height: 5000, frame: false,
+    webPreferences: { nodeIntegration: false, contextIsolation: true }
+  });
+  try {
+    fs.writeFileSync(tmpHtml, html, 'utf-8');
+    await printWindow.loadFile(tmpHtml);
+    await new Promise(r => setTimeout(r, 500)); // Wait for render
+
+    return await new Promise((resolve) => {
+      printWindow.webContents.print({
+        silent: true,
+        deviceName: printerName || undefined,
+        printBackground: true,
+        margins: { marginType: 'none' },
+        pageSize: { width: 80000, height: 297000 } // 80mm thermal
+      }, (success, failureReason) => {
+        if (!printWindow.isDestroyed()) printWindow.close();
+        try { fs.unlinkSync(tmpHtml); } catch {}
+        if (success) {
+          resolve({ success: true });
+        } else {
+          resolve({ success: false, message: failureReason || 'Print failed' });
+        }
+      });
+    });
+  } catch (err) {
+    if (!printWindow.isDestroyed()) printWindow.close();
+    try { fs.unlinkSync(tmpHtml); } catch {}
+    return { success: false, message: err.message };
+  }
+});
+
 ipcMain.handle('print-html', async (event, html, printerName) => {
   const tmpHtml = path.join(app.getPath('temp'), `receipt_${Date.now()}.html`);
   const tmpBin  = path.join(app.getPath('temp'), `receipt_raster_${Date.now()}.bin`);
@@ -349,11 +387,43 @@ ipcMain.handle('print-raw-usb', async (event, buffer, printerName) => {
   try {
     fs.writeFileSync(tmpFile, Buffer.from(buffer));
     return await new Promise((resolve) => {
-      const lp = spawn('lp', ['-d', printerName, '-o', 'raw', tmpFile]);
-      let stderr = '';
-      lp.stderr.on('data', d => { stderr += d.toString(); });
-      lp.on('close', code => { try { fs.unlinkSync(tmpFile); } catch {} resolve(code === 0 ? { success: true } : { success: false, message: stderr }); });
-      lp.on('error', err => { try { fs.unlinkSync(tmpFile); } catch {} resolve({ success: false, message: err.message }); });
+      if (process.platform === 'win32') {
+        // Windows: Use PowerShell to send raw bytes to the printer
+        const psScript = `
+          $PrinterName = '${printerName.replace(/'/g, "''")}'
+          $FilePath = '${tmpFile.replace(/\\/g, '\\\\').replace(/'/g, "''")}'
+          try {
+            $bytes = [System.IO.File]::ReadAllBytes($FilePath)
+            $prn = Get-Printer -Name $PrinterName -ErrorAction Stop
+            $port = (Get-PrinterPort -Name $prn.PortName -ErrorAction Stop).Name
+            $fs = [System.IO.File]::OpenWrite("\\\\.$port")
+            $fs.Write($bytes, 0, $bytes.Length)
+            $fs.Close()
+            Write-Output 'OK'
+          } catch {
+            Write-Error $_.Exception.Message
+          }
+        `;
+        const ps = spawn('powershell', ['-NoProfile', '-Command', psScript], { windowsHide: true });
+        let stdout = '', stderr = '';
+        ps.stdout.on('data', d => { stdout += d.toString(); });
+        ps.stderr.on('data', d => { stderr += d.toString(); });
+        ps.on('close', code => {
+          try { fs.unlinkSync(tmpFile); } catch {}
+          resolve(stdout.includes('OK') ? { success: true } : { success: false, message: stderr || 'PowerShell print failed' });
+        });
+        ps.on('error', err => {
+          try { fs.unlinkSync(tmpFile); } catch {}
+          resolve({ success: false, message: err.message });
+        });
+      } else {
+        // macOS/Linux: Use lp command
+        const lp = spawn('lp', ['-d', printerName, '-o', 'raw', tmpFile]);
+        let stderr = '';
+        lp.stderr.on('data', d => { stderr += d.toString(); });
+        lp.on('close', code => { try { fs.unlinkSync(tmpFile); } catch {} resolve(code === 0 ? { success: true } : { success: false, message: stderr }); });
+        lp.on('error', err => { try { fs.unlinkSync(tmpFile); } catch {} resolve({ success: false, message: err.message }); });
+      }
     });
   } catch (err) { return { success: false, message: err.message }; }
 });

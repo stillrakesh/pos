@@ -25,6 +25,7 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
   const [ipSaved, setIpSaved] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [silentPrintDisabled, setSilentPrintDisabled] = useState(() => localStorage.getItem('pos_silent_print_disabled') === 'true');
 
   const handleSaveConfig = () => {
     if (onSave) onSave();
@@ -227,6 +228,68 @@ const PrinterSetup = ({ settings, categories, setSettings, onSave }) => {
             )}
           </button>
         </div>
+      </div>
+
+
+      {/* ── Silent Printing Master Toggle ── */}
+      <div style={{ ...cardStyle, border: '2px solid #6366f1', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.03), rgba(139, 92, 246, 0.05))' }}>
+        <div style={sectionHeaderStyle}>
+          <div style={{ padding: '8px', background: '#eef2ff', borderRadius: '12px' }}>
+            <Printer size={20} color="#6366f1" />
+          </div>
+          <div>
+            <span style={titleStyle}>Silent Printing</span>
+            <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Print KOTs & Bills directly without any popup dialog</div>
+          </div>
+        </div>
+
+        <label style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '20px', borderRadius: '20px', cursor: 'pointer',
+          background: !silentPrintDisabled ? 'rgba(16, 185, 129, 0.06)' : '#f8fafc',
+          border: !silentPrintDisabled ? '1.5px solid rgba(16, 185, 129, 0.3)' : '1px solid #f1f5f9',
+          transition: 'all 0.2s'
+        }} onClick={() => {
+          const newVal = !silentPrintDisabled;
+          setSilentPrintDisabled(newVal);
+          localStorage.setItem('pos_silent_print_disabled', String(newVal));
+        }}>
+          <div>
+            <div style={{ fontWeight: '700', fontSize: '15px', color: !silentPrintDisabled ? '#065f46' : '#64748b' }}>
+              {!silentPrintDisabled ? '✅ Silent Printing is ON' : '⚠️ Silent Printing is OFF'}
+            </div>
+            <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '4px', maxWidth: '420px' }}>
+              {!silentPrintDisabled
+                ? 'All KOTs and Bills print directly to the selected printer — no dialog, no popup.'
+                : 'Printing will show the browser print dialog every time. Turn ON for seamless operation.'}
+            </div>
+          </div>
+          <div style={{
+            width: '56px', height: '30px', borderRadius: '15px', padding: '4px', position: 'relative',
+            background: !silentPrintDisabled ? '#10b981' : '#cbd5e1',
+            transition: 'background 0.3s', flexShrink: 0
+          }}>
+            <div style={{
+              width: '22px', height: '22px', position: 'absolute', top: '4px',
+              left: !silentPrintDisabled ? '30px' : '4px',
+              borderRadius: '50%', background: 'white',
+              transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.15)'
+            }} />
+          </div>
+        </label>
+
+        {!silentPrintDisabled && !selectedName && connected && (
+          <div style={{ marginTop: '12px', padding: '12px 16px', borderRadius: '12px', background: '#fffbeb', border: '1px solid #fde68a', fontSize: '12px', fontWeight: '600', color: '#92400e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <AlertTriangle size={16} /> Select a printer below for silent printing to work.
+          </div>
+        )}
+
+        {silentPrintDisabled && (
+          <div style={{ marginTop: '12px', padding: '12px 16px', borderRadius: '12px', background: '#fef2f2', border: '1px solid #fecaca', fontSize: '12px', fontWeight: '600', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <AlertTriangle size={16} /> The print dialog will pop up every time. Enable Silent Printing for a smoother workflow.
+          </div>
+        )}
       </div>
 
 

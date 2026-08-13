@@ -94,7 +94,10 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
   }, [loadDiagnostics]);
 
   // Create App URL (Captain or Kitchen) based strictly on Backend's active IP
-  const getAppUrl = (appType = activeApp) => {
+  const [useHttpsKitchen, setUseHttpsKitchen] = useState(false);
+
+  // Create App URL (Captain or Kitchen) based strictly on Backend's active IP
+  const getAppUrl = (appType = activeApp, forceHttps = useHttpsKitchen) => {
     let rawUrl = selectedIpUrl;
     if (!rawUrl) {
       if (backendUrl && backendUrl !== 'http://localhost:3100') {
@@ -110,11 +113,22 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
     }
 
     if (appType === 'kitchen') {
-      if (rawUrl.includes('/captain')) {
-        return rawUrl.replace(/\/captain\/?$/, '/kitchen/');
+      let target = rawUrl;
+      if (target.includes('/captain')) {
+        target = target.replace(/\/captain\/?$/, '/kitchen/');
+      } else {
+        const cleanBase = target.replace(/\/+$/, '');
+        target = cleanBase.endsWith('/kitchen') ? `${cleanBase}/` : `${cleanBase}/kitchen/`;
       }
-      const cleanBase = rawUrl.replace(/\/+$/, '');
-      return cleanBase.endsWith('/kitchen') ? `${cleanBase}/` : `${cleanBase}/kitchen/`;
+      if (forceHttps) {
+        try {
+          const parsed = new URL(target);
+          return `https://${parsed.hostname}:3443/kitchen/`;
+        } catch {
+          return target.replace(/^http:/, 'https:').replace(/:3101\//, ':3443/').replace(/:3100\//, ':3443/');
+        }
+      }
+      return target;
     } else {
       if (rawUrl.includes('/kitchen')) {
         return rawUrl.replace(/\/kitchen\/?$/, '/captain/');
@@ -126,7 +140,8 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
 
   const activeUrl = getAppUrl(activeApp);
   const captainUrl = getAppUrl('captain');
-  const kitchenUrl = getAppUrl('kitchen');
+  const kitchenUrl = getAppUrl('kitchen', false);
+  const httpsKitchenUrl = getAppUrl('kitchen', true);
 
   const handleCopyUrl = (urlToCopy) => {
     navigator.clipboard.writeText(urlToCopy);
@@ -508,10 +523,10 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
             {/* Target URL Selector Box */}
             <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: '16px', padding: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-                {/* App Selector Pills: Captain vs Kitchen KDS */}
-                <div style={{ display: 'flex', gap: '6px', background: '#0f172a', padding: '4px', borderRadius: '10px', border: '1px solid #334155' }}>
+                {/* App Selector Pills: Captain vs Kitchen KDS vs Kitchen HTTPS */}
+                <div style={{ display: 'flex', gap: '6px', background: '#0f172a', padding: '4px', borderRadius: '10px', border: '1px solid #334155', flexWrap: 'wrap' }}>
                   <button
-                    onClick={() => setActiveApp('captain')}
+                    onClick={() => { setActiveApp('captain'); setUseHttpsKitchen(false); }}
                     style={{
                       padding: '5px 12px',
                       borderRadius: '7px',
@@ -530,13 +545,13 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
                     <Smartphone size={14} /> Captain App
                   </button>
                   <button
-                    onClick={() => setActiveApp('kitchen')}
+                    onClick={() => { setActiveApp('kitchen'); setUseHttpsKitchen(false); }}
                     style={{
                       padding: '5px 12px',
                       borderRadius: '7px',
                       border: 'none',
-                      background: activeApp === 'kitchen' ? '#f87171' : 'transparent',
-                      color: activeApp === 'kitchen' ? '#0f172a' : '#94a3b8',
+                      background: activeApp === 'kitchen' && !useHttpsKitchen ? '#f87171' : 'transparent',
+                      color: activeApp === 'kitchen' && !useHttpsKitchen ? '#0f172a' : '#94a3b8',
                       fontWeight: '700',
                       fontSize: '12px',
                       cursor: 'pointer',
@@ -546,7 +561,26 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
                       transition: 'all 0.15s ease'
                     }}
                   >
-                    <ChefHat size={14} /> Kitchen App
+                    <ChefHat size={14} /> Kitchen App (HTTP)
+                  </button>
+                  <button
+                    onClick={() => { setActiveApp('kitchen'); setUseHttpsKitchen(true); }}
+                    style={{
+                      padding: '5px 12px',
+                      borderRadius: '7px',
+                      border: 'none',
+                      background: activeApp === 'kitchen' && useHttpsKitchen ? '#10b981' : 'transparent',
+                      color: activeApp === 'kitchen' && useHttpsKitchen ? '#0f172a' : '#10b981',
+                      fontWeight: '700',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    🔒 Kitchen App (HTTPS - Screen Awake)
                   </button>
                 </div>
 
@@ -568,15 +602,15 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
                 )}
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#0f172a', padding: '10px 14px', borderRadius: '12px', border: `1px solid ${activeApp === 'kitchen' ? 'rgba(248, 113, 113, 0.4)' : 'rgba(56, 189, 248, 0.3)'}` }}>
-                <div style={{ flex: 1, fontSize: '15px', fontWeight: '600', color: activeApp === 'kitchen' ? '#f87171' : '#38bdf8', wordBreak: 'break-all', fontFamily: 'monospace' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#0f172a', padding: '10px 14px', borderRadius: '12px', border: `1px solid ${activeApp === 'kitchen' ? (useHttpsKitchen ? 'rgba(16, 185, 129, 0.4)' : 'rgba(248, 113, 113, 0.4)') : 'rgba(56, 189, 248, 0.3)'}` }}>
+                <div style={{ flex: 1, fontSize: '15px', fontWeight: '600', color: activeApp === 'kitchen' ? (useHttpsKitchen ? '#10b981' : '#f87171') : '#38bdf8', wordBreak: 'break-all', fontFamily: 'monospace' }}>
                   {activeUrl}
                 </div>
                 <button
                   onClick={() => handleCopyUrl(activeUrl)}
                   style={{
                     padding: '8px 14px', borderRadius: '8px', border: 'none',
-                    background: copiedUrl === activeUrl ? '#10b981' : (activeApp === 'kitchen' ? '#f87171' : '#38bdf8'),
+                    background: copiedUrl === activeUrl ? '#10b981' : (activeApp === 'kitchen' ? (useHttpsKitchen ? '#10b981' : '#f87171') : '#38bdf8'),
                     color: copiedUrl === activeUrl ? 'white' : '#0f172a',
                     fontWeight: '700', fontSize: '12px', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s'
@@ -602,16 +636,22 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
 
                 {/* Direct quick-copy shortcuts for both */}
                 <button 
-                  onClick={() => { setActiveApp('captain'); handleCopyUrl(captainUrl); }} 
+                  onClick={() => { setActiveApp('captain'); setUseHttpsKitchen(false); handleCopyUrl(captainUrl); }} 
                   style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(56, 189, 248, 0.3)', background: activeApp === 'captain' ? 'rgba(56, 189, 248, 0.2)' : 'rgba(56, 189, 248, 0.05)', color: '#38bdf8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                 >
                   <Smartphone size={12} /> Copy Captain Link
                 </button>
                 <button 
-                  onClick={() => { setActiveApp('kitchen'); handleCopyUrl(kitchenUrl); }} 
-                  style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(248, 113, 113, 0.3)', background: activeApp === 'kitchen' ? 'rgba(248, 113, 113, 0.2)' : 'rgba(248, 113, 113, 0.05)', color: '#f87171', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  onClick={() => { setActiveApp('kitchen'); setUseHttpsKitchen(false); handleCopyUrl(kitchenUrl); }} 
+                  style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(248, 113, 113, 0.3)', background: activeApp === 'kitchen' && !useHttpsKitchen ? 'rgba(248, 113, 113, 0.2)' : 'rgba(248, 113, 113, 0.05)', color: '#f87171', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                 >
-                  <ChefHat size={12} /> Copy Kitchen Link
+                  <ChefHat size={12} /> Copy Kitchen (HTTP)
+                </button>
+                <button 
+                  onClick={() => { setActiveApp('kitchen'); setUseHttpsKitchen(true); handleCopyUrl(httpsKitchenUrl); }} 
+                  style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.4)', background: activeApp === 'kitchen' && useHttpsKitchen ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.05)', color: '#10b981', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  🔒 Copy Kitchen (HTTPS - Screen Awake)
                 </button>
 
                 <button onClick={() => setShowDiagnosticsModal(true)} style={{ marginLeft: 'auto', padding: '4px 10px', borderRadius: '6px', border: 'none', background: 'transparent', color: '#a5b4fc', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>

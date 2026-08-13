@@ -1,17 +1,47 @@
 // Web Audio API sound effects for Kitchen Display System
-// No external audio files required — generates tones programmatically
+// Programmatic synth sound generation — no external mp3 files required
 
 let audioCtx: AudioContext | null = null;
+let unlocked = false;
 
 function getAudioContext(): AudioContext {
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    audioCtx = new AudioContextClass();
   }
-  // Always resume if suspended (mobile browsers require user gesture)
   if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
+    audioCtx.resume().catch(() => {});
   }
   return audioCtx;
+}
+
+/** Check if audio has been unlocked by user gesture */
+export function isAudioUnlocked(): boolean {
+  return unlocked && audioCtx !== null && audioCtx.state === 'running';
+}
+
+/**
+ * Unlock AudioContext on first user interaction.
+ * Must be called inside a touchstart / click event handler.
+ */
+export function unlockAudio() {
+  try {
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
+    // Play a silent 0.01s buffer to force iOS Safari AudioContext state to 'running'
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+    unlocked = true;
+    console.log('[Audio] ✅ Web Audio API Unlocked successfully');
+  } catch (e) {
+    console.warn('[Audio] Unlock failed:', e);
+  }
 }
 
 /**
@@ -22,9 +52,13 @@ function getAudioContext(): AudioContext {
 export function playNewOrderSound() {
   try {
     const ctx = getAudioContext();
+
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
     const now = ctx.currentTime;
 
-    // Three-note ascending major chord: C5, E5, G5 — bright and attention-grabbing
     const notes = [
       { freq: 523.25, delay: 0 },      // C5
       { freq: 659.25, delay: 0.15 },    // E5
@@ -34,45 +68,47 @@ export function playNewOrderSound() {
     notes.forEach(({ freq, delay }) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'square'; // Square wave is louder and more piercing than sine
+      osc.type = 'square';
       osc.frequency.setValueAtTime(freq, now + delay);
-      gain.gain.setValueAtTime(0.35, now + delay); // Higher volume
-      gain.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.45);
+      gain.gain.setValueAtTime(0.40, now + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.45);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(now + delay);
       osc.stop(now + delay + 0.5);
     });
 
-    // Second burst after a short gap for urgency (double-ring effect)
     const gap = 0.6;
     notes.forEach(({ freq, delay }) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'square';
       osc.frequency.setValueAtTime(freq, now + gap + delay);
-      gain.gain.setValueAtTime(0.30, now + gap + delay);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + gap + delay + 0.4);
+      gain.gain.setValueAtTime(0.35, now + gap + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + gap + delay + 0.4);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(now + gap + delay);
       osc.stop(now + gap + delay + 0.45);
     });
 
-  } catch { /* silent fail on unsupported browsers */ }
+  } catch (e) {
+    console.warn('[Audio] playNewOrderSound error:', e);
+  }
 }
 
 /** Short double-beep for qty/order modifications */
 export function playModifiedSound() {
   try {
     const ctx = getAudioContext();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const now = ctx.currentTime;
     [440, 440].forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, now + i * 0.15);
-      gain.gain.setValueAtTime(0.20, now + i * 0.15);
+      gain.gain.setValueAtTime(0.25, now + i * 0.15);
       gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.15);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -82,18 +118,39 @@ export function playModifiedSound() {
   } catch { /* silent fail */ }
 }
 
+/** Pleasant chime when marking item/ticket as READY */
+export function playReadySound() {
+  try {
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    const now = ctx.currentTime;
+    [523.25, 659.25, 1046.50].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + i * 0.1);
+      gain.gain.setValueAtTime(0.25, now + i * 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + i * 0.1);
+      osc.stop(now + i * 0.1 + 0.3);
+    });
+  } catch { /* silent fail */ }
+}
+
 /** Sound for table shift/move notification */
 export function playTableShiftSound() {
   try {
     const ctx = getAudioContext();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const now = ctx.currentTime;
-    // Descending two-tone: attention but not as urgent as new order
     [659.25, 440].forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(freq, now + i * 0.2);
-      gain.gain.setValueAtTime(0.22, now + i * 0.2);
+      gain.gain.setValueAtTime(0.25, now + i * 0.2);
       gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.2 + 0.3);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -103,76 +160,32 @@ export function playTableShiftSound() {
   } catch { /* silent fail */ }
 }
 
-/** Soft success chime for item marked ready */
-export function playReadySound() {
-  try {
-    const ctx = getAudioContext();
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(880, now);
-    gain.gain.setValueAtTime(0.08, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.25);
-  } catch { /* silent fail */ }
-}
-
-/** Vibrate device if supported */
-export function vibrateDevice(pattern: number | number[] = 50) {
-  try {
-    if (navigator.vibrate) navigator.vibrate(pattern);
-  } catch { /* silent fail */ }
-}
-
-/** Urgent warning alarm for connection loss — distinct descending tones */
+/** Warning sound when disconnected from server */
 export function playDisconnectWarning() {
   try {
     const ctx = getAudioContext();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const now = ctx.currentTime;
-    // Descending urgent alarm: three descending notes repeated twice
-    const tones = [
-      { freq: 880, delay: 0 },
-      { freq: 660, delay: 0.15 },
-      { freq: 440, delay: 0.30 },
-      { freq: 880, delay: 0.55 },
-      { freq: 660, delay: 0.70 },
-      { freq: 440, delay: 0.85 },
-    ];
-    tones.forEach(({ freq, delay }) => {
+    [300, 250].forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'sawtooth'; // Harsh, attention-grabbing
-      osc.frequency.setValueAtTime(freq, now + delay);
-      gain.gain.setValueAtTime(0.3, now + delay);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.12);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, now + i * 0.2);
+      gain.gain.setValueAtTime(0.3, now + i * 0.2);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.2 + 0.18);
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.start(now + delay);
-      osc.stop(now + delay + 0.15);
+      osc.start(now + i * 0.2);
+      osc.stop(now + i * 0.2 + 0.2);
     });
   } catch { /* silent fail */ }
 }
 
-/**
- * Unlock AudioContext on first user interaction.
- * Mobile browsers (iOS/Android) require a user gesture before audio can play.
- * Call this once on first tap/click anywhere on the page.
- */
-export function unlockAudio() {
+/** Vibrate device (if supported by hardware/browser) */
+export function vibrateDevice(pattern: number | number[]) {
   try {
-    const ctx = getAudioContext();
-    if (ctx.state === 'suspended') {
-      ctx.resume();
+    if ('vibrate' in navigator) {
+      navigator.vibrate(pattern);
     }
-    // Play a silent buffer to fully unlock on iOS
-    const buffer = ctx.createBuffer(1, 1, 22050);
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-    source.start(0);
-  } catch { /* silent fail */ }
+  } catch { /* ignore */ }
 }

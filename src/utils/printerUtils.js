@@ -408,38 +408,59 @@ async function doPrint(orders, type, settings, printerName) {
   const html  = generatePrintHTML(orders, type, settings);
   const bytes = buildEscPos(orders, type, settings);
 
-  // ─── Priority 1: HTML design via Electron capturePage to PNG ─────────────────
-  // Petpooja method: Rasterizes HTML to PNG, then prints PNG via lp. 
-  // This supports Verdana font and bypasses the macOS CUPS text filter bug entirely.
+  // Check if silent printing is explicitly disabled by user
+  const silentDisabled = localStorage.getItem('pos_silent_print_disabled') === 'true';
+  if (silentDisabled) {
+    console.log('[Print] Silent printing disabled by user — opening browser dialog.');
+    fallbackToBrowser(html);
+    return;
+  }
+
+  // ─── Priority 1: Electron webContents.print({ silent: true }) ────────────────
+  // This is the PRIMARY method — works on both Windows and macOS.
+  // Uses Electron's native print API, no lp or PowerShell needed.
+  if (window.electronAPI?.printSilent && printerName) {
+    try {
+      const result = await window.electronAPI.printSilent(html, printerName);
+      if (result.success) {
+        console.log('[Print] ✅ Silent print succeeded (Electron native).');
+        return;
+      }
+      console.warn('[Print] ⚠️ Silent print failed:', result.message, '— trying raster method...');
+    } catch (e) {
+      console.warn('[Print] ⚠️ Silent print error:', e.message);
+    }
+  }
+
+  // ─── Priority 2: HTML raster via Electron capturePage + lp (macOS) ──────────
   if (window.electronAPI?.printHtml && printerName) {
     try {
       const result = await window.electronAPI.printHtml(html, printerName);
       if (result.success) {
-        console.log('[Print] ✅ HTML image print succeeded! Verdana design printed.');
+        console.log('[Print] ✅ HTML raster print succeeded.');
         return;
       }
-      console.warn('[Print] ⚠️ HTML image print failed:', result.message, '— falling back to ESC/POS...');
+      console.warn('[Print] ⚠️ HTML raster print failed:', result.message, '— trying ESC/POS...');
     } catch (e) {
-      console.warn('[Print] ⚠️ HTML image print error:', e.message);
+      console.warn('[Print] ⚠️ HTML raster error:', e.message);
     }
   }
 
-  // ─── Priority 2: ESC/POS Raw USB via lp --raw ────────────────────────────────
-  // Fallback to basic text if image print fails
+  // ─── Priority 3: ESC/POS Raw USB (lp on macOS, PowerShell on Windows) ───────
   if (window.electronAPI?.printRawUsb && printerName) {
     try {
       const result = await window.electronAPI.printRawUsb(bytes, printerName);
       if (result.success) {
-        console.log('[Print] ✅ Silent USB print succeeded!');
+        console.log('[Print] ✅ Raw USB print succeeded.');
         return;
       }
-      console.warn('[Print] ⚠️ USB lp failed:', result.message);
+      console.warn('[Print] ⚠️ Raw USB failed:', result.message);
     } catch (e) {
       console.warn('[Print] ⚠️ USB error:', e.message);
     }
   }
 
-  // ─── Priority 2: Network TCP (ESC/POS direct to printer IP) ─────────────────
+  // ─── Priority 4: Network TCP (ESC/POS direct to printer IP:9100) ────────────
   if (window.electronAPI?.printRawTcp) {
     try {
       let printerIp = null, printerPort = 9100;

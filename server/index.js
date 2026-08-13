@@ -11,10 +11,11 @@ import express from 'express';
 import cors from 'cors';
 import os from 'os';
 import { createServer } from 'http';
+import { createServer as createHttpsServer } from 'https';
 import { Server } from 'socket.io';
+import { readFileSync, writeFileSync, existsSync, appendFileSync, mkdirSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { existsSync, appendFileSync, mkdirSync } from 'fs';
 import { exec } from 'child_process';
 
 import { initDatabase, forceSave } from './db.js';
@@ -47,6 +48,7 @@ import { logShift, clearShiftForTable, setIo, getActiveShifts } from './shifts.j
 const app        = express();
 const httpServer = createServer(app);
 const PORT       = process.env.PORT || 3101;
+const HTTPS_PORT = process.env.HTTPS_PORT || (Number(PORT) + 342); // 3443 by default
 
 const io = new Server(httpServer, {
   cors: {
@@ -60,6 +62,49 @@ const io = new Server(httpServer, {
     skipMiddlewares: true
   }
 });
+
+// ── HTTPS Server for Kitchen Display (Screen Wake Lock requires HTTPS) ──
+let httpsServer = null;
+try {
+  const certsDir = path.join(__dirname, '..', 'data', 'certs');
+  const keyPath  = path.join(certsDir, 'key.pem');
+  const certPath = path.join(certsDir, 'cert.pem');
+
+  let key, cert;
+  if (existsSync(keyPath) && existsSync(certPath)) {
+    key  = readFileSync(keyPath);
+    cert = readFileSync(certPath);
+    console.log('  🔒 HTTPS: Loaded existing SSL certificates');
+  } else {
+    // Auto-generate self-signed certificates (valid for 10 years)
+    const selfsigned = (await import('selfsigned')).default || (await import('selfsigned'));
+    const attrs = [{ name: 'commonName', value: 'Restaurant POS Local' }];
+    const pems = await selfsigned.generate(attrs, {
+      days: 3650,
+      keySize: 2048,
+      algorithm: 'sha256',
+      extensions: [{
+        name: 'subjectAltName',
+        altNames: [
+          { type: 2, value: 'localhost' },
+          { type: 7, ip: '127.0.0.1' },
+        ]
+      }]
+    });
+    key  = pems.private;
+    cert = pems.cert;
+    if (!existsSync(certsDir)) mkdirSync(certsDir, { recursive: true });
+    writeFileSync(keyPath, key);
+    writeFileSync(certPath, cert);
+    console.log('  🔒 HTTPS: Generated new self-signed SSL certificates');
+  }
+
+  httpsServer = createHttpsServer({ key, cert }, app);
+  io.attach(httpsServer); // Socket.IO works over both HTTP and HTTPS
+  console.log('  🔒 HTTPS: Server initialized successfully');
+} catch (httpsErr) {
+  console.warn('  ⚠️  HTTPS: Setup failed (Kitchen will work on HTTP only):', httpsErr.message);
+}
 
 setIo(io);
 app.set('io', io);
@@ -232,9 +277,14 @@ io.on('connection', (socket) => {
 // ─────────────────────────────────────────────────────────────
 // Middleware & CORS (with Chrome Private Network Access support)
 // ─────────────────────────────────────────────────────────────
-app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] }));
+app.use(cors({ 
+  origin: '*', 
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  exposedHeaders: ['X-Server-Time', 'Date']
+}));
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Private-Network', 'true');
+  res.setHeader('X-Server-Time', new Date().toISOString());
   if (req.method === 'OPTIONS') {
     return res.sendStatus(204);
   }
@@ -334,7 +384,7 @@ app.use('/auth', authRouter);
 // ─────────────────────────────────────────────────────────────
 // Printers API — expose network printers from db for frontend
 // ─────────────────────────────────────────────────────────────
-import { readFileSync, writeFileSync } from 'fs';
+
 
 const getDbJson = () => {
   const dbPath = process.env.DATA_DIR
@@ -1367,7 +1417,18 @@ async function start() {
     console.log('');
     console.log(`  📱 Point Captain App at: http://${ip}:${PORT}`);
     console.log(`  🖥️  Point POS at        : http://${ip}:${PORT}`);
-    console.log('');
+
+    // Start HTTPS server for Kitchen Display (Screen Wake Lock)
+    if (httpsServer) {
+      httpsServer.listen(HTTPS_PORT, '0.0.0.0', () => {
+        console.log('');
+        console.log(`  🔒 HTTPS Kitchen Display: https://${ip}:${HTTPS_PORT}/kitchen/`);
+        console.log(`     (First visit: tap "Advanced → Proceed" to accept the local certificate)`);
+        console.log('');
+      });
+    } else {
+      console.log('');
+    }
   });
 }
 
