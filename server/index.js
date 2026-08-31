@@ -651,18 +651,6 @@ app.post('/order', (req, res) => {
       const io = req.app.get('io');
       // Broadcast to POS for auto-print and UI update
       if (io) {
-        const fullTable = normalizeTable(statements.getTableById({ id: targetTable.id }));
-        io.emit("order_updated", {
-          ...fullTable,
-          is_new_kot: printKOT !== false,
-          new_items: normalizedItems,
-          notes: notes || '' // Pass global notes for printing
-        });
-        
-        // Also broadcast full table list
-        const allTables = statements.getAllTables().map(normalizeTable);
-        io.emit("table_updated", allTables);
-
         // Fetch categories to enrich KOT items for KDS stations filtering
         const allMenu = statements.getAllMenu();
         const enrichedNewItems = normalizedItems.map(i => {
@@ -673,19 +661,22 @@ app.post('/order', (req, res) => {
           };
         });
 
-        // Always create a BRAND NEW ticket for a new KOT submission
+        // Create KOT ticket first so we get the kot_number
         const kotResult = syncKdsTicket(table_number, enrichedNewItems, io, true);
 
-        // Re-emit order_updated with kot_number so POS can show/print it
-        if (kotResult?.kot_number) {
-          io.emit("order_updated", {
-            ...normalizeTable(statements.getTableById({ id: targetTable.id })),
-            is_new_kot: printKOT !== false,
-            new_items: normalizedItems,
-            notes: notes || '',
-            kot_number: kotResult.kot_number
-          });
-        }
+        // Single emit with kot_number included
+        const fullTable = normalizeTable(statements.getTableById({ id: targetTable.id }));
+        io.emit("order_updated", {
+          ...fullTable,
+          is_new_kot: printKOT !== false,
+          new_items: normalizedItems,
+          notes: notes || '',
+          kot_number: kotResult?.kot_number || null
+        });
+        
+        // Also broadcast full table list
+        const allTables = statements.getAllTables().map(normalizeTable);
+        io.emit("table_updated", allTables);
       }
     }
 

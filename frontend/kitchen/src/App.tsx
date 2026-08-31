@@ -315,15 +315,8 @@ export default function App() {
           }
 
           if (Object.keys(changedNotifs).length > 0) {
-            const hasNewItem = Object.values(changedNotifs).includes('new_item');
-            if (hasNewItem) {
-              playNewOrderSound();
-              vibrateDevice([50, 80, 50]);
-            } else {
-              playModifiedSound();
-              vibrateDevice(40);
-            }
-
+            // Sound is handled by the order_updated socket event handler (instant)
+            // Here we only update visual notification badges
             setNotifications(p => ({ ...p, ...changedNotifs }));
             if (freshItems.size > 0) {
               setNewItemKeys(p => {
@@ -350,11 +343,11 @@ export default function App() {
           }
         }
 
+        // Brand new table visual highlight (sound handled by socket event)
         if (shouldAlert && !isFirstLoad.current) {
           for (const table of Object.keys(newSnap)) {
             if (!prev[table] && Object.keys(newSnap[table]).length > 0) {
-              playNewOrderSound();
-              vibrateDevice([50, 80, 50]);
+              // Visual notification only — no sound here
               break;
             }
           }
