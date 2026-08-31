@@ -631,31 +631,31 @@ ${ordersArray.map((order, idx) => {
 
     /* ── KOT ─────────────────────────────────────────────── */
     if (type === 'KOT') {
-      return `<div class="${idx < ordersArray.length - 1 ? 'pb' : ''}">
-      <div class="hdr">
-        <div style="font-size:16px;font-weight:700;">${isTakeaway ? 'Takeaway' : 'Dine In'}</div>
-        <div style="font-size:13px;font-weight:700;margin-top:2px;">
+      return `<div class="${idx < ordersArray.length - 1 ? 'pb' : ''}" style="padding-top: 0px; padding-bottom: 8px;">
+      <div class="hdr" style="margin: 0; padding: 0;">
+        <div style="font-size:15px;font-weight:700;line-height:1.15;margin:0;">${isTakeaway ? 'Takeaway' : 'Dine In'}</div>
+        <div style="font-size:13px;font-weight:700;margin-top:1px;line-height:1.15;">
           ${isTakeaway
             ? `Token: ${tableLabel}${order.customerName ? ' | ' + order.customerName : ''}`
             : `Table No: ${tableLabel}`}
         </div>
-        <div style="font-size:12px;margin-top:2px;">${dateStr} &nbsp; ${timeStr}</div>
+        <div style="font-size:11px;margin-top:1px;line-height:1.15;">${dateStr} &nbsp; ${timeStr}</div>
       </div>
-      <hr class="sb-kot"/>
-      <table class="t">
+      <hr class="sb-kot" style="margin: 2px 0;"/>
+      <table class="t" style="margin: 0;">
         <thead><tr>
-          <th class="kot-item" style="text-align:left; border-top:none; border-bottom:${kotLine};">Item</th>
-          <th class="kot-qty"  style="text-align:center; border-top:none; border-bottom:${kotLine};">Qty</th>
+          <th class="kot-item" style="text-align:left; padding: 2px 0; border-top:none; border-bottom:${kotLine};">Item</th>
+          <th class="kot-qty"  style="text-align:center; padding: 2px 0; border-top:none; border-bottom:${kotLine};">Qty</th>
         </tr></thead>
         <tbody>
           ${(order.items || []).map(item => `
           <tr>
-            <td class="kot-item"><strong>${item.name}</strong>${item.note ? `<br/><span style="font-size:11px;font-style:italic;padding-left:5px;">Note: ${item.note}</span>` : ''}</td>
-            <td class="kot-qty" style="font-size:14px;font-weight:700;">x${item.qty}</td>
+            <td class="kot-item" style="padding: 2px 0; line-height: 1.25;"><strong>${item.name}</strong>${item.note ? `<br/><span style="font-size:11px;font-style:italic;padding-left:5px;">Note: ${item.note}</span>` : ''}</td>
+            <td class="kot-qty" style="padding: 2px 0; font-size:14px;font-weight:700; line-height: 1.25;">x${item.qty}</td>
           </tr>`).join('')}
         </tbody>
       </table>
-      <hr class="sb-kot" style="margin-top:2px;"/>
+      <hr class="sb-kot" style="margin-top:2px; margin-bottom:0;"/>
     </div>`;
     }
 
