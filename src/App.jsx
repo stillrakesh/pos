@@ -5675,25 +5675,28 @@ const OrderingSystem = ({ table, tables, nonTableOrders, initialOrder, onBack, o
       const tid = String(table.id || '').toUpperCase();
       const isTakeaway = isPickup;
     
-    // Mark as completed if already paid, otherwise printed
-    const finalStatus = (isTakeaway && isPaid) ? 'completed' : 'printed';
-
     // 🖨️ PRINT FIRST (before navigation) so we still have cart + totals in scope
     await printBill();
 
-    // Then save to backend and navigate away
-    await onSaveOrder(table.id, cart, finalStatus, { 
-      customerName, 
-      customerPhone, 
-      note: orderNote,
-      paymentStatus: isPaid ? 'PAID' : 'UNPAID',
-      paymentMethod: paymentMethod,
-      gst_enabled: applyGst,
-      gst_rate: gstRate,
-      service_charge_enabled: applyServiceCharge,
-      service_charge_rate: serviceChargeRate,
-      redeemedPoints: redeemedPoints || 0
-    });
+    // Only save order state on FIRST bill print — reprints just print without touching backend
+    const currentStatus = String(table.status || '').toLowerCase();
+    const isReprint = currentStatus === 'printed' || currentStatus === 'billing';
+    
+    if (!isReprint) {
+      const finalStatus = (isTakeaway && isPaid) ? 'completed' : 'printed';
+      await onSaveOrder(table.id, cart, finalStatus, { 
+        customerName, 
+        customerPhone, 
+        note: orderNote,
+        paymentStatus: isPaid ? 'PAID' : 'UNPAID',
+        paymentMethod: paymentMethod,
+        gst_enabled: applyGst,
+        gst_rate: gstRate,
+        service_charge_enabled: applyServiceCharge,
+        service_charge_rate: serviceChargeRate,
+        redeemedPoints: redeemedPoints || 0
+      });
+    }
     } finally {
       setIsProcessing(false);
       setProcessingType(null);
