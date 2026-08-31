@@ -45,6 +45,18 @@ export function unlockAudio() {
 }
 
 /**
+ * Resume a suspended AudioContext (e.g. after screen unlock / tab refocus).
+ * Does NOT require a fresh user gesture on Android Chrome.
+ * On iOS Safari, resume may still be blocked until next tap.
+ */
+export function resumeAudioContext() {
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+    console.log('[Audio] Attempting to resume suspended AudioContext');
+  }
+}
+
+/**
  * Loud, alertful multi-tone chime for new KOT orders.
  * Plays 3 ascending notes (C5→E5→G5) with higher volume and longer sustain
  * so it's clearly audible on phone speakers across a noisy kitchen.

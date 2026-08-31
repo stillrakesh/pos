@@ -308,27 +308,25 @@ const App = () => {
       syncOfflineOrders(); // attempt sync on reconnect
     };
     const onDisconnect = () => setConnectionState('reconnecting');
-    socket.on('connect', onConnect);
-    socket.on('disconnect', onDisconnect);
-    socket.io.on('reconnect_attempt', () => setConnectionState('reconnecting'));
-    socket.io.on('reconnect_failed', () => setConnectionState('offline'));
-    socket.on('device_status', (data: any) => {
+    const onReconnectAttempt = () => setConnectionState('reconnecting');
+    const onReconnectFailed = () => setConnectionState('offline');
+    const onDeviceStatus = (data: any) => {
       if (data?.status) setDeviceStatus(data.status);
-    });
-    socket.on('shift_history_updated', (history: any[]) => {
+    };
+    const onShiftHistory = (history: any[]) => {
       setShiftHistory(history || []);
-    });
+    };
 
-    socket.on('table_updated', (rawTables: any) => {
+    const onTableUpdated = (rawTables: any) => {
       const safeTables = Array.isArray(rawTables) ? rawTables : [];
       setTables(safeTables.map(mapTable));
-    });
+    };
 
-    socket.on('pickup_orders_updated', (orders: any[]) => {
+    const onPickupOrders = (orders: any[]) => {
       setPickupOrders(orders || []);
-    });
+    };
 
-    socket.on('order_updated', (payload: any) => {
+    const onOrderUpdated = (payload: any) => {
       if (!payload) return;
       setTables(prev => prev.map(t => {
         const match = String(t.id) === String(payload.id) || String(t.id) === String(payload.table_id);
@@ -345,9 +343,9 @@ const App = () => {
           createdAt: payload.createdAt
         };
       }));
-    });
+    };
 
-    socket.on('menu_updated', (payload: any) => {
+    const onMenuUpdated = (payload: any) => {
       const rawItems: any[] = Array.isArray(payload?.items) ? payload.items : Array.isArray(payload) ? payload : payload?.menu ? (Array.isArray(payload.menu) ? payload.menu : Object.values(payload.menu as Record<string, any[]>).flat()) : [];
       setMenu(rawItems.map((i: any) => ({
         id: String(i.id),
@@ -357,7 +355,18 @@ const App = () => {
         isVeg: (i.type || '').toLowerCase() === 'veg',
         short_code: i.short_code
       })));
-    });
+    };
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.io.on('reconnect_attempt', onReconnectAttempt);
+    socket.io.on('reconnect_failed', onReconnectFailed);
+    socket.on('device_status', onDeviceStatus);
+    socket.on('shift_history_updated', onShiftHistory);
+    socket.on('table_updated', onTableUpdated);
+    socket.on('pickup_orders_updated', onPickupOrders);
+    socket.on('order_updated', onOrderUpdated);
+    socket.on('menu_updated', onMenuUpdated);
 
     if (socket.connected) setConnectionState('connected');
 
@@ -366,9 +375,14 @@ const App = () => {
       window.removeEventListener('offline-sync-updated', handleSyncUpdate);
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
-      socket.off('table_updated');
-      socket.off('order_updated');
-      socket.off('menu_updated');
+      socket.io.off('reconnect_attempt', onReconnectAttempt);
+      socket.io.off('reconnect_failed', onReconnectFailed);
+      socket.off('device_status', onDeviceStatus);
+      socket.off('shift_history_updated', onShiftHistory);
+      socket.off('table_updated', onTableUpdated);
+      socket.off('pickup_orders_updated', onPickupOrders);
+      socket.off('order_updated', onOrderUpdated);
+      socket.off('menu_updated', onMenuUpdated);
     };
   }, [fetchData]);
 

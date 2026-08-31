@@ -56,7 +56,7 @@ const io = new Server(httpServer, {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
   },
   pingInterval: 10000,
-  pingTimeout: 8000,
+  pingTimeout: 15000,
   connectionStateRecovery: {
     maxDisconnectionDuration: 2 * 60 * 1000,
     skipMiddlewares: true
@@ -674,7 +674,18 @@ app.post('/order', (req, res) => {
         });
 
         // Always create a BRAND NEW ticket for a new KOT submission
-        syncKdsTicket(table_number, enrichedNewItems, io, true);
+        const kotResult = syncKdsTicket(table_number, enrichedNewItems, io, true);
+
+        // Re-emit order_updated with kot_number so POS can show/print it
+        if (kotResult?.kot_number) {
+          io.emit("order_updated", {
+            ...normalizeTable(statements.getTableById({ id: targetTable.id })),
+            is_new_kot: printKOT !== false,
+            new_items: normalizedItems,
+            notes: notes || '',
+            kot_number: kotResult.kot_number
+          });
+        }
       }
     }
 
@@ -709,6 +720,10 @@ app.post('/settle-bill', (req, res) => {
 
     // Clear shift history & KDS tickets for this table
     clearShiftForTable(table.table_number);
+    // Link active KOTs to bill before clearing
+    if (table.bill_number) {
+      statements.linkKotsToBill(table.table_number, table.bill_number);
+    }
     statements.clearTableKotTickets(table.table_number, table.id, table.name);
     if (typeof io !== 'undefined' && io) io.emit('kds_updated');
 

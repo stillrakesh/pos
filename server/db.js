@@ -346,6 +346,9 @@ export async function initDatabase() {
       updated_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     );
   `);
+  // KOT numbering & bill linkage migrations
+  try { db.run(`ALTER TABLE kot_tickets ADD COLUMN kot_number TEXT`); } catch(e) {}
+  try { db.run(`ALTER TABLE kot_tickets ADD COLUMN bill_number TEXT`); } catch(e) {}
 
   // Initial save
   persistToFile();
@@ -1278,14 +1281,67 @@ export const statements = {
   },
 
   // --- KOT Tickets ---
+
+  getNextKotNumber() {
+    // 1. Get max kot_number from kot_tickets
+    let maxTickets = 0;
+    try {
+      const res = db.exec(`SELECT MAX(CAST(kot_number AS INTEGER)) as max_kot FROM kot_tickets WHERE kot_number IS NOT NULL`);
+      const rows = rowsToObjects(res);
+      if (rows[0] && rows[0].max_kot) maxTickets = parseInt(rows[0].max_kot, 10);
+    } catch (e) {}
+
+    // 2. Get sequence from config
+    let configSeq = 0;
+    try {
+      const res = db.exec(`SELECT value FROM config WHERE key = 'global_kot_sequence'`);
+      const rows = rowsToObjects(res);
+      if (rows[0] && rows[0].value) configSeq = parseInt(JSON.parse(rows[0].value), 10);
+    } catch (e) {}
+
+    const currentMax = Math.max(maxTickets, configSeq);
+    const nextKot = currentMax >= 1001 ? currentMax + 1 : 1001;
+
+    // Persist to config for crash safety
+    try {
+      db.run(
+        `INSERT OR REPLACE INTO config (key, value) VALUES ('global_kot_sequence', ?)`,
+        [JSON.stringify(nextKot.toString())]
+      );
+      persistToFile();
+    } catch (e) {}
+
+    return nextKot.toString();
+  },
+
   insertKotTicket(tableNumber, items, status = 'NEW') {
+    const kotNumber = this.getNextKotNumber();
     db.run(
-      `INSERT INTO kot_tickets (table_number, items, status) VALUES (?, ?, ?)`,
-      [tableNumber || '', JSON.stringify(items), status]
+      `INSERT INTO kot_tickets (table_number, items, status, kot_number) VALUES (?, ?, ?, ?)`,
+      [tableNumber || '', JSON.stringify(items), status, kotNumber]
     );
     persistToFile();
     const res = db.exec(`SELECT last_insert_rowid() AS id`);
-    return { id: res[0].values[0][0] };
+    return { id: res[0].values[0][0], kot_number: kotNumber };
+  },
+
+  linkKotsToBill(tableNumber, billNumber) {
+    if (!tableNumber || !billNumber) return { changes: 0 };
+    const norm = String(tableNumber).trim().toUpperCase();
+    const variants = new Set();
+    variants.add(norm);
+    const stripped = norm.replace(/^TABLE\s+/, '').trim();
+    variants.add(stripped);
+    variants.add(`TABLE ${stripped}`);
+
+    const arr = Array.from(variants);
+    const placeholders = arr.map(() => '?').join(',');
+    db.run(
+      `UPDATE kot_tickets SET bill_number = ?, updated_at = (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) WHERE UPPER(table_number) IN (${placeholders}) AND (bill_number IS NULL OR bill_number = '') AND status != 'SERVED'`,
+      [billNumber, ...arr]
+    );
+    persistToFile();
+    return { changes: db.getRowsModified() };
   },
 
   getKotTickets() {

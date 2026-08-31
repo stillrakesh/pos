@@ -118,6 +118,12 @@ router.post('/settle', (req, res) => {
     // Clear shift history for this table
     clearShiftForTable(tableNum);
 
+    // Link active KOTs to bill number before clearing
+    const settleBillNum = order_details?.billNumber || order_details?.bill_number || (table ? table.bill_number : null);
+    if (settleBillNum) {
+      statements.linkKotsToBill(tableNum, settleBillNum);
+    }
+
     // Clear KDS tickets
     statements.clearTableKotTickets(tableNum);
     if (req.app.get('io')) req.app.get('io').emit('kds_updated');

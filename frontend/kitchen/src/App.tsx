@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { socket } from './services/socket';
 import { SwipeCard } from './components/SwipeCard';
 import { SwipeItem } from './components/SwipeItem';
-import { playNewOrderSound, playModifiedSound, playTableShiftSound, playDisconnectWarning, vibrateDevice, unlockAudio } from './utils/sounds';
+import { playNewOrderSound, playModifiedSound, playTableShiftSound, playDisconnectWarning, vibrateDevice, unlockAudio, resumeAudioContext } from './utils/sounds';
 
 // ── Types ──────────────────────────────────────────────────────
 interface KdsItem {
@@ -168,8 +168,6 @@ export default function App() {
   const [connected, setConnected] = useState(socket.connected);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const [disconnectedSince, setDisconnectedSince] = useState<number | null>(null);
-  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const missedPingsRef = useRef(0);
   const disconnectSoundPlayed = useRef(false);
 
   // ── Change Detection State ───────────────────────────────────
@@ -288,8 +286,8 @@ export default function App() {
         const newSnap = buildSnapshot(tRes, currentStation);
         const prev = prevSnapshot.current;
 
-        // Only trigger audio alerts if user is actively inside a station queue
-        const shouldAlert = currentView === 'queue' && currentStation !== null;
+        // Trigger audio alerts whenever a station is selected (any view)
+        const shouldAlert = currentStation !== null;
 
         if (shouldAlert && !isFirstLoad.current && Object.keys(prev).length > 0) {
           const changedNotifs: Record<string, 'qty_updated' | 'new_item'> = {};
@@ -414,7 +412,6 @@ export default function App() {
       setConnected(true);
       setReconnectAttempt(0);
       setDisconnectedSince(null);
-      missedPingsRef.current = 0;
       disconnectSoundPlayed.current = false;
       fetchData(true);
     };
@@ -431,7 +428,14 @@ export default function App() {
       setReconnectAttempt(attempt);
     };
     const onKds = () => { debouncedFetch(); if (view === 'history') fetchHistory(); };
-    const onOrderUpdate = () => debouncedFetch();
+    const onOrderUpdate = (payload: any) => {
+      // ── INSTANT sound: play immediately when server says this is a new KOT ──
+      if (payload?.is_new_kot) {
+        playNewOrderSound();
+        vibrateDevice([50, 80, 50]);
+      }
+      debouncedFetch();
+    };
     const onTableUpdate = () => debouncedFetch();
     const onConfigUpdate = () => fetchData(true);
     const onTableShifted = (data: { oldTable: string; newTable: string }) => {
@@ -445,30 +449,17 @@ export default function App() {
       debouncedFetch();
     };
 
-    // Client-side heartbeat: ping server every 5 seconds
-    heartbeatRef.current = setInterval(() => {
-      if (socket.connected) {
-        const start = Date.now();
-        socket.volatile.emit('heartbeat_ping', {}, () => {
-          missedPingsRef.current = 0;
-        });
-        // If no pong within 4 seconds, count as missed
-        setTimeout(() => {
-          if (Date.now() - start >= 4000) {
-            missedPingsRef.current += 1;
-            if (missedPingsRef.current >= 3) {
-              setConnected(false);
-              setDisconnectedSince(prev => prev || Date.now());
-              if (!disconnectSoundPlayed.current) {
-                playDisconnectWarning();
-                vibrateDevice([100, 80, 100, 80, 100]);
-                disconnectSoundPlayed.current = true;
-              }
-            }
-          }
-        }, 4000);
+    // ── Resume audio when tab/page becomes visible again ──
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        resumeAudioContext();
+        // If socket disconnected while backgrounded, force reconnect
+        if (!socket.connected) {
+          socket.connect();
+        }
       }
-    }, 5000);
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
@@ -481,7 +472,7 @@ export default function App() {
     if (socket.connected) setConnected(true);
 
     return () => {
-      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
       socket.io.off('reconnect_attempt', onReconnectAttempt);

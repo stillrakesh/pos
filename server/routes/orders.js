@@ -87,9 +87,9 @@ export function syncKdsTicket(tableNumber, items, io, isNewKot = false) {
 
     if (isNewKot) {
       // Force insert as a brand new KOT card in KDS
-      statements.insertKotTicket(tableNumStr, normalizedKdsItems, 'NEW');
+      const result = statements.insertKotTicket(tableNumStr, normalizedKdsItems, 'NEW');
       if (io) io.emit('kds_updated');
-      return;
+      return result; // { id, kot_number }
     }
 
     // 1. Get current table session start time (created_at from tables table)
