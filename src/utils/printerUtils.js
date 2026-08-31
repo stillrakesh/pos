@@ -525,12 +525,12 @@ function generatePrintHTML(orders, type, settings) {
   }
   body { display: block; }
 
-  /* ── Outer wrapper — CRITICAL for Mac "footer-only" bug ── */
+  /* ── Outer wrapper — fits all thermal printers including Windows drivers ── */
   .wrap {
-    width: 280px;           /* 280 × 2.021 zoom = 565px, fits inside 576px ESC/POS raster */
+    width: 260px;           /* Safe for 80mm thermal: fits even with driver margins */
     max-width: 100%;
     margin: 0;
-    padding: 0 5px;         /* 5px each side — tight for thermal paper */
+    padding: 0 3px;         /* 3px each side — minimal for thermal paper */
     height: auto !important;
     overflow: visible !important;
     display: block !important;
@@ -597,13 +597,13 @@ function generatePrintHTML(orders, type, settings) {
 
   /* ── Print media ── */
   @media print {
-    @page { margin: 0; size: 80mm auto; }
+    @page { margin: 0; size: 72mm auto; }
     html, body { margin: 0; padding: 0; width: 100%; }
     .wrap {
-      width: 280px;
+      width: 260px;
       box-sizing: border-box;
       margin: 0 auto;
-      padding: 0 5px;
+      padding: 0 3px;
       height: auto !important;
       overflow: visible !important;
       display: block !important;

@@ -292,7 +292,7 @@ ipcMain.handle('get-printers', async (event) => {
 ipcMain.handle('print-silent', async (event, html, printerName) => {
   const tmpHtml = path.join(app.getPath('temp'), `receipt_silent_${Date.now()}.html`);
   const printWindow = new BrowserWindow({
-    show: false, width: 302, height: 5000, frame: false,
+    show: false, width: 275, height: 5000, frame: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });
   try {
@@ -306,7 +306,7 @@ ipcMain.handle('print-silent', async (event, html, printerName) => {
         deviceName: printerName || undefined,
         printBackground: true,
         margins: { marginType: 'none' },
-        pageSize: { width: 80000, height: 297000 } // 80mm thermal
+        pageSize: { width: 72000, height: 297000 } // 72mm printable area (80mm minus driver margins)
       }, (success, failureReason) => {
         if (!printWindow.isDestroyed()) printWindow.close();
         try { fs.unlinkSync(tmpHtml); } catch {}
