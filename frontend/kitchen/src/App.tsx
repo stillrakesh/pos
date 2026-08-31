@@ -422,10 +422,22 @@ export default function App() {
     };
     const onKds = () => { debouncedFetch(); if (view === 'history') fetchHistory(); };
     const onOrderUpdate = (payload: any) => {
-      // ── INSTANT sound: play immediately when server says this is a new KOT ──
+      // ── INSTANT sound: only if a station is selected and the KOT has items for it ──
       if (payload?.is_new_kot) {
-        playNewOrderSound();
-        vibrateDevice([50, 80, 50]);
+        const station = selectedStationRef.current;
+        if (station) {
+          const stationCats = (station.categories || []).map((c: string) => String(c).trim().toLowerCase());
+          const newItems: any[] = payload.new_items || [];
+          // Check if ANY item in this KOT matches the current station's categories
+          const hasMatchingItem = stationCats.length === 0 || newItems.some((item: any) => {
+            const itemCat = String(item.category || '').trim().toLowerCase();
+            return stationCats.includes(itemCat);
+          });
+          if (hasMatchingItem) {
+            playNewOrderSound();
+            vibrateDevice([50, 80, 50]);
+          }
+        }
       }
       debouncedFetch();
     };
