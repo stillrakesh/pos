@@ -527,10 +527,10 @@ function generatePrintHTML(orders, type, settings) {
 
   /* ── Outer wrapper — CRITICAL for Mac "footer-only" bug ── */
   .wrap {
-    width: 300px;           /* Fixed 80mm width */
+    width: 280px;           /* 280 × 2.021 zoom = 565px, fits inside 576px ESC/POS raster */
     max-width: 100%;
     margin: 0;
-    padding: 0 10px;        /* 10px each side per spec */
+    padding: 0 5px;         /* 5px each side — tight for thermal paper */
     height: auto !important;
     overflow: visible !important;
     display: block !important;
@@ -600,7 +600,7 @@ function generatePrintHTML(orders, type, settings) {
     @page { margin: 0; size: 80mm auto; }
     html, body { margin: 0; padding: 0; width: 100%; }
     .wrap {
-      width: 285px;
+      width: 280px;
       box-sizing: border-box;
       margin: 0 auto;
       padding: 0 5px;
