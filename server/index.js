@@ -1096,7 +1096,7 @@ const handleNetworkDiagnostics = (req, res) => {
     const nets = os.networkInterfaces();
     const interfaces = [];
     const hostname = os.hostname();
-    const localDomain = `${hostname.toLowerCase()}.local`;
+    const localDomain = hostname.toLowerCase().endsWith('.local') ? hostname.toLowerCase() : `${hostname.toLowerCase()}.local`;
     
     for (const [name, netList] of Object.entries(nets)) {
       if (!netList) continue;
@@ -1152,7 +1152,7 @@ app.get('/api/network', (req, res) => {
     port: PORT,
     connectedDevicesCount: io ? io.sockets.sockets.size : 0,
     hostname: os.hostname(),
-    localDomain: `${os.hostname().toLowerCase()}.local`
+    localDomain: os.hostname().toLowerCase().endsWith('.local') ? os.hostname().toLowerCase() : `${os.hostname().toLowerCase()}.local`
   });
 });
 

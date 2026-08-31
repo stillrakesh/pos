@@ -271,42 +271,42 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#0f172a', color: 'white', overflow: 'hidden' }} className="animate-fade-in">
       {/* ── HEADER BAR ──────────────────────────────── */}
-      <div style={{ padding: '20px 28px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ 
-            padding: '12px', borderRadius: '16px', 
+            padding: '8px', borderRadius: '12px', 
             background: isOnline 
               ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(52, 211, 153, 0.1))' 
               : 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1))',
             border: `1px solid ${isOnline ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
           }}>
-            {isOnline ? <Wifi size={22} color="#10b981" /> : <WifiOff size={22} color="#ef4444" />}
+            {isOnline ? <Wifi size={18} color="#10b981" /> : <WifiOff size={18} color="#ef4444" />}
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <h2 style={{ fontSize: '22px', fontWeight: '700', letterSpacing: '-0.5px', margin: 0 }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '700', letterSpacing: '-0.5px', margin: 0 }}>
                 Captain Control Panel
               </h2>
 
               {/* Live Connected Devices Badge */}
               <div style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '4px 10px', borderRadius: '20px',
+                display: 'flex', alignItems: 'center', gap: '5px',
+                padding: '3px 8px', borderRadius: '20px',
                 background: connectedDeviceCount > 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(148, 163, 184, 0.15)',
                 border: `1px solid ${connectedDeviceCount > 0 ? 'rgba(16, 185, 129, 0.4)' : 'rgba(148, 163, 184, 0.2)'}`,
                 color: connectedDeviceCount > 0 ? '#34d399' : '#94a3b8',
                 fontSize: '11px', fontWeight: '600'
               }}>
-                <Smartphone size={13} />
+                <Smartphone size={12} />
                 <span>{connectedDeviceCount} Connected {connectedDeviceCount === 1 ? 'Device' : 'Devices'}</span>
               </div>
             </div>
 
-            <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               {isOnline ? 'Connected to API — polling & real-time socket ready' : 'API server offline — retrying...'}
               {isOnline && (
                 <span style={{ 
-                  fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '6px',
+                  fontSize: '10px', fontWeight: '600', padding: '2px 6px', borderRadius: '6px',
                   background: printMethod === 'electron' ? 'rgba(99, 102, 241, 0.15)' : printMethod === 'web-serial' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
                   color: printMethod === 'electron' ? '#818cf8' : printMethod === 'web-serial' ? '#f59e0b' : '#ef4444'
                 }}>
@@ -317,34 +317,34 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
           {/* Network Diagnostics Button */}
           <button
             onClick={() => setShowDiagnosticsModal(true)}
             style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '10px 16px', borderRadius: '12px', fontSize: '12px', fontWeight: '600',
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '8px 12px', borderRadius: '10px', fontSize: '11px', fontWeight: '600',
               border: '1px solid rgba(99, 102, 241, 0.3)',
               background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1))',
               color: '#a5b4fc', cursor: 'pointer'
             }}
           >
-            <Activity size={14} /> Network Health & Diagnostics
+            <Activity size={13} /> Network Health & Diagnostics
           </button>
 
           {/* Captain Mode toggle */}
           <button
             onClick={() => setCaptainMode(!captainMode)}
             style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '10px 16px', borderRadius: '12px', fontSize: '12px', fontWeight: '600',
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '8px 12px', borderRadius: '10px', fontSize: '11px', fontWeight: '600',
               border: `1px solid ${captainMode ? 'rgba(56, 189, 248, 0.3)' : 'rgba(255,255,255,0.1)'}`,
               background: captainMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.05)',
               color: captainMode ? '#38bdf8' : '#64748b', cursor: 'pointer',
               textTransform: 'uppercase', letterSpacing: '0.5px'
             }}
           >
-            <Smartphone size={14} /> Captain Mode: {captainMode ? 'ON' : 'OFF'}
+            <Smartphone size={13} /> Captain Mode: {captainMode ? 'ON' : 'OFF'}
           </button>
 
           {/* Sound toggle */}
@@ -352,12 +352,12 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
             onClick={() => setSoundEnabled(!soundEnabled)}
             title={soundEnabled ? 'Mute notifications' : 'Enable notifications'}
             style={{
-              padding: '10px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)',
+              padding: '8px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)',
               background: soundEnabled ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255,255,255,0.05)',
               color: soundEnabled ? '#818cf8' : '#64748b', cursor: 'pointer'
             }}
           >
-            {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+            {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
 
           {/* Auto-print toggle & Category Filter button */}
@@ -365,15 +365,15 @@ const CaptainOrders = ({ newOrders = [], setNewOrders, onManualSync, onInjectOrd
             <button
               onClick={() => setAutoPrint(!autoPrint)}
               style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '10px 16px', borderRadius: autoPrint ? '12px 0 0 12px' : '12px', fontSize: '12px', fontWeight: '600',
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 12px', borderRadius: autoPrint ? '10px 0 0 10px' : '10px', fontSize: '11px', fontWeight: '600',
                 border: `1px solid ${autoPrint ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.1)'}`,
                 background: autoPrint ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.05)',
                 color: autoPrint ? '#34d399' : '#64748b', cursor: 'pointer',
                 textTransform: 'uppercase', letterSpacing: '0.5px'
               }}
             >
-              <Zap size={14} /> Auto-Print KOT: {autoPrint ? 'ON' : 'OFF'}
+              <Zap size={13} /> Auto-Print KOT: {autoPrint ? 'ON' : 'OFF'}
             </button>
 
             {autoPrint && (

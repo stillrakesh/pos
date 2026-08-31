@@ -536,14 +536,14 @@ function generatePrintHTML(orders, type, settings) {
     display: block !important;
   }
 
-  /* ── Receipt inner ── */
+   /* ── Receipt inner ── */
   .receipt {
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     font-size: 13px;
     color: #000;
     width: 100%;
     box-sizing: border-box;
-    line-height: 1.4;
+    line-height: 1.3;
     -webkit-font-smoothing: none;
     text-rendering: optimizeSpeed;
     word-wrap: break-word;
@@ -552,9 +552,9 @@ function generatePrintHTML(orders, type, settings) {
   }
 
   /* ── Separators ── */
-  .sb      { border: 0; border-top: ${boldLine};  margin: 4px 0; }
-  .st      { border: 0; border-top: ${thinLine};  margin: 3px 0; }
-  .sb-kot  { border: 0; border-top: ${kotLine};   margin: 4px 0; }
+  .sb      { border: 0; border-top: ${boldLine};  margin: 2px 0; }
+  .st      { border: 0; border-top: ${thinLine};  margin: 2px 0; }
+  .sb-kot  { border: 0; border-top: ${kotLine};   margin: 2px 0; }
 
   /* ── Header ── */
   .hdr { text-align: center; margin-bottom: 0px; }
@@ -655,7 +655,7 @@ ${ordersArray.map((order, idx) => {
           </tr>`).join('')}
         </tbody>
       </table>
-      <hr class="sb-kot" style="margin-top:4px;"/>
+      <hr class="sb-kot" style="margin-top:2px;"/>
     </div>`;
     }
 
