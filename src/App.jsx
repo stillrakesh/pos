@@ -1046,6 +1046,18 @@ const OrderHistoryView = ({ orderHistory, onSelectActive, globalSearch, loadHist
                             </div>
                           </div>
 
+                          {/* KOT Numbers (if linked) */}
+                          {order.kot_numbers && order.kot_numbers.length > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>KOT Numbers:</span>
+                              {order.kot_numbers.map((k, ki) => (
+                                <span key={ki} style={{ fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '6px', background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', fontFamily: 'monospace' }}>
+                                  KOT #{k}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
                           {/* Items Breakdown Table */}
                           <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', background: '#ffffff', marginBottom: '16px' }}>
                             <div style={{ padding: '10px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: '11px', fontWeight: '600', color: '#64748b', display: 'flex', letterSpacing: '0.5px' }}>
@@ -1069,52 +1081,63 @@ const OrderHistoryView = ({ orderHistory, onSelectActive, globalSearch, loadHist
                             </div>
                           </div>
 
-                          {/* Bill Totals breakdown matching industry receipt standard */}
+                              {/* Bill Totals breakdown matching industry receipt standard */}
                           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                             <div style={{ width: '320px', display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                               
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '500', color: '#64748b' }}>
-                                <span>Subtotal:</span>
-                                <span style={{ color: '#0f172a' }}>₹{Number(order.subtotal || total).toLocaleString()}</span>
-                              </div>
-
-                              {Number(order.discountAmt || 0) > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '500', color: '#dc2626' }}>
-                                  <span>Discount:</span>
-                                  <span>-₹{Number(order.discountAmt).toLocaleString()}</span>
-                                </div>
-                              )}
-
-                              {Number(order.serviceCharge || 0) > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '500', color: '#64748b' }}>
-                                  <span>Service Charge:</span>
-                                  <span style={{ color: '#0f172a' }}>+₹{Number(order.serviceCharge).toLocaleString()}</span>
-                                </div>
-                              )}
-
-                              {Number(order.gstAmount || 0) > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '500', color: '#64748b' }}>
-                                  <span>CGST/SGST:</span>
-                                  <span style={{ color: '#0f172a' }}>+₹{Number(order.gstAmount).toLocaleString()}</span>
-                                </div>
-                              )}
-
-                              {Number(order.tipAmount || 0) > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '500', color: '#2563eb' }}>
-                                  <span>Tips:</span>
-                                  <span>+₹{Number(order.tipAmount).toLocaleString()}</span>
-                                </div>
-                              )}
-
                               {(() => {
-                                const calculatedRaw = (Number(order.subtotal || total) - Number(order.discountAmt || 0) + Number(order.serviceCharge || 0) + Number(order.gstAmount || 0));
-                                const diff = Number(total) - calculatedRaw;
-                                return Math.abs(diff) > 0.01 ? (
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '500', color: '#64748b' }}>
-                                    <span>Round Off:</span>
-                                    <span style={{ color: '#0f172a' }}>{diff >= 0 ? '+' : ''}₹{diff.toFixed(2)}</span>
-                                  </div>
-                                ) : null;
+                                // Compute real subtotal from cart items
+                                const itemSubtotal = items.reduce((sum, it) => sum + (Number(it.price || 0) * (it.qty || it.quantity || 1)), 0);
+                                const discount = Number(order.discountAmt || 0);
+                                const svc = Number(order.serviceCharge || 0);
+                                const gst = Number(order.gstAmount || 0);
+                                const tip = Number(order.tipAmount || 0);
+                                const grandTotal = Number(total);
+                                const calculatedBeforeRound = itemSubtotal - discount + svc + gst + tip;
+                                const roundOff = grandTotal - calculatedBeforeRound;
+                                return (
+                                  <>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '500', color: '#64748b' }}>
+                                      <span>Subtotal:</span>
+                                      <span style={{ color: '#0f172a' }}>₹{itemSubtotal.toLocaleString()}</span>
+                                    </div>
+
+                                    {discount > 0 && (
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '500', color: '#dc2626' }}>
+                                        <span>Discount:</span>
+                                        <span>-₹{discount.toLocaleString()}</span>
+                                      </div>
+                                    )}
+
+                                    {svc > 0 && (
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '500', color: '#64748b' }}>
+                                        <span>Service Charge:</span>
+                                        <span style={{ color: '#0f172a' }}>+₹{svc.toLocaleString()}</span>
+                                      </div>
+                                    )}
+
+                                    {gst > 0 && (
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '500', color: '#64748b' }}>
+                                        <span>CGST/SGST:</span>
+                                        <span style={{ color: '#0f172a' }}>+₹{gst.toLocaleString()}</span>
+                                      </div>
+                                    )}
+
+                                    {tip > 0 && (
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '500', color: '#2563eb' }}>
+                                        <span>Tips:</span>
+                                        <span>+₹{tip.toLocaleString()}</span>
+                                      </div>
+                                    )}
+
+                                    {Math.abs(roundOff) > 0.01 && (
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '500', color: '#64748b' }}>
+                                        <span>Round Off:</span>
+                                        <span style={{ color: '#0f172a' }}>{roundOff >= 0 ? '+' : ''}₹{roundOff.toFixed(2)}</span>
+                                      </div>
+                                    )}
+                                  </>
+                                );
                               })()}
 
                               <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '8px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>
@@ -7420,6 +7443,8 @@ function MainApp() {
         return {
           ...o,
           id: String(o.id),
+          bill_number: o.bill_number || null,
+          kot_numbers: o.kot_numbers || [],
           type: orderType,
           orderType: orderType,
           customerName: o.customer_name || o.customerName || (orderType === 'Dine In' ? `Table ${o.table_number}` : 'Walk-In'),
@@ -8322,14 +8347,19 @@ function MainApp() {
       // without waiting for the socket event (which may have empty cart for virtual tables).
       const cartItems = orderDetails.cart || orderDetails.orders || orderDetails.items || [];
       const computedRoundOff = (orderDetails.grandTotal || 0) - ((orderDetails.subtotal || 0) - (orderDetails.discountAmt || 0) + (orderDetails.serviceCharge || 0) + (orderDetails.gstAmount || 0));
+      const finalBillNum = res?.bill_number || res?.settled_order?.bill_number || res?.settled_order?.billNumber || orderDetails.bill_number || orderDetails.billNumber || null;
       const completedEntry = res?.settled_order ? {
         ...res.settled_order,
         id: String(res.settled_order.id || finalTid),
+        bill_number: finalBillNum,
+        kot_numbers: res.settled_order.kot_numbers || [],
         timestamp: res.settled_order.timestamp || new Date().toISOString(),
         roundOff: res.settled_order.roundOff !== undefined ? res.settled_order.roundOff : computedRoundOff
       } : {
         id: finalTid,
         table_number: finalTid,
+        bill_number: finalBillNum,
+        kot_numbers: [],
         type: orderDetails.type || (isFloorTable ? 'Dine In' : 'Takeaway'),
         customerName: orderDetails.customerName || orderDetails.customer_name || (isFloorTable ? `Table ${finalTid}` : 'Walk-In'),
         paymentMethod: orderDetails.paymentMethod || 'Cash',

@@ -45,6 +45,13 @@ router.post('/settle', (req, res) => {
     // Hoist itemsToSave so it's accessible both inside the if/else blocks AND in the socket emit below
     const itemsToSave = order_details?.cart || order_details?.orders || order_details?.items || [];
 
+    // Ensure bill number is present — resolve from request, table, or auto-generate next sequence
+    let settleBillNum = order_details?.billNumber || order_details?.bill_number || (table ? table.bill_number : null);
+    if (!settleBillNum) {
+      settleBillNum = String(statements.getNextBillNumber());
+      console.log(`  📝 [SETTLE] Auto-generated bill number for ${tableNum}: ${settleBillNum}`);
+    }
+
     if (activeOrders.length > 0) {
       activeOrders.forEach(order => {
         if (itemsToSave.length > 0) {
@@ -62,7 +69,7 @@ router.post('/settle', (req, res) => {
             gst_amount: gstAmount,
             service_charge: serviceCharge,
             tip_amount: tipAmount,
-            bill_number: order_details?.billNumber || order_details?.bill_number || table?.bill_number || null,
+            bill_number: settleBillNum,
             customer_name: order_details?.customerName || order_details?.customer_name || null,
             phone: order_details?.phone || order_details?.customerPhone || null
           });
@@ -91,14 +98,18 @@ router.post('/settle', (req, res) => {
           gst_amount: gstAmount,
           service_charge: serviceCharge,
           discount_amount: order_details?.discountAmt || 0,
-          discount_rate: order_details?.discountRate || 0
+          discount_rate: order_details?.discountRate || 0,
+          bill_number: settleBillNum,
+          grand_total: grandTotal,
+          payment_method: paymentMethod,
+          tip_amount: tipAmount
         });
         changesMade = 1;
-        console.log(`  ✅ [SETTLE] Created missing order for ${tableNum} and marked COMPLETED. ID: ${result.lastInsertRowid}`);
+        console.log(`  ✅ [SETTLE] Created missing order for ${tableNum} and marked COMPLETED. ID: ${result.lastInsertRowid}, Bill: ${settleBillNum}`);
       }
     }
 
-    console.log(`  💰 [SETTLE] table=${tableNum} grandTotal=${grandTotal} serviceCharge=${serviceCharge} gstAmount=${gstAmount} tipAmount=${tipAmount} method=${paymentMethod}`);
+    console.log(`  💰 [SETTLE] table=${tableNum} bill=${settleBillNum} grandTotal=${grandTotal} serviceCharge=${serviceCharge} gstAmount=${gstAmount} tipAmount=${tipAmount} method=${paymentMethod}`);
 
     try {
       const result = statements.updateOrderPayment({
@@ -108,21 +119,23 @@ router.post('/settle', (req, res) => {
         gst_amount: gstAmount,
         service_charge: serviceCharge,
         tip_amount: tipAmount,
-        bill_number: table ? table.bill_number : null,
+        bill_number: settleBillNum,
         customer_name: order_details?.customerName || order_details?.customer_name || null,
         phone: order_details?.phone || order_details?.customerPhone || null
       });
-      console.log(`  ✅ [SETTLE] updateOrderPayment changed ${result.changes} rows`);
+      console.log(`  ✅ [SETTLE] updateOrderPayment changed ${result.changes} rows for bill #${settleBillNum}`);
     } catch(e) { console.error('  ❌ [SETTLE] updateOrderPayment failed:', e.message); }
 
     // Clear shift history for this table
     clearShiftForTable(tableNum);
 
     // Link active KOTs to bill number before clearing
-    const settleBillNum = order_details?.billNumber || order_details?.bill_number || (table ? table.bill_number : null);
     if (settleBillNum) {
       statements.linkKotsToBill(tableNum, settleBillNum);
     }
+
+    // Retrieve linked KOT numbers for display
+    const linkedKotNumbers = settleBillNum ? statements.getKotNumbersByBill(settleBillNum) : [];
 
     // Clear KDS tickets
     statements.clearTableKotTickets(tableNum);
@@ -167,6 +180,7 @@ router.post('/settle', (req, res) => {
           type: order_details?.type || order_details?.orderType || (table && (table.type || table.zone)) || (isVirtual ? 'Takeaway' : 'Dine In'),
           split_payments: order_details?.splitPayments || [],
           subtotal: order_details?.subtotal || 0,
+          bill_number: settleBillNum,
           created_at: new Date().toISOString()
         }
       });
@@ -226,6 +240,9 @@ router.post('/settle', (req, res) => {
       phone: order_details?.phone || order_details?.customerPhone || '',
       grandTotal: grandTotal,
       paymentMethod: paymentMethod,
+      bill_number: settleBillNum,
+      billNumber: settleBillNum,
+      kot_numbers: linkedKotNumbers,
       timestamp: new Date().toISOString(),
       status: 'completed',
       paymentStatus: 'PAID',
@@ -255,7 +272,7 @@ router.post('/settle', (req, res) => {
     }
 
     const updated = table ? statements.getTableById({ id: table.id }) : null;
-    res.json({ success: true, message: 'Bill settled', table: updated, settled_order: settledOrderPayload });
+    res.json({ success: true, message: 'Bill settled', bill_number: settleBillNum, table: updated, settled_order: settledOrderPayload });
   } catch (err) {
     console.error('[POST /api/billing/settle] Error:', err);
     res.status(500).json({ error: 'SERVER_ERROR', message: 'Failed to settle bill' });
@@ -389,10 +406,14 @@ router.get('/bill-number/:table_id', (req, res) => {
 router.get('/history', (req, res) => {
   try {
     const orders = statements.getHistoryOrders();
-    const parsedOrders = orders.map(o => ({
-      ...o,
-      items: typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || [])
-    }));
+    const parsedOrders = orders.map(o => {
+      const kotNumbers = o.bill_number ? statements.getKotNumbersByBill(o.bill_number) : [];
+      return {
+        ...o,
+        items: typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || []),
+        kot_numbers: kotNumbers
+      };
+    });
     res.json({ success: true, orders: parsedOrders });
   } catch (err) {
     console.error('[GET /api/billing/history] Error:', err);

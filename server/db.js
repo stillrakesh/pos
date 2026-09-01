@@ -571,10 +571,10 @@ export const statements = {
   },
 
   insertOrder(req) {
-    const { table_number, items, notes, status, gst_enabled, gst_rate, service_charge_enabled, service_charge_rate, gst_amount, service_charge, customer_name, phone } = req;
+    const { table_number, items, notes, status, gst_enabled, gst_rate, service_charge_enabled, service_charge_rate, gst_amount, service_charge, customer_name, phone, bill_number, grand_total, payment_method, tip_amount } = req;
     db.run(
-      `INSERT INTO orders (table_number, items, notes, status, gst_enabled, gst_rate, service_charge_enabled, service_charge_rate, gst_amount, service_charge, discount_amount, discount_rate, customer_name, phone, covers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [table_number, items, notes || '', status, gst_enabled ? 1 : 0, Number(gst_rate) || 0, service_charge_enabled ? 1 : 0, Number(service_charge_rate) || 0, gst_amount || 0, service_charge || 0, req.discount_amount || 0, req.discount_rate || 0, customer_name || '', phone || '', req.covers || 1]
+      `INSERT INTO orders (table_number, items, notes, status, gst_enabled, gst_rate, service_charge_enabled, service_charge_rate, gst_amount, service_charge, discount_amount, discount_rate, customer_name, phone, covers, bill_number, grand_total, payment_method, tip_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [table_number, items, notes || '', status, gst_enabled ? 1 : 0, Number(gst_rate) || 0, service_charge_enabled ? 1 : 0, Number(service_charge_rate) || 0, gst_amount || 0, service_charge || 0, req.discount_amount || 0, req.discount_rate || 0, customer_name || '', phone || '', req.covers || 1, bill_number || null, grand_total || 0, payment_method || null, tip_amount || 0]
     );
     const lastId = db.exec(`SELECT last_insert_rowid() as id`)[0].values[0][0];
     persistToFile();
@@ -632,6 +632,16 @@ export const statements = {
       [limit, offset]
     );
     return rowsToObjects(result);
+  },
+
+  getKotNumbersByBill(billNumber) {
+    if (!billNumber) return [];
+    const result = db.exec(
+      `SELECT DISTINCT kot_number FROM kot_tickets WHERE bill_number = ? AND kot_number IS NOT NULL ORDER BY CAST(kot_number AS INTEGER) ASC`,
+      [String(billNumber)]
+    );
+    const rows = rowsToObjects(result);
+    return rows.map(r => r.kot_number);
   },
 
   updateOrderPaymentMethod({ id, payment_method }) {
