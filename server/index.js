@@ -1023,7 +1023,7 @@ app.get('/api/sync-queue', (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// Health Check
+// Health Check & System Lifecycle
 // ─────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   try {
@@ -1045,6 +1045,20 @@ app.get('/api/health', (req, res) => {
 });
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+// Graceful Remote Shutdown (called by Electron before quit)
+app.post('/api/system/shutdown', (req, res) => {
+  console.log('  ⚡ Shutdown requested via API — flushing database to disk...');
+  try {
+    forceSave();
+    res.json({ success: true, message: 'Database saved, shutting down.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+  setTimeout(() => {
+    process.exit(0);
+  }, 100);
+});
 
 // Instant Mobile LAN Connection Tester Page
 app.get(['/ping', '/test'], (req, res) => {
@@ -1402,6 +1416,20 @@ async function start() {
     console.log('  👤 CRM: Customer statistics reconciled with database orders');
   } catch (crmRecErr) {
     console.warn('  ⚠️  CRM: Startup reconciliation warning:', crmRecErr.message);
+  }
+
+  httpServer.on('error', (err) => {
+    console.error('  ❌ HTTP Server Error:', err.message);
+    if (err.code === 'EADDRINUSE') {
+      console.error(`  🚨 Port ${PORT} is already occupied! Exiting process to allow clean restart.`);
+      process.exit(1);
+    }
+  });
+
+  if (httpsServer) {
+    httpsServer.on('error', (err) => {
+      console.warn('  ⚠️ HTTPS Server Error (non-fatal):', err.message);
+    });
   }
 
   httpServer.listen(PORT, '0.0.0.0', () => {

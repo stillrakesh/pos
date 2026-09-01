@@ -358,62 +358,76 @@ export async function initDatabase() {
 }
 
 /**
- * Persist the in-memory DB to disk.
- * Debounced: won't write more than once per 500ms.
+ * Synchronously write in-memory SQLite state to disk.
+ * Tries atomic rename first, with direct write fallback on Windows file-lock errors.
  */
-function persistToFile() {
-  if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    try {
-      const data = db.export();
-      const buffer = Buffer.from(data);
-      const tmpPath = DB_PATH + '.tmp';
-      const backupPath = DB_PATH + '.bak';
-      
-      // Step 1: Write to temporary file
-      writeFileSync(tmpPath, buffer);
-      
-      // Step 2: Backup current DB (if it exists and has content)
-      if (existsSync(DB_PATH)) {
-        try { copyFileSync(DB_PATH, backupPath); } catch (e) {}
-      }
-      
-      // Step 3: Atomic rename (this is the critical moment — rename is atomic on most OS)
-      renameSync(tmpPath, DB_PATH);
-    } catch (err) {
-      console.error('  ❌ DB persist error:', err.message);
+function writeDbToDisk() {
+  if (!db) return;
+  const data = db.export();
+  const buffer = Buffer.from(data);
+  const tmpPath = DB_PATH + '.tmp';
+  const backupPath = DB_PATH + '.bak';
+
+  try {
+    // 1. Write temporary buffer
+    writeFileSync(tmpPath, buffer);
+
+    // 2. Backup current DB if present
+    if (existsSync(DB_PATH)) {
+      try { copyFileSync(DB_PATH, backupPath); } catch (e) {}
     }
-  }, 500);
+
+    // 3. Try atomic replace
+    try {
+      renameSync(tmpPath, DB_PATH);
+    } catch (renameErr) {
+      // Windows often locks DB_PATH if opened by Defender/system — fallback to direct write
+      writeFileSync(DB_PATH, buffer);
+      try { if (existsSync(tmpPath)) fs.unlinkSync(tmpPath); } catch (e) {}
+    }
+  } catch (err) {
+    console.error('  ❌ DB atomic save failed, attempting direct write fallback:', err.message);
+    try {
+      writeFileSync(DB_PATH, buffer);
+      console.log('  💾 DB direct fallback write successful.');
+    } catch (fallbackErr) {
+      console.error('  ❌ DB direct fallback also failed:', fallbackErr.message);
+    }
+  }
+}
+
+/**
+ * Persist the in-memory DB to disk.
+ * If immediate = true (default), writes immediately and synchronously.
+ * Otherwise debounces writes by 300ms.
+ */
+export function persistToFile(immediate = true) {
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+
+  if (immediate) {
+    writeDbToDisk();
+    return;
+  }
+
+  saveTimer = setTimeout(() => {
+    saveTimer = null;
+    writeDbToDisk();
+  }, 300);
 }
 
 /**
  * Force-save the DB immediately (used on shutdown).
  */
 export function forceSave() {
-  if (saveTimer) clearTimeout(saveTimer);
-  try {
-    const data = db.export();
-    const buffer = Buffer.from(data);
-    const tmpPath = DB_PATH + '.tmp';
-    const backupPath = DB_PATH + '.bak';
-    
-    writeFileSync(tmpPath, buffer);
-    if (existsSync(DB_PATH)) {
-      try { copyFileSync(DB_PATH, backupPath); } catch (e) {}
-    }
-    renameSync(tmpPath, DB_PATH);
-    console.log('  💾 Database saved to disk (atomic).');
-  } catch (err) {
-    console.error('  ❌ DB force-save error:', err.message);
-    // Fallback: try direct write if atomic fails
-    try {
-      const data = db.export();
-      writeFileSync(DB_PATH, Buffer.from(data));
-      console.log('  💾 Database saved (fallback direct write).');
-    } catch (fallbackErr) {
-      console.error('  ❌ DB fallback save also failed:', fallbackErr.message);
-    }
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
   }
+  writeDbToDisk();
+  console.log('  💾 Database force-saved to disk.');
 }
 
 // ─── Helper: convert sql.js row arrays to objects ────────────

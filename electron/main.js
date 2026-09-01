@@ -19,6 +19,17 @@ function logToFile(msg) {
     const dataDir = path.join(app.getPath('userData'), 'data');
     if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
     const logPath = path.join(dataDir, 'electron_debug.log');
+    
+    // Log rotation: truncate if over 5MB (keep last 1MB)
+    try {
+      const stats = fs.statSync(logPath);
+      if (stats.size > 5 * 1024 * 1024) {
+        const content = fs.readFileSync(logPath, 'utf-8');
+        const truncated = content.slice(-1024 * 1024); // Keep last 1MB
+        fs.writeFileSync(logPath, `[LOG ROTATED at ${new Date().toISOString()}]\n${truncated}`);
+      }
+    } catch (rotateErr) { /* file might not exist yet */ }
+    
     fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${msg}\n`);
   } catch (e) {}
 }
@@ -452,17 +463,65 @@ ipcMain.handle('print-pdf-usb', async (event, html, printerName) => {
 // ── Global Crash Protection for Main Process ──
 process.on('uncaughtException', (err) => {
   logToFile(`[MAIN PROCESS CRASH PREVENTED] ${err.stack || err}`);
-  // Don't exit — keep the app running
 });
 
 process.on('unhandledRejection', (reason) => {
   logToFile(`[MAIN PROCESS UNHANDLED REJECTION] ${reason?.stack || reason}`);
 });
 
-app.whenReady().then(() => {
+function killProcessOnPort(port) {
+  return new Promise((resolve) => {
+    if (process.platform === 'win32') {
+      const cmd = `powershell -NoProfile -NonInteractive -Command "try { Get-NetTCPConnection -LocalPort ${port} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue } } catch {}"`;
+      exec(cmd, { windowsHide: true }, () => resolve());
+    } else {
+      exec(`lsof -ti tcp:${port} | xargs kill -9 2>/dev/null || true`, { shell: '/bin/bash' }, () => resolve());
+    }
+  });
+}
+
+app.whenReady().then(async () => {
+  const port = process.env.PORT || '3101';
+  logToFile(`Ensuring port ${port} is clear before backend spawn...`);
+  await killProcessOnPort(port);
   startBackend();
   createWindow();
 });
 
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-app.on('quit', () => { if (backendProcess && !backendProcess.killed) backendProcess.kill('SIGTERM'); });
+let isQuitting = false;
+
+app.on('before-quit', (e) => {
+  if (isQuitting) return;
+  isQuitting = true;
+  e.preventDefault();
+
+  logToFile('[App Shutdown] Graceful shutdown initiated. Triggering backend database save...');
+
+  const port = process.env.PORT || '3101';
+  const shutdownUrl = `http://127.0.0.1:${port}/api/system/shutdown`;
+
+  try {
+    const req = http.request(shutdownUrl, { method: 'POST', timeout: 800 }, () => {});
+    req.on('error', () => {});
+    req.end();
+  } catch (err) {}
+
+  setTimeout(() => {
+    if (backendProcess && !backendProcess.killed) {
+      try {
+        if (process.platform === 'win32') {
+          exec(`taskkill /pid ${backendProcess.pid} /T /F`, { windowsHide: true }, () => {});
+        } else {
+          backendProcess.kill('SIGTERM');
+        }
+      } catch (err) {}
+    }
+    app.exit(0);
+  }, 500);
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
