@@ -104,7 +104,7 @@ function ensureFirewallRules() {
       `/usr/libexec/ApplicationFirewall/socketfilterfw --add "${appPath}" 2>/dev/null`,
       `/usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp "${appPath}" 2>/dev/null`
     ];
-    exec(cmds.join(' && '), { shell: '/bin/bash' }, (err) => {
+    exec(cmds.join(' && '), { timeout: 3000 }, (err) => {
       if (err) logToFile(`macOS firewall config: ${err.message}`);
       else logToFile('macOS firewall: app whitelisted.');
     });
@@ -471,11 +471,19 @@ process.on('unhandledRejection', (reason) => {
 
 function killProcessOnPort(port) {
   return new Promise((resolve) => {
-    if (process.platform === 'win32') {
-      const cmd = `powershell -NoProfile -NonInteractive -Command "try { Get-NetTCPConnection -LocalPort ${port} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue } } catch {}"`;
-      exec(cmd, { windowsHide: true }, () => resolve());
-    } else {
-      exec(`lsof -ti tcp:${port} | xargs kill -9 2>/dev/null || true`, { shell: '/bin/bash' }, () => resolve());
+    // Safety timeout — never block startup for more than 2 seconds
+    const timer = setTimeout(() => resolve(), 2000);
+    try {
+      if (process.platform === 'win32') {
+        const cmd = `powershell -NoProfile -NonInteractive -Command "try { Get-NetTCPConnection -LocalPort ${port} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue } } catch {}"`;
+        exec(cmd, { windowsHide: true, timeout: 1500 }, () => { clearTimeout(timer); resolve(); });
+      } else {
+        // macOS/Linux: best-effort, with timeout protection
+        exec(`lsof -ti tcp:${port} 2>/dev/null | xargs kill -9 2>/dev/null; exit 0`, { timeout: 1500 }, () => { clearTimeout(timer); resolve(); });
+      }
+    } catch (err) {
+      clearTimeout(timer);
+      resolve();
     }
   });
 }
@@ -483,7 +491,11 @@ function killProcessOnPort(port) {
 app.whenReady().then(async () => {
   const port = process.env.PORT || '3101';
   logToFile(`Ensuring port ${port} is clear before backend spawn...`);
-  await killProcessOnPort(port);
+  try {
+    await killProcessOnPort(port);
+  } catch (err) {
+    logToFile(`Port cleanup error (non-fatal): ${err.message}`);
+  }
   startBackend();
   createWindow();
 });
@@ -525,3 +537,11 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
+
+app.on('activate', () => {
+  // macOS: re-create window when dock icon is clicked and no windows are open
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
+});
+

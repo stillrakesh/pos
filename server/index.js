@@ -1421,8 +1421,16 @@ async function start() {
   httpServer.on('error', (err) => {
     console.error('  ❌ HTTP Server Error:', err.message);
     if (err.code === 'EADDRINUSE') {
-      console.error(`  🚨 Port ${PORT} is already occupied! Exiting process to allow clean restart.`);
-      process.exit(1);
+      console.warn(`  ⚠️  Port ${PORT} in use — retrying in 1.5s...`);
+      setTimeout(() => {
+        try {
+          httpServer.close();
+          httpServer.listen(PORT, '0.0.0.0');
+        } catch (retryErr) {
+          console.error(`  🚨 Port ${PORT} still occupied after retry! Exiting.`);
+          process.exit(1);
+        }
+      }, 1500);
     }
   });
 
